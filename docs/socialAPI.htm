@@ -1,0 +1,362 @@
+<html>
+<head>
+<title>Browser Social API technical reference DRAFT</title>
+<style>
+BODY {
+font:12px/1.428 "Lucida Grande","Lucida Sans Unicode",Lucida,Arial,Helvetica,sans-serif;
+background-color:rgb(51, 51, 51)
+}
+H1 {
+ font-size:20px;
+ margin-left:-16px;
+}
+
+H2 {
+ font-size:16px;
+ margin-left:-16px;
+}
+LI {margin-bottom: 16px}
+
+.content {
+  width:900px;
+  margin:auto;
+  background-color:white;
+  padding:18px 18px 18px 36px;
+  border:1px solid rgb(236,236,231);
+  box-shadow:2px 2px 0pt rgba(170, 160, 130, 0.5), 4px 4px 0pt rgba(200, 190, 165, 0.5)
+}
+.spacer {height:80px}
+.codebox {
+  border:1px solid #999;
+  background-color:#ddd;
+  padding-left:16px;
+  padding-top:4px;
+  padding-bottom:4px;
+  font:monospace;
+  white-space:pre;
+}
+CODE {
+  color:#005500
+}
+.arglist {
+  background-color:#f8f8f8;
+  border:1px solid #dddddd;
+  padding:4px;
+}
+.arglist P {
+  margin-top: 0px;
+  font-weight:bold;
+}
+
+.contents > LI {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+.messagedefn {
+  margin-top:16px;
+  font:bold 10pt monospace;
+  color:#005500;
+  border:1px solid #e0e0e0;
+  background-color:#f8f8f8;
+  display:inline-block;
+  clear:both;
+}
+.warn {
+  margin-top:16px;
+  font:bold 12pt monospace;
+  color:#990000;
+  border:1px solid #e0e0e0;
+  background-color:#f8f8f8;
+  clear:both;
+}
+</style>
+
+<div class="content">
+
+<h1>DRAFT Browser Social API Reference</h1>
+
+<h2>Contents</h2>
+
+<ol class="contents">
+<li>Terms</li>
+<li>Creation and Lifecycle of a Social Service Worker</li>
+<li>Service Worker API Reference</li>
+<ol class="contents">
+<li>Methods available to Service Workers</li>
+<li>Messages Sent By Service Workers</li>
+<li>Messages Sent To Service Workers</li>
+</ol>
+<li>Service Content API Reference</li>
+<ol class="contents">
+<li>Methods</li>
+</ol>
+<li>Widgets</li>
+<ol class="contents">
+<li>SidebarWidget</li>
+<ol class="contents">
+<li>Messages Sent To Widget</li>
+<li>Browser Visual Integration</li>
+<li>Browser Panel Integration</li>
+</ol>
+<li>ShareWidget</li>
+<ol class="contents">
+<li>Messages Sent To Widget</li>
+</ol>
+</ol>
+<li>Service Windows</li>
+<li>Message Serialization</li>
+<li>Example Interactions</li>
+</ol>
+
+
+<h1>Terms</h1>
+<dl>
+<dt>Social Service Provider:</dt><dd>A web service that provides one or more APIs to a browser to enable social features.  It is defined to the browser by a structured text file, which instructs the browser how to load JavaScript and HTML resources that brings its functions into the browser.</dd>
+<dt>Service Worker:</dt><dd>A long-running JS computation environment, managed by the browser, served by a user-specified web address, which acts as a coordination and communication hub for integration between the browser and a web service.</dd>
+<dt>Widget:</dt><dd>A user-interface element, created by the browser, which provides a visual region for the display of content produced by the Service Provider.</dd>
+<dt>Service Message:</dt><dd>A message is a JSON-encoded string that is either sent by the browser to the Service Worker, or sent by the Service Worker to the browser.  These messages are used to coordinate the display of browser-managed user interface elements and to respond to user and content interactions.  See <a href="#Serialization">Message Serialization</a> for encoding details.</dd>
+<dt>Sidebar:</dt><dd>A vertical rectangle of screen space, positioned to the side of normal browser content in a tabbed browser window, which is stable across brower navigation and tab-focus changes.  A Sidebar may be minimized, which causes it to be rendered entirely in "above-the-content/not-overlaid-over-content" layout space.</dd>
+<dt>Recommend:</dt><dd> The user-initiated act of indicating that a piece of web content (typically a URL) should be marked as being of interest to a user.  No input other than than the URL is expected.  A Recommend can be completed with no Widget; it has no user interface other than the button, menu bar, or command that indicates "recommend this".</dd>
+<dt>Share:</dt><dd>The user-initiated act of sending a piece of web content (typically a URL) with an optional comment, explanation, or other data, to a user address, list of user addresses, social network, or other destination.  The details of a Share interaction are service-specific and a ShareWidget is required to render the user interface to complete a share.</dd>
+<dt>Client-to-User Notification:</dt><dd>Client-to-User Notification is the API that is made available to a Service Worker to indicate that data and interactions are pending for the user on this particular device, and that the service is ready to provide them.  Subject to the browser's configuration, these notifications may be used to trigger a variety of attention-getting interface elements, including "toast" or "Growl"-style ephemeral windows, ambient notifications (e.g. glowing, hopping, pulsing), or collections (e.g. pull-down notification panels, lists of pending events).  These Notifications are constructed to allow the Service Worker to receive notification when the user indicates interest in one of them, allowing the data presentation or interaction to proceed immediately.</dd>
+<dt>Server-to-Client Notification:</dt><dd>Server-to-Client Notification is a system by which a service arranges for notifications to be delivered promptly and efficiently to a client.  It is not a feature of this proposal, though existing web techniques including WebSockets, Server-Sent Events, XMLHttpRequest with long polling (or infrequently quick polling) can all be used from Service Workers.  It is expected that a Service Worker that has received a Server-to-Client Notification will often relay this data into a Client-to-User Notification.</dd>
+<dt>Panel:</dt><dd >A user-interface region (typically rectangular) that is temporarily displayed above content and browser chrome, used for short-lived interactions that are user-initiated or very important.</dd>
+
+<h1>Creation and Lifecycle of a Social Service Worker</h1>
+<p>It is expected that a Social Service Provider will be defined by a structured text file (JSON) containing a number of keyed URLs, a name, an icon, and a "root domain" prefix.</p>
+<p>A Service Worker is instantiated with the Servicer Worker URL provided by the service provider, which should resolve to a JavaScript file that will be evaluated by the Server Worker.  The Worker is a Shared Worker, rendered "headlessly", as per the <a href="http://dev.w3.org/html5/workers/#shared-workers-and-the-sharedworker-interface">Shared Web Workers</a> specification.</p>
+<p>The Service Worker lives until terminated, either by browser shutdown or by an explicit control command from the user.</p>
+<p>If the browser determines that termination of the Service Worker is necessary, all of the service-level content associated with the Service Worker will be unloaded (i.e. all ServiceWindows and sidebars will be closed) as part of the termination.</p>
+<p>If the browser starts (or restarts) the service during a normal user session, the Service Worker will be fully loaded first, and sidebars will then be instantiated on existing windows.  ServiceWindows (e.g. chats) are not restarted automatically.</p>
+
+<h1>Service Worker Reference</h1>
+
+<p>A Service Worker inherits all the limitations and behaviors available to <a href="http://dev.w3.org/html5/workers/#shared-workers-and-the-sharedworker-interface">HTML5 Shared Workers.</a>
+It can create XMLHttpRequests, use WebSockets, receive messages from windows and the browser, use IndexedDB, and post messages to other windows.</p>
+<p>The Worker can use the <code>ononline</code>, <code>onoffline</code>, and <code>navigator.online</code> methods and properties that are available to all Workers to obtain notification of the browser's online/offline status.</p>
+
+<p>In addition to the standard methods, Service Workers have access these to these methods and events:</p>
+
+<h3>Methods available to Service Workers</h3>
+
+<div class="messagedefn">navigator.mozNotification.createNotification</div>
+
+<p>Creates a Notification object.  By constructing and showing a <code>Notification</code>, the Worker requests that the browser notify the user of an immediately-relevant change in state.  See the <a href="https://developer.mozilla.org/en/DOM/navigator.mozNotification">navigator.mozNotification</a> documentation for more detail.  The Worker may attach an <code>onclick</code> or <code>onclose</code> handler to the notification, if desired.</p>
+
+<p>NOTE: We want to augment the mozNotification object defined in the docs with an additional "type" field.  Details TBD.</p>
+
+
+<h3>Messages Sent by Service Workers</h3>
+
+<div class="messagedefn">observe-isidle</div>
+
+<p>By constructing and posting an <code>observe-isidle</code> message, the Worker requests notification when the user has become idle.</p>
+
+<p>DETAILS TBD, see <a href="https://wiki.mozilla.org/WebAPI/IdleAPI">WebAPI/IdleAPI</a><p>
+
+<div class="messagedefn">user-recommend-prompt-response</div>
+
+<p>The Worker constructs and posts a <code>user-recommend-prompt-response</code> in response to a <code>user-recommend-prompt</code> message received from the browser.
+
+<div class="arglist">
+<p>Arguments:</p>
+<dl>
+<dt>url</dt>
+<dd>String.  Must be set to the URL that was included in the user-recommend-prompt that causes this response, if any.  This allows the browser to catch race conditions (i.e. when the user has navigated away from content before the service responded).</dd>
+
+<dt>img</dt>
+<dd>String. Will be set as the "src" property of an image contained in the user-facing click target for the "recommend" action.  It can contain a web-addressible image or a data URL containing dynamically-generated image data.  Implementors are strongly encouraged to use a data URL to minimize latency.</dd>
+</dl>
+</div>
+
+<p>Note that for some configurations, the browser will never provide a domain or url property in the user-recommend-prompt event; the Worker should be prepared to serve up static (e.g. data URL) content in these cases. (TODO: do we want to come up with a system to signal that it hasn't changed to speed up rendering?)</p>
+
+
+<h3>Messages Sent To Service Workers</h3>
+
+<div class="messagedefn">user-recommend-prompt</div>
+<p>Sent by the browser to request the visual prompt for the "user recommendation" interface element.   The user agent MAY include a "url" or "domain" property with the request, indicating the current browsing context.  The Worker should respond with a <code>user-recommend-prompt-response</code></p>
+
+<p>Note that most user agents will NOT include the domain and url in user-recommend-prompt, but that the user may, in some configurations, choose to enable URL- or domain-keyed prompting.</p>
+
+<div class="arglist">
+<p>Arguments:</p>
+<dl>
+<dt>domain</dt>
+<dd>String, optional.  If present, indicates the domain (scheme, host, and port) of the root of the current browser viewing context.</dd>
+
+<dt>url</dt>
+<dd>String, optional.  If present, indicates the full URL, including query string, but minus any hash text, of the root of the current browser viewing context.</dd>
+</dl>
+</div>
+
+
+<div class="messagedefn">user-recommend </div>
+<p>Indicates that the user has clicked the "user recommendation" interface element. The message includes: </p>
+
+<div class="arglist">
+<p>Arguments:</p>
+<dl>
+<dt>url</dt>
+<dd>String, required.  The URL that the user is viewing, including query string, but minus any hash text, of the root of the current browser viewing context.</dd>
+</dl>
+</div>
+
+<p>No response is necessary; however, the service may respond with a <code>user-recommend-prompt-response</code> if the click target should change its appearance.</p>
+
+<div class="messagedefn">user-isidle</div>
+<p>Sent by the browser when the idle timer requested in an earlier <code>observe-isidle</code> is reached.  No arguments.</p>
+
+
+<div class="messagedefn">user-endidle</div>
+<p>Sent by the browser when user activity resumes; only sent when a previous <code>user-isidle</code> has been sent.  No arguments.</p>
+
+
+
+<h1>Service Content API Reference</h1>
+<p>These methods are available to all Widget and ServiceWindow content.</p>
+
+<p>TODO: Can Widget and ServiceWindow content send and receive the same messages as the Service Worker, or does that complicate things?</p>
+
+<h3>Methods:</h3>
+
+<div class="messagedefn">navigator.mozSocial.getWorker()</div>
+<p>returns a reference to the Service Worker.  The content can then call postMessage on it as normal.</p>
+
+
+<div class="messagedefn">[window.]open( name, title, features)</div>
+<div class="warn">NOTE This section (window.open) is likely to change</div>
+<p>    acts like a normal window.open call, but has support for one new "feature"  item:</p>
+<ul style="list-style:none">
+  <li><code>servicewindow=true</code>: If this property is present in the  (comma-separated) features list, with a value of "true", a "service window" will be created.</li>
+</ul>
+
+
+<p>An  attempt to create a "service window" with a domain that does not match  the domain of the Service Provider is an error and will have no effect.</p>
+
+<p>"service windows" will contain a single content region, with no tabbed browser  elements, and no navigation chrome.  The browser will display domain and  security badges as its implementors see fit.  The browser may implement "pinning" to attach the content region to an existing chrome window; content should observe the size of its window and reflow as needed.</p>
+
+<p>Messages may be posted to and from the service window as normal.  If the "name" argument passed to the function matches an existing window that is already open, a reference to that window is returned rather than opening a new one.</p>
+
+<p>Calls to <code>window.open</code> are subject to normal anti-popup behavior: windows may only be opened in the event context of a user click.  <code>window.onunload</code> is available as normal; implementors are encouraged to use it to notify the service that they are going away.</p>
+
+<p>Callers may use the <code>name</code> argument of <code>window.open</code> to target the same tab for multiple calls, if desired.</p>
+
+
+<h1>Widgets</h1>
+<h2>SidebarWidget </h2>
+<p>If a service defines a SidebarWidget, the browser will instantiate a content region with the SidebarWidget URL as the location on some browser windows.  These regions will not be  instantiated until the Worker has been fully loaded.  The content in these regions has the additional API defined in the Service Content API reference, above.</p>
+<p>Sidebars can be in a <i>maximized</i>, <i>minimized</i>, or <i>hidden</i> state. </p>
+<ul>
+<li>    When <i>maximized</i>, they will receive a vertical rectangle of screen space in which to render; this rectangle is stable across changes in tab focus and has an independent scrollbar from the scrollbar of tabbed browsing content.
+
+<li>    When <i>minimized</i>, they will receive a horizontal rectangle of screen space to the right of the (tab bar / navigation bar/ TBD) in which to render a small visual element.  Service providers are encouraged to use this space for ambient notification and current-login-status.
+
+<li>    When <i>hidden</i>, a sidebar is completely removed from the visual hierarchy.  The user agent will continue to deliver messages to it, and the sidebar may pre-render its DOM for later display. (TODO: Is this right?  Or should we "suspend" when we minimize? If we do, it becomes harder to dynamically display sidebar later; maybe this isn't a problem)
+</ul>
+<p>Sidebar windows will only be instantiated on browser windows that have a full tabbed-browsing interface; windows created with <i>window.open</i> that do not have these interface elements will not have a sidebar.<p>
+<p>The minimized/maximized/hidden state of the sidebar widget is a per-window setting.  The most-recently-set state is remembered and used for new windows, and is persisted across browser restarts.</p>
+
+
+
+<h3>Messages Sent to Widget</h3>
+
+<div class="messagedefn">content-hidden</div>
+<p>Sent by the browser when the user hides the sidebar content.</p>
+
+<div class="messagedefn">content-minimized</div>
+<p>Sent by the browser when the user minimizes the sidebar content.</p>
+<p>TODO: does this fire when the user initiates the minimize or after animation? if the former, maybe provide a way to read out the expected height when minimized?</p>
+
+<div class="messagedefn">content-maximized</div>
+<p>Sent by the browser when the user maximizes the sidebar content.</p>
+
+
+<h3>Browser Visual Integration</h3>
+
+<p>To allow remote content to integrate smoothly with browser chrome, the following CSS classes are automatically introduced to sidebar content:</p>
+<dl>
+<dt>mozSidebarMinimizedHeight:</dt>
+<dd>Sets "height:&lt;int&gt;px", with the height of the visual region that is available to sidebar content when it has been minimized.</dd>
+</dl>
+
+<p>TODO: Perhaps this should be a message instead?</p>
+
+
+<h3>Browser "Panel" Integration</h3>
+<p>To allow content to place an ephemeral window in front of normal browser content and chrome, the following API is used:</p>
+<p>TODO</p>
+
+
+<h2>ShareWidget</h2>
+
+<p>If a service defines a ShareWidget, when the user triggers the "Share" behavior, the browser will create a  "floating panel" interface element containing an IFRAME whose src is set to the ShareWidget URL. A Share event is then fired at the message, as defined in the ShareHandler section, below.</p>
+<p>The service provider may perform content interactions in this IFRAME to prompt the user for details about the share, and may use XMLHttpRequest or window-level navigation to change the content.</p>
+<p>The service provider should call window.close when the interaction with the share panel is complete.  Alternatively, the user may click away from the panel, causing the window to be closed immediately.</p>
+
+<h3>Messages Sent to Widget:</h3>
+
+<div class="messagedefn">begin-share</div>
+<p>Sent by the browser to the share widget once the widget has loaded, providing the details of the content the user has requested to share.</p>
+
+<div class="arglist">
+<p>Arguments:</p>
+<dl>
+<dt>TODO</dt>
+<dd>TODO</dd>
+</dl>
+
+</div>
+
+
+
+
+<h1>ServiceWindows:</h1>
+ServiceWindows are created by calling <code>window.open</code> with the <code>servicewindow=true</code> feature.  </p>
+<p>A ServiceWindow can only serve content from the Social Service Provider's domain.  Any attempt to navigate the root of the ServiceWindow's browser away from this domain will be automatically intercepted and redirected to a new tab in the front most tabbed browsing window (or a new window if no such browsing window exists).</p>
+<p>ServiceWindow content inherits the API defined for ServiceContent above.</p>
+<p>TODO On OSes that require an application window to be open for process visibility, does closing all the tabbed browsing windows and keeping a ServiceWindow open cause application shutdown, or does the browser keep running?  If it keeps running we need a way to get a browser window back.</p>
+<p>TODO: Need to specify more about the primary widget interactions of ServiceWindows.  On Windows they get an application menu, on Mac they need to inherit some of the MenuBar (rather like prefwindows).</p>
+<p>ServiceWindows are expected to use getWorker() and postMessage() to register with the Service Worker shortly after becoming loaded.  The Service Worker can inspect the "origin" property of messages that are delivered this way to make a list of current windows, and can invoke the <code>close()</code> and <code>focus()</code> methods on these windows.</p>
+<p>TODO: can the service see the "frontmost/hasfocus" property on these windows?</p>
+<p>TODO: what is the best practice to know when a window has been closed?  can onunload/onclose fire a postMessage before it goes away?</p>
+<p><code>window.onunload</code> is available as normal; implementors are encouraged to use it to notify the service that they are going away.  The Service Worker can also inspect the <code>.closed</code> property of postMessage origins to see if the window has been closed.</p>
+<p>changes to <code>document.title</code> in the service window's content will change the title displayed on the window, in operating systems where that concept is applicable.</p>
+
+
+<h1><a name="Serialization">Message Serialization</a></h1>
+
+<p>For a message with topic <code>topic</code> and arguments <code>arg1:val1</code>, <code>arg2:val2</code>, construct an object like:</p>
+
+<div class="codebox">
+{
+  topic: <code>topic</code>
+  arg1: <code>val1</code>
+  arg2: <code>val2</code>
+}
+</div>
+
+<h1>Example interactions / expected implementation flow</h1>
+
+<ul>
+<li>The service is registered with a Service, Sidebar widget, and Share widget
+<li>    At browser startup time, the Service Worker is instantiated.
+<li>    The service opens a connection its service, if a user session is available, and starts receiving push events.
+<li>    When a browser window is created, the Sidebar widget content is instantiated.
+<li>    The sidebar registers with the service by using mozSocial.getWorker().postMessage("hello")
+<li>    The service worker catches the "hello" message and adds the sidebarContentWindow to a list of event sinks.
+<li>    The sidebar content may then perform more elaborate publish-subscribe handshaking,   to limit what events it receives.
+<li>    When the service receives events from the server (or from other content), it  invokes postMessage on each window reference that was previously saved.  The sidebar redraws as needed.
+<li>    If the user clicks in the sidebar to e.g. open a chat window, window.open is invoked and a new window is created.  The chat window registers with the service by using mozSocial.getWorker().postMessage("hello") and receives a message back telling it who to open a chat with.  The service might then deliver server-pushed events to the chat window, perhaps through a publish-subscribe system.
+</ul>
+
+<h1>To Figure Out</h1>
+<ul>
+<li>    Should we not create a sidebar window if the user isn't signed in?   Or should we create a sidebar that can present a "sign in" box?
+<li>    Do we need to blacklist some URLs for "recommend"? (i.e. anything with security-sensitive GET params)
+<li>    Can sidebar content cause itself to be hidden, minimized, maximized?
+<li>    Can serviceWindows cause themselves to be hidden, minimized, maximized, resized?
+<li>    Still need to figure out panels popping out of sidebar, especially in minimized mode; position, sizing, asynchrony.
+<li>    Punting on any questions of content-talking-to-service right now, or vice-versa.  Two worlds for now.  Preference is for markup.
+</ul>

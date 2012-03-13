@@ -1,0 +1,73 @@
+@-moz-document url-prefix("chrome://browser/content/browser.xul") {
+
+#social-vbox {
+  -moz-transition-property: margin-left;
+  -moz-transition-delay: 0s;
+  -moz-transition-duration: 0.25s;
+}
+
+.social-open #social-vbox {
+  -moz-transition-delay: 0.25s;
+}
+
+#social-cropper {
+  -moz-transition-property: height;
+  -moz-transition-delay: 0.25s;
+  -moz-transition-duration: 0.5s;
+}
+
+.social-open #social-cropper {
+  -moz-transition-delay: 0s;
+}
+
+#social-popup-panel {
+  padding-bottom:6px;
+  padding-right:4px;
+  padding-top:4px;
+}
+
+.social-popup-service-row {
+    float:left;
+    padding-top:4px;
+}
+
+.social-popup-service-row-leftcol {
+  width:24px;
+  display:inline-block;
+  vertical-align:top;
+  padding-left:4px;
+  float:left;
+}
+
+.social-popup-service-row-rightcol {
+  display:inline-block;
+  padding-right:4px;
+  border-left:1px solid white;
+  float:left;
+}
+
+.social-popup-service-row-icon {
+  display:inline-block;
+  margin-right:4px;
+  margin-left:4px;
+  margin-top:4px;
+}
+
+.social-popup-service-row-menuitem {
+  margin-left:8px;
+  white-space:nowrap;
+  font:-moz-use-system-font;
+  /*font-size:-moz-use-system-font; *//* this isn't right */
+  -x-system-font:-moz-pull-down-menu;
+  margin:2px 6px 2px 6px;
+  padding-bottom:2px;
+  cursor: default;
+}
+
+.social-button {
+  width: auto;
+  height: auto;
+  padding: 1px;
+}
+
+} /* @-moz-document url-prefix("chrome://browser/content/browser.xul") */
