@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>Preferences</title>
+<style>
+body {
+    background-color: transparent !important;
+}
+button > img {
+    width:  16px;
+    height: 16px;
+}
+button > label {
+    padding: 4px;
+}
+button {
+    border-style: outset;
+}
+button[checked="checked"] {
+    border-style: inset;
+}
+</style>
+<script>
+
+window.addEventListener("message", function(event) {
+  if (!event.source) {
+    // when xul sends the event, source is null
+    //dump("recieved "+event.data+"\n");
+    var msg = JSON.parse(event.data);
+    if (msg.topic == 'service-manifest') {
+        var manifest = msg.data;
+
+            var svc = msg.data;
+            if (document.getElementById(svc.name)) {
+                return;
+            }
+            var btn = document.createElement('button');
+            var img = document.createElement('img');
+            var lbl = document.createElement('label');
+            //dump("service: " + JSON.stringify(svc) + "\n");
+            img.setAttribute('src', svc.iconURL);
+            img.setAttribute('for', svc.name);
+            lbl.setAttribute('for', svc.name);
+            lbl.appendChild(document.createTextNode(svc.name));
+            btn.setAttribute('id', svc.name);
+            btn.setAttribute('type', "checkbox");
+            btn.setAttribute('value', svc.origin);
+            btn.setAttribute('checked', svc.enabled ? "checked":"");
+            btn.appendChild(img);
+            btn.appendChild(lbl);
+            btn.addEventListener('click', function(e) {
+                var btn = e.target;
+                var enabled = !(btn.getAttribute('checked')=="checked");
+                btn.setAttribute('checked', enabled ? "checked":"");
+                var response = JSON.stringify({
+                  topic: "preference-change",
+                  data: {
+                    origin: btn.getAttribute('value'),
+                    enabled: enabled
+                  }
+                });
+                window.postMessage(response, "*");
+            });
+            document.getElementById('available-activities').appendChild(btn);
+    }
+  }
+}, false);
+
+</script>
+</head>
+
+<body>
+<h3>Preferences</h3>
+<div>
+<div id="available-activities"/>
+<div>Ugly on purpose&trade;</div>
+</div>
+
+</body>
+</html>

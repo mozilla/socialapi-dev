@@ -55,6 +55,7 @@ function installBuiltins() {
     //  initialize the db with our builtins
     // TODO if a real provider implementation is added later, we don't want to
     // overwrite that, however, if we're upgrading a builtin, we need to overwrite
+    manifest.enabled = true;
     ManifestDB.insert(manifest.URLPrefix, manifest);
   }
 
