@@ -1,4 +1,4 @@
-const {classes: Cc, interfaces: Ci, utils: Cu, resources: Cr} = Components;
+const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 Cu.import("resource://gre/modules/PlacesUtils.jsm");
 Cu.import("resource://socialdev/lib/manifestDB.jsm");
