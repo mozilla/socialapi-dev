@@ -6,6 +6,7 @@
 <style>
 body {
     background-color: transparent !important;
+    font-family: "Lucida Grande","Tahoma",sans-serif; /* TODO what's the right Ffx rule? */
 }
 button > img {
     width:  16px;
@@ -20,6 +21,23 @@ button {
 button[checked="checked"] {
     border-style: inset;
 }
+.service {
+    padding:16px;
+    width:80%;
+    background-color:#f8f8f8;
+    border:1px solid #f0f0f0;
+    box-shadow:#e0e0e0 1px 1px;
+}
+H1 {
+    font-family: "Lucida Grande","Tahoma",sans-serif; /* TODO what's the right Ffx rule? */
+    font-size:16pt;
+}
+H1 > img {
+    margin-right:16px;
+}
+.service input 
+{}
+
 </style>
 <script>
 
@@ -31,37 +49,69 @@ window.addEventListener("message", function(event) {
     if (msg.topic == 'service-manifest') {
         var manifest = msg.data;
 
-            var svc = msg.data;
-            if (document.getElementById(svc.origin)) {
-                return;
-            }
-            var btn = document.createElement('button');
-            var img = document.createElement('img');
-            var lbl = document.createElement('label');
-            //dump("service: " + JSON.stringify(svc) + "\n");
-            img.setAttribute('src', svc.iconURL);
-            img.setAttribute('for', svc.name);
-            lbl.setAttribute('for', svc.name);
-            lbl.appendChild(document.createTextNode(svc.name));
-            btn.setAttribute('id', svc.origin);
-            btn.setAttribute('type', "checkbox");
-            btn.setAttribute('checked', svc.enabled ? "checked":"");
-            btn.appendChild(img);
-            btn.appendChild(lbl);
-            btn.addEventListener('click', function(e) {
-                var btn = e.target;
-                var enabled = !(btn.getAttribute('checked')=="checked");
-                btn.setAttribute('checked', enabled ? "checked":"");
-                var response = JSON.stringify({
-                  topic: "preference-change",
-                  data: {
-                    origin: btn.getAttribute('id'),
-                    enabled: enabled
-                  }
-                });
-                window.postMessage(response, "*");
+        var svc = msg.data;
+        if (document.getElementById(svc.origin)) {
+            return;
+        }
+        var serviceblock = document.createElement('div');
+        serviceblock.setAttribute("class", "service");
+        
+        var header = document.createElement('h1');
+        var img = document.createElement('img');
+        img.setAttribute('src', svc.iconURL);
+        header.appendChild(img);
+        header.appendChild(document.createTextNode(svc.name));
+        
+        var btn = document.createElement('button');
+        var lbl = document.createElement('label');
+
+        img.setAttribute('for', svc.name);
+        lbl.setAttribute('for', svc.name);
+        var buttonText = document.createTextNode("Service is Active");
+        lbl.appendChild(buttonText);
+        
+        btn.setAttribute('id', svc.origin);
+        btn.setAttribute('type', "checkbox");
+        btn.setAttribute('checked', svc.enabled ? "checked":"");
+        btn.appendChild(lbl);
+
+        var startupRow = document.createElement('div');
+        var startupCheck = document.createElement('input');
+        startupCheck.setAttribute("type", "checkbox");
+        startupCheck.setAttribute("checked", "true");
+        startupRow.appendChild(startupCheck);
+        startupRow.appendChild(document.createTextNode("Connect at Firefox startup"));
+
+        var notificationRow = document.createElement('div');
+        var notificationCheck = document.createElement('input');
+        notificationCheck.setAttribute("type", "checkbox");
+        notificationCheck.setAttribute("checked", "true");
+        notificationRow.appendChild(notificationCheck);
+        notificationRow.appendChild(document.createTextNode("Enable popup notifications"));
+
+        serviceblock.appendChild(header);
+        serviceblock.appendChild(btn);
+        serviceblock.appendChild(startupRow);
+        serviceblock.appendChild(notificationRow);
+
+        btn.addEventListener('click', function(e) {
+            var btn = e.target;
+            var enabled = !(btn.getAttribute('checked')=="checked");
+            btn.setAttribute('checked', enabled ? "checked":"");
+            buttonText.nodeValue = "Service is " + (enabled ? "Active" : "Inactive");            
+            var response = JSON.stringify({
+              topic: "preference-change",
+              data: {
+                origin: btn.getAttribute('id'),
+                enabled: enabled
+              }
             });
-            document.getElementById('available-activities').appendChild(btn);
+            window.postMessage(response, "*");
+        });
+
+        document.getElementById('available-activities').appendChild(serviceblock);
+
+        
     }
   }
 }, false);
@@ -70,10 +120,9 @@ window.addEventListener("message", function(event) {
 </head>
 
 <body>
-<h3>Preferences</h3>
+<h3>Preferences: Ugly on purpose&trade;</h3>
 <div>
 <div id="available-activities"/>
-<div>Ugly on purpose&trade;</div>
 </div>
 
 </body>
