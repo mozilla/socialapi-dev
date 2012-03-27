@@ -44,7 +44,6 @@ H1 > img {
 window.addEventListener("message", function(event) {
   if (!event.source) {
     // when xul sends the event, source is null
-    //dump("recieved "+event.data+"\n");
     var msg = JSON.parse(event.data);
     if (msg.topic == 'service-manifest') {
         var manifest = msg.data;
