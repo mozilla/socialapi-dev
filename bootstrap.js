@@ -68,7 +68,7 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
         Cu.import("resource://"+id+"/lib/main.js").startup(data);
     }
     catch (e) {
-        Cu.reportError("Startup error: " + e + "\n");
+        Cu.reportError("Startup error: " + e);
     }
 });
 
