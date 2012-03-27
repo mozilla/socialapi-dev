@@ -35,8 +35,9 @@ var ManifestDB = (function() {
       let uri = Services.io.newURI(aURL, null, null);
       if (uri.scheme == 'resource') return aURL;
       return uri.host;
-    } catch(e) {
-      dump(e+"\n");
+    }
+    catch(e) {
+      Cu.reportError(e);
     }
     return aURL;
   }
@@ -70,7 +71,8 @@ var ManifestDB = (function() {
     storage.get(origin, function(item) {
       if (!item) {
         cb(false);
-      } else {
+      }
+      else {
         storage.remove(origin, function() {
           cb(true);
         });

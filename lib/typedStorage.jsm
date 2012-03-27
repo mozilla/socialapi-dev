@@ -7,7 +7,7 @@
 
 const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-Cu.import("resource://socialdev/lib/console.js");
+Cu.import("resource://gre/modules/Services.jsm");
 
 function TypedStorageImpl() {}
 TypedStorageImpl.prototype = {
@@ -17,15 +17,12 @@ TypedStorageImpl.prototype = {
 };
 
 function ObjectStore(objType, dbName) {
-  let file = Cc["@mozilla.org/file/directory_service;1"].
-              getService(Ci.nsIProperties).
+  let file = Services.dirsvc.
               get("ProfD", Ci.nsIFile);
               file.append(dbName + ".sqlite");
-  let storageService = Cc["@mozilla.org/storage/service;1"].
-              getService(Ci.mozIStorageService);
 
   // Will also create the file if it does not exist
-  let dbConn = storageService.openDatabase(file);
+  let dbConn = Services.storage.openDatabase(file);
   this._dbConn = dbConn;
 
   // See if the table is already created:
@@ -35,15 +32,18 @@ function ObjectStore(objType, dbName) {
     statement = dbConn.createStatement("SELECT * FROM " + objType + " LIMIT 1");
     statement.executeStep();
     tableExists = true;
-  } catch (e) {} finally {
+  }
+  catch (e) {}
+  finally {
     if (statement) statement.finalize();
   }
 
   if (!tableExists) {
     try {
       dbConn.executeSimpleSQL("CREATE TABLE " + objType + " (id INTEGER PRIMARY KEY, key TEXT UNIQUE NOT NULL, data TEXT)");
-    } catch (e) {
-      console.log("Error while creating table: " + e);
+    }
+    catch (e) {
+      Cu.reportError("Error while creating table: " + e);
       throw e;
     }
   }
@@ -64,17 +64,18 @@ ObjectStore.prototype = {
         }
       },
       handleError: function(error) {
-        console.log("Error while selecting from table " + self._objType + ": " + error + "; " + self._dbConn.lastErrorString + " (" + this._dbConn.lastError + ")");
+        Cu.reportError("Error while selecting from table " + self._objType + ": " + error + "; " + self._dbConn.lastErrorString + " (" + this._dbConn.lastError + ")");
       },
       handleCompletion: function(reason) {
         getStatement.reset();
-        if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED) console.log("Get query canceled or aborted! " + reason);
+        if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED)
+          Cu.reportError("Get query canceled or aborted! " + reason);
         else {
           try {
             cb(value);
-          } catch (e) {
-            console.log("Error in completion callback for ObjectStore.get(): " + e);
-            console.log(e.stack);
+          }
+          catch (e) {
+            Cu.reportError("Error in completion callback for ObjectStore.get(): " + e);
           }
         }
       }
@@ -125,16 +126,18 @@ ObjectStore.prototype = {
         }
       },
       handleError: function(error) {
-        console.log("Error while getting keys for " + self._objType + ": " + error + "; " + self._dbConn.lastErrorString + " (" + self._dbConn.lastError + ")");
+        Cu.reportError("Error while getting keys for " + self._objType + ": " + error + "; " + self._dbConn.lastErrorString + " (" + self._dbConn.lastError + ")");
       },
       handleCompletion: function(reason) {
         keyStatement.reset();
-        if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED) console.log("Keys query canceled or aborted! " + reason);
+        if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED) 
+          Cu.reportError("Keys query canceled or aborted! " + reason);
         else {
           try {
             cb(resultKeys);
-          } catch (e) {
-            console.log("Error in completion callback for ObjectStore.keys(): " + e);
+          }
+          catch (e) {
+            Cu.reportError("Error in completion callback for ObjectStore.keys(): " + e);
           }
         }
       }
@@ -160,20 +163,21 @@ ObjectStore.prototype = {
     statement.executeAsync({
       handleResult: function(result) {},
       handleError: function(error) {
-        console.log("Error while executing ", statement, "on", this._objType, ":", error.message, error.result);
+        Cu.reportError("Error while executing ", statement, "on", this._objType, ":", error.message, error.result);
         if (this._dbConn) {
-          console.log("database error details:", this._dbConn.lastErrorString, "(" + this._dbConn.lastError + ")")
+          Cu.reportError("database error details:", this._dbConn.lastErrorString, "(" + this._dbConn.lastError + ")")
         }
       },
       handleCompletion: function(reason) {
         statement.reset();
-        if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED) console.log("Query canceled or aborted! " + reason);
+        if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED)
+          Cu.reportError("Query canceled or aborted! " + reason);
         else {
           try {
             if (cb) cb(true);
-          } catch (e) {
-            console.log("Error while invoking callback for " + statement + ": " + e);
-            console.log(e.stack);
+          }
+          catch (e) {
+            Cu.reportError("Error while invoking callback for " + statement + ": " + e);
           }
         }
       }

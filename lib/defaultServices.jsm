@@ -1,5 +1,6 @@
 const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
+Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/PlacesUtils.jsm");
 Cu.import("resource://socialdev/lib/manifestDB.jsm");
 
@@ -10,8 +11,7 @@ const EXPORTED_SYMBOLS = ["hasLogin", "installBuiltins", "frecencyForUrl"];
 
 function hasLogin(hostname) {
   try {
-    var loginManager = Cc["@mozilla.org/login-manager;1"].getService(Ci.nsILoginManager);
-    return loginManager.countLogins(hostname, "", "") > 0;
+    return Services.logins.countLogins(hostname, "", "") > 0;
   } catch(e) {
     Cu.reportError(e);
   }
@@ -47,7 +47,6 @@ function frecencyForUrl(host)
 // be maintained in the case the user does not have any logins or frecency.
 // the mediator will enable via login and frecency, and sort by frecency.
 var builtins = [
-
 ];
 
 function installBuiltins() {

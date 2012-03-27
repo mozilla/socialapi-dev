@@ -46,7 +46,7 @@ function registerProtocol(scheme, installPath, name) {
     let alias = Services.io.newFileURI(installPath);
     if (!installPath.isDirectory())
         alias = Services.io.newURI("jar:" + alias.spec + "!/", null, null);
-    dump("setting alias for "+scheme+" to "+alias.spec+"\n");
+    Services.console.logStringMessage("setting alias for "+scheme+" to "+alias.spec+"\n");
     resource.setSubstitution(name, alias);
 }
 
@@ -66,9 +66,9 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
     // load startAddon.  This is where the addon logic should actually start
     try {
         Cu.import("resource://"+id+"/lib/main.js").startup(data);
-    } catch (e) {
-        dump("Startup error: " + e + "\n");
-        dump(e.stack + "\n");
+    }
+    catch (e) {
+        Cu.reportError("Startup error: " + e + "\n");
     }
 });
 
