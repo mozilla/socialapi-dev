@@ -163,9 +163,9 @@ ObjectStore.prototype = {
     statement.executeAsync({
       handleResult: function(result) {},
       handleError: function(error) {
-        Cu.reportError("Error while executing ", statement, "on", this._objType, ":", error.message, error.result);
+        Cu.reportError("Error while executing "+ statement+ "on"+ this._objType+ ":"+ error.message, error.result);
         if (this._dbConn) {
-          Cu.reportError("database error details:", this._dbConn.lastErrorString, "(" + this._dbConn.lastError + ")")
+          Cu.reportError("database error details:"+ this._dbConn.lastErrorString+ "(" + this._dbConn.lastError + ")")
         }
       },
       handleCompletion: function(reason) {
