@@ -17,15 +17,12 @@ TypedStorageImpl.prototype = {
 };
 
 function ObjectStore(objType, dbName) {
-  let file = Cc["@mozilla.org/file/directory_service;1"].
-              getService(Ci.nsIProperties).
+  let file = Services.dirsvc.
               get("ProfD", Ci.nsIFile);
               file.append(dbName + ".sqlite");
-  let storageService = Cc["@mozilla.org/storage/service;1"].
-              getService(Ci.mozIStorageService);
 
   // Will also create the file if it does not exist
-  let dbConn = storageService.openDatabase(file);
+  let dbConn = Services.storage.openDatabase(file);
   this._dbConn = dbConn;
 
   // See if the table is already created:
