@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet href="resource://socialdev/data/styles/browser.css" type="text/css"?>
+
+<overlay id="socialdev-overlay"
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+  
+  <script type="application/x-javascript">
+  <![CDATA[
+    {
+      // quick hack to move to an overlay
+      let socialdev = {};
+      Components.utils.import("resource://socialdev/lib/main.js", socialdev);
+      socialdev.startup();
+    }
+  ]]>
+  </script>
+
+
+</overlay>

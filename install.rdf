@@ -8,7 +8,6 @@
     <em:creator>Mozilla Labs</em:creator>
     <em:description>Experimental support for social features in Firefox</em:description>
     <em:homepageURL>http://social.mozillalabs.com/</em:homepageURL>
-    <em:bootstrap>true</em:bootstrap>
 
     <!-- Firefox -->
     <em:targetApplication>
