@@ -16,5 +16,27 @@
   ]]>
   </script>
 
+<toolbarpalette id="BrowserToolbarPalette">
+  <toolbaritem
+    id="social-button-container"
+    class= "chromeclass-toolbar-additional"
+    removable="true"
+    title="Social">
+    <toolbarbutton
+      id="socialdev-button"
+      class="toolbarbutton-1 chromeclass-toolbar-additional"
+      type="menu-button"
+      tooltiptext="Social Browsing"
+      image="resource://socialdev/data/social.png"
+      removable="true"
+      oncommand="social.toolbarButton.oncommand(event);">
+      <menupopup id="social-popup-panel"
+        onpopupshown="social.toolbarButton.onpopupshown(event)"
+        onpopupshowing="social.toolbarButton.onpopupshowing(event)"
+        onpopuphidden="social.toolbarButton.onpopuphidden(event)"/>
+    </toolbarbutton>
+  </toolbaritem>
+</toolbarpalette>
+
 
 </overlay>
