@@ -12,9 +12,23 @@
       let socialdev = {};
       Components.utils.import("resource://socialdev/lib/main.js", socialdev);
       socialdev.startup();
+
+      window.social = {};
+      Cu.import("resource://socialdev/lib/toolbarButtonWidget.js", socialdev);
+      Cu.import("resource://socialdev/lib/recommendButtonWidget.js", socialdev);
+      social.toolbarButton = new socialdev.ToolbarButton(window);
+      social.recommendButton = new socialdev.RecommendButton(window);
     }
   ]]>
   </script>
+
+  <commandset id="mainCommandSet">
+    <command id="cmd_socialRecommend" oncommand="social.toolbarButton.oncommand(event);"/>
+  </commandset>
+  
+  <keyset id="mainKeyset">
+    <key id="key_socialRecommend" keycode="VK_F2" command="cmd_socialRecommend"/>
+  </keyset>
 
 <toolbarpalette id="BrowserToolbarPalette">
   <toolbaritem
@@ -38,5 +52,12 @@
   </toolbaritem>
 </toolbarpalette>
 
+<hbox id="urlbar-icons">
+  <image id="social-recommend-button"
+         insertbefore="star-button"
+         hidden="true"
+         class="social-button"
+         command="cmd_socialRecommend"/>
+</hbox>
 
 </overlay>
