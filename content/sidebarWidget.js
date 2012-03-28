@@ -18,7 +18,6 @@ SocialSidebar.prototype = {
   },
   create: function(aWindow) {
     let self = this;
-    let {document, gBrowser} = aWindow;
     let XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
     // We insert a vbox as a child of 'browser', as an immediate sibling of 'appcontent'
@@ -68,12 +67,12 @@ SocialSidebar.prototype = {
     cropper.appendChild(sbrowser);
   
     // Make sure the browser stretches and shrinks to fit
-    listen(aWindow, aWindow, "resize", function({target}) {
-      if (target == aWindow) {
+    listen(window, window, "resize", function({target}) {
+      if (target == window) {
         self.reflow();
       }
     });
-    listen(aWindow, document.getElementById('navigator-toolbox'), "DOMAttrModified", function(event) {
+    listen(window, document.getElementById('navigator-toolbox'), "DOMAttrModified", function(event) {
       if (event.attrName == "collapsed" || event.attrName == "tabsontop") {
         // so, one of the toolbars changed state.  If this means our "anchor"
         // changed then we need to reflow (which will re-anchor).
