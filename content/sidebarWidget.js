@@ -1,34 +1,26 @@
 "use strict";
 
-const {classes: Cc, interfaces: Ci, utils: Cu, results: Cr} = Components;
-
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://socialdev/lib/listen.js");
 Cu.import("resource://socialdev/lib/baseWidget.js");
 
-const EXPORTED_SYMBOLS = ["Sidebar"];
-
-const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
-const isMac = Services.appinfo.OS == "Darwin";
 
 
-function Sidebar(aWindow) {
-  baseWidget.call(this, aWindow);
+function SocialSidebar() {
+  baseWidget.call(this, window);
   this._currentAnchorId = null;
 }
-Sidebar.prototype = {
+SocialSidebar.prototype = {
   __proto__: baseWidget.prototype,
-  get window() {
-    return this._widget.ownerDocument.defaultView;
-  },
   get browser() {
-    return this.window.document.getElementById("social-status-sidebar-browser");
+    return document.getElementById("social-status-sidebar-browser");
   },
   create: function(aWindow) {
     let self = this;
     let {document, gBrowser} = aWindow;
-  
+    let XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+
     // We insert a vbox as a child of 'browser', as an immediate sibling of 'appcontent'
     let vbox = this._widget = document.createElementNS(XUL_NS, "vbox");
     vbox.setAttribute("id", "social-vbox");
@@ -178,12 +170,12 @@ Sidebar.prototype = {
   },
   reflow: function() {
     let window = this._widget.ownerDocument.defaultView;
-    let sbrowser = window.document.getElementById('social-status-sidebar-browser');
+    let sbrowser = document.getElementById('social-status-sidebar-browser');
 
     let anchor = this._findAnchor();
     if (this._currentAnchorId && anchor.getAttribute("id") != this._currentAnchorId) {
       // reset the old anchor.
-      let old = window.document.getElementById(this._currentAnchorId);
+      let old = document.getElementById(this._currentAnchorId);
       old.style.paddingRight = "";
     }
     this._currentAnchorId = anchor.getAttribute("id");
@@ -198,14 +190,15 @@ Sidebar.prototype = {
     let open = visibility == "open";
   
     if (open)
-      window.document.documentElement.classList.add("social-open");
+      document.documentElement.classList.add("social-open");
     else
-      window.document.documentElement.classList.remove("social-open");
+      document.documentElement.classList.remove("social-open");
   
-    let vbox = window.document.getElementById('social-vbox');
-    let cropper = window.document.getElementById('social-cropper');
+    let vbox = document.getElementById('social-vbox');
+    let cropper = document.getElementById('social-cropper');
   
     // Include the visual border thickness when calculating navbar height
+    let isMac = Services.appinfo.OS == "Darwin";
     let navHeight = anchor.clientHeight + (isMac ? 2 : 1);
     let openHeight = window.gBrowser.boxObject.height + navHeight;
     let sideWidth = vbox.getAttribute("width");
@@ -235,7 +228,6 @@ Sidebar.prototype = {
     // not clear how to continue traversing back from there in layout order.
     // (and the same basic issue may exist traversing forward)
     // So - just use the bounding rects.
-    let document = this.window.document;
     let anchor = null;
     let lowestBottom = 0;
     let look = document.getElementById('navigator-toolbox').firstChild;
@@ -263,7 +255,7 @@ Sidebar.prototype = {
     }
   
     // retarget the sidebar
-    var sbrowser = window.document.getElementById("social-status-sidebar-browser");
+    var sbrowser = document.getElementById("social-status-sidebar-browser");
     sbrowser.service = aService;
     // XXX when switching providers, always open
     sbrowser.visibility = "open";
@@ -336,7 +328,7 @@ Sidebar.prototype = {
     this._widget.parentNode.removeChild(this._widget);
     // restore the toolbar style stuff we mangled.
     if (this._currentAnchorId) {
-      let anchor = this.window.document.getElementById(this._currentAnchorId);
+      let anchor = document.getElementById(this._currentAnchorId);
       anchor.style.paddingRight = "";
     }
   }

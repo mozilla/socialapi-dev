@@ -7,20 +7,18 @@
   
   <script type="application/x-javascript" src="chrome://socialdev/content/recommendButtonWidget.js"/>
   <script type="application/x-javascript" src="chrome://socialdev/content/toolbarButtonWidget.js"/>
+  <script type="application/x-javascript" src="chrome://socialdev/content/sidebarWidget.js"/>
   <script type="application/x-javascript">
   <![CDATA[
     {
       // quick hack to move to an overlay
-      let socialdev = {};
-      Components.utils.import("resource://socialdev/lib/sidebarWidget.js", socialdev);
-
       window.social = {};
       social.toolbarButton = new SocialToolbarButton(window);
       social.recommendButton = new SocialRecommendButton(window);
       // due to what we are doing in the sidebar, we have to wait for the
       // chromeWindow to load before we do our magic
       window.addEventListener('load', function(e) {
-        social.sidebar = new socialdev.Sidebar(window);
+        social.sidebar = new SocialSidebar(window);
       });
     }
   ]]>
