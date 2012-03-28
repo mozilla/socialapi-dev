@@ -1,10 +1,7 @@
-const {classes: Cc, interfaces: Ci, utils: Cu, manager: Cm} = Components;
+const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-
-Cu.import("resource://socialdev/lib/unload+.js");
-Cu.import("resource://socialdev/lib/manifestDB.jsm");
 
 const ABOUTURL = "chrome://socialdev/content/about.html";
 const EXPORTED_SYMBOLS = [];
@@ -12,13 +9,11 @@ const EXPORTED_SYMBOLS = [];
 //----- about:passwords implementation
 const AboutSocialUUID = Components.ID("{ddf3f2e0-c819-b843-b32c-c8834d98ef49}");
 const AboutSocialContract = "@mozilla.org/network/protocol/about;1?what=social";
-let AboutSocialFactory = {
-  createInstance: function(outer, iid) {
-    if (outer != null) throw Cr.NS_ERROR_NO_AGGREGATION;
-    return AboutSocial.QueryInterface(iid);
-  }
-};
-let AboutSocial = {
+
+function AboutSocial() {}
+AboutSocial.prototype = {
+  classID: AboutSocialUUID,
+  contractID: AboutSocialContract,
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIAboutModule]),
 
   getURIFlags: function(aURI) {
@@ -78,14 +73,8 @@ var aboutPage = {
 
 // global init
 Services.obs.addObserver(aboutPage, 'document-element-inserted', false);
-Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
-  AboutSocialUUID, "About Social", AboutSocialContract, AboutSocialFactory
-);
 
-unload(function() {
-  Cm.QueryInterface(Ci.nsIComponentRegistrar).unregisterFactory(
-    AboutSocialUUID, AboutSocialFactory
-  );
-});
 
+const components = [AboutSocial];
+const NSGetFactory = XPCOMUtils.generateNSGetFactory(components);
 

@@ -12,3 +12,6 @@ component {1a60fb78-b2d2-104b-b16a-7f497be5626d} components/registry.js
 contract @mozilla.org/socialProviderRegistry;1 {1a60fb78-b2d2-104b-b16a-7f497be5626d}
 category profile-after-change socialRegistry @mozilla.org/socialProviderRegistry;1
 interfaces components/mozISocialAPI.xpt
+
+component {ddf3f2e0-c819-b843-b32c-c8834d98ef49} components/about.js
+contract @mozilla.org/network/protocol/about;1?what=social {ddf3f2e0-c819-b843-b32c-c8834d98ef49}
