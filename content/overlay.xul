@@ -5,6 +5,7 @@
 <overlay id="socialdev-overlay"
          xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
   
+  <script type="application/x-javascript" src="chrome://socialdev/content/recommendButtonWidget.js"/>
   <script type="application/x-javascript">
   <![CDATA[
     {
@@ -15,15 +16,14 @@
 
       window.social = {};
       Cu.import("resource://socialdev/lib/toolbarButtonWidget.js", socialdev);
-      Cu.import("resource://socialdev/lib/recommendButtonWidget.js", socialdev);
       social.toolbarButton = new socialdev.ToolbarButton(window);
-      social.recommendButton = new socialdev.RecommendButton(window);
+      social.recommendButton = new SocialRecommendButton(window);
     }
   ]]>
   </script>
 
   <commandset id="mainCommandSet">
-    <command id="cmd_socialRecommend" oncommand="social.toolbarButton.oncommand(event);"/>
+    <command id="cmd_socialRecommend" oncommand="social.recommendButton.oncommand(event);"/>
   </commandset>
   
   <keyset id="mainKeyset">
@@ -57,7 +57,7 @@
          insertbefore="star-button"
          hidden="true"
          class="social-button"
-         command="cmd_socialRecommend"/>
+         onclick="social.recommendButton.oncommand(event);"/>
 </hbox>
 
 </overlay>
