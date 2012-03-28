@@ -169,7 +169,6 @@ SocialSidebar.prototype = {
     vbox.setAttribute("context", "social-context-menu");    
   },
   reflow: function() {
-    let window = this._widget.ownerDocument.defaultView;
     let sbrowser = document.getElementById('social-status-sidebar-browser');
 
     let anchor = this._findAnchor();
@@ -248,7 +247,6 @@ SocialSidebar.prototype = {
   },
   setProvider: function(aService) {
     let self = this;
-    let window = this._widget.ownerDocument.defaultView;
 
     if (!aService.enabled) {
       return;// sanity check
