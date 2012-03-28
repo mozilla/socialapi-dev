@@ -40,13 +40,12 @@
     title="Social">
     <toolbarbutton
       id="socialdev-button"
-      class="toolbarbutton-1 chromeclass-toolbar-additional"
+      class="toolbarbutton-1"
       type="menu-button"
       tooltiptext="Social Browsing"
-      image="resource://socialdev/skin/social.png"
       removable="true"
       oncommand="social.toolbarButton.oncommand(event);">
-      <menupopup id="social-popup-panel"
+      <menupopup id="social-toolbar-menu"
         onpopupshown="social.toolbarButton.onpopupshown(event)"
         onpopupshowing="social.toolbarButton.onpopupshowing(event)"
         onpopuphidden="social.toolbarButton.onpopuphidden(event)"/>
@@ -58,7 +57,7 @@
   <image id="social-recommend-button"
          insertbefore="star-button"
          hidden="true"
-         class="social-button"
+         class="social-recommend-button"
          onclick="social.recommendButton.oncommand(event);"/>
 </hbox>
 

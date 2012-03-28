@@ -33,7 +33,7 @@ SocialToolbarButton.prototype = {
   },
   onpopupshowing: function(event) {
     let aWindow = event.target.ownerDocument.defaultView;
-    let socialpanel = aWindow.document.getElementById("social-popup-panel");
+    let socialpanel = aWindow.document.getElementById("social-toolbar-menu");
     buildSocialPopupContents(aWindow, socialpanel);
   },
   oncommand: function(event) {
