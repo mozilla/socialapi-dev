@@ -1,31 +1,22 @@
 "use strict";
 
-const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
-
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://socialdev/lib/registry.js");
 Cu.import("resource://socialdev/lib/baseWidget.js");
 
-let notification = {};
-Cu.import("resource://socialdev/lib/notification.js", notification);
 
-const EXPORTED_SYMBOLS = ["ToolbarButton"];
-
-const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
-
-
-function ToolbarButton(aWindow) {
-  baseWidget.call(this, aWindow);
+function SocialToolbarButton() {
+  baseWidget.call(this, window);
 
   // we need to make our button appear on first install, for now we always
   // ensure that it is in the toolbar, even if the user removes it
-  var navbar = aWindow.document.getElementById("nav-bar");
+  var navbar = window.document.getElementById("nav-bar");
   var newset = navbar.currentSet + ",social-button-container";
   navbar.currentSet = newset;
   navbar.setAttribute("currentset", newset );
-  aWindow.document.persist("nav-bar", "currentset");  
+  window.document.persist("nav-bar", "currentset");  
 }
-ToolbarButton.prototype = {
+SocialToolbarButton.prototype = {
   __proto__: baseWidget.prototype,
   create: function(aWindow) {
   },
@@ -66,6 +57,8 @@ ToolbarButton.prototype = {
   }
 }
 
+
+const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 function buildSocialPopupContents(window, socialpanel)
 {
@@ -175,6 +168,8 @@ function buildSocialPopupContents(window, socialpanel)
         menuitem.setAttribute("label", "Fire a demo notification");
         menuitem.addEventListener("click", function(event) {
           // cannot fire a notification from inside an event, setTimeout is our friend
+          let notification = {};
+          Cu.import("resource://socialdev/lib/notification.js", notification);
           window.setTimeout(notification.addNotification, 0, {
               "_iconUrl": "http://1.gravatar.com/userimage/13041757/99cac03c3909baf0cd2f2a5e1cf1deed?size=36",
               "_title": "Michael Hanson",

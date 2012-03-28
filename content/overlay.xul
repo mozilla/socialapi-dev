@@ -6,6 +6,7 @@
          xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
   
   <script type="application/x-javascript" src="chrome://socialdev/content/recommendButtonWidget.js"/>
+  <script type="application/x-javascript" src="chrome://socialdev/content/toolbarButtonWidget.js"/>
   <script type="application/x-javascript">
   <![CDATA[
     {
@@ -15,8 +16,7 @@
       socialdev.startup();
 
       window.social = {};
-      Cu.import("resource://socialdev/lib/toolbarButtonWidget.js", socialdev);
-      social.toolbarButton = new socialdev.ToolbarButton(window);
+      social.toolbarButton = new SocialToolbarButton(window);
       social.recommendButton = new SocialRecommendButton(window);
     }
   ]]>
