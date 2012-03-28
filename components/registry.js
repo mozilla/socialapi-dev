@@ -225,6 +225,34 @@ function ProviderRegistry() {
   ManifestDB.iterate(function(key, manifest) {
     self.register(manifest);
   });
+
+  // we need to have our service injector running on startup of the
+  // registry
+  dump("setup the observer to inject our api for service panels\n");
+  this.injectController = function(doc, topic, data) {
+    try {
+      // if we have attached 'service' on to the social-browser for the window
+      // then we'll continue our injection.
+      if (!doc.defaultView) return;
+      var xulWindow = doc.defaultView.QueryInterface(Ci.nsIInterfaceRequestor)
+                     .getInterface(Ci.nsIWebNavigation)
+                     .QueryInterface(Ci.nsIDocShellTreeItem)
+                     .rootTreeItem
+                     .QueryInterface(Ci.nsIInterfaceRequestor)
+                     .getInterface(Ci.nsIDOMWindow);
+      // our service windows simply have browser attached to them
+      var sbrowser = xulWindow.document.getElementById("social-status-sidebar-browser") || xulWindow.browser;
+      if (sbrowser && sbrowser.contentDocument == doc) {
+        let service = sbrowser.service? sbrowser.service : xulWindow.service;
+        service.attachToWindow(doc.defaultView);
+      }
+    }
+    catch(e) {
+      Cu.reportError("unable to attachToWindow for "+doc.location);
+      dump(e.stack+"\n");
+    }
+  };
+  Services.obs.addObserver(this.injectController, 'document-element-inserted', false);
 }
 ProviderRegistry.prototype = {
   classID: providerRegistryClassID,
