@@ -38,9 +38,10 @@ SocialRecommendButton.prototype = {
     this.disable();
   },
   oncommand: function(event) {
-    Components.utils.import("resource://socialdev/lib/registry.js");
+    let providerRegistry = Cc["@mozilla.org/socialProviderRegistry;1"]
+                            .getService(Ci.mozISocialRegistry);
     let url = window.gBrowser.currentURI.cloneIgnoringRef().spec;
-    let worker = providerRegistry().currentProvider.makeWorker(window)
+    let worker = providerRegistry.currentProvider.makeWorker(window)
     worker.port.postMessage({topic: "user-recommend",
                              data: {
                               url: url}

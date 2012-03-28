@@ -23,7 +23,7 @@ Cu.import("resource://socialdev/lib/unload+.js");
 const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const FRECENCY = 100;
 
-
+dump("loading registry\n");
 /**
  * manifestRegistry is our internal api for registering manfist files that
    contain data for various services. It holds a registry of installed activity
@@ -189,33 +189,24 @@ ManifestRegistry.prototype = {
       this.discoverManifest(aSubject, aData);
       return;
     }
-  },
-
-  /**
-   * get
-   *
-   * Return the mediator instance handling this activity, create one if one
-   * does not exist.
-   *
-   * @param  jsobject activity
-   * @return MediatorPanel instance
-   */
-  get: function manifestRegistry_get(cb) {
-    ManifestDB.iterate(function(key, manifest) {
-      cb(manifest);
-    });
   }
 };
 
 
+const providerRegistryClassID = Components.ID("{1a60fb78-b2d2-104b-b16a-7f497be5626d}");
+const providerRegistryCID = "@mozilla.org/socialProviderRegistry;1";
+
 function ProviderRegistry() {
+  dump("registery service initializing\n");
+  this.manifestRegistry = new ManifestRegistry();
   this._prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
 
-  Services.obs.addObserver(this, 'social-service-enabled', false);
-  Services.obs.addObserver(this, 'social-service-disabled', false);
-  Services.obs.addObserver(this, 'social-browsing-enabled', false);
-  Services.obs.addObserver(this, 'social-browsing-disabled', false);
+  Services.obs.addObserver(this, 'social-service-enabled', true);
+  Services.obs.addObserver(this, 'social-service-disabled', true);
+  Services.obs.addObserver(this, 'social-browsing-enabled', true);
+  Services.obs.addObserver(this, 'social-browsing-disabled', true);
 
+  // XXX watch for xpcom shutdown to do this
   let self = this;
   unload(function() {
     try {
@@ -229,8 +220,19 @@ function ProviderRegistry() {
       provider.shutdown();
     })
   });
+
+  let self = this;
+  ManifestDB.iterate(function(key, manifest) {
+    self.register(manifest);
+  });
 }
 ProviderRegistry.prototype = {
+  classID: providerRegistryClassID,
+  contractID: providerRegistryCID,
+  QueryInterface: XPCOMUtils.generateQI([Ci.mozISocialRegistry,
+                                         Ci.nsISupportsWeakReference,
+                                         Ci.nsIObserver]),
+
   _providers: {},
   _currentProvider: null,
 
@@ -272,20 +274,17 @@ ProviderRegistry.prototype = {
         this.currentProvider = provider;
     }
     else if (aTopic == 'social-browsing-enabled') {
-      this.each(function(svc) { svc.activate(); });
+      for each(let provider in this._providers) {
+        provider.activate();
+      }
     }
     else if (aTopic == 'social-browsing-disabled') {
-      this.each(function(svc) { svc.deactivate(); });
+      for each(let provider in this._providers) {
+        provider.deactivate();
+      }
     }
   },
 
-  init: function() {
-    // we really need to have this be an xpcom service
-    let self = this;
-    manifestRegistryService.get(function(manifest) {
-      self.register(manifest);
-    });
-  },
   register: function(manifest) {
     // we are not pushing into manifestDB here, rather manifestDB is calling us
     try {
@@ -330,25 +329,14 @@ ProviderRegistry.prototype = {
   get: function pr_get(origin) {
     return this._providers[origin];
   },
-  getByOrigin: function pr_getByOrigin(origin) {
-    return this._providers[origin];
-  },
   each: function pr_iterate(cb) {
     for each(let provider in this._providers) {
-      cb(provider);
+      cb.handle(provider);
     }
   }
 }
 
-//const components = [manifestRegistry];
-//const NSGetFactory = XPCOMUtils.generateNSGetFactory(components);
-const manifestRegistryService = new ManifestRegistry();
-const providerRegistryService = new ProviderRegistry();
+const components = [ProviderRegistry];
+const NSGetFactory = XPCOMUtils.generateNSGetFactory(components);
 
-function manifestRegistry() {
-  return manifestRegistryService;
-}
-function providerRegistry() {
-  return providerRegistryService;
-}
-const EXPORTED_SYMBOLS = ["manifestRegistry", "providerRegistry"];
+dump("...loading registry\n");

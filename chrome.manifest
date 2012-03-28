@@ -7,7 +7,7 @@ locale    socialdev en-US           locale/en-US/
 overlay	chrome://browser/content/browser.xul   chrome://socialdev/content/overlay.xul
 resource socialdev ./
 
-#component {8cbbd741-662a-4a4b-a6f4-29c466faf076} components/registry.js
-#contract @mozilla.org/socialRegistry;1 {8cbbd741-662a-4a4b-a6f4-29c466faf076}
-#category profile-after-change socialRegistry @mozilla.org/socialRegistry;1
-#interfaces components/mozISocialRegistry.xpt
+component {1a60fb78-b2d2-104b-b16a-7f497be5626d} components/registry.js
+contract @mozilla.org/socialProviderRegistry;1 {1a60fb78-b2d2-104b-b16a-7f497be5626d}
+category profile-after-change socialRegistry @mozilla.org/socialProviderRegistry;1
+interfaces components/mozISocialAPI.xpt

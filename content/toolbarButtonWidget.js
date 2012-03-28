@@ -1,7 +1,6 @@
 "use strict";
 
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://socialdev/lib/registry.js");
 Cu.import("resource://socialdev/lib/baseWidget.js");
 
 
@@ -41,7 +40,8 @@ SocialToolbarButton.prototype = {
     if (event.target.getAttribute("id") != "socialdev-button")
       return;
     let aWindow = event.target.ownerDocument.defaultView;
-    let registry = providerRegistry();
+    let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
+                            .getService(Ci.mozISocialRegistry);
     if (!registry.currentProvider || !registry.currentProvider.enabled) {
       Services.console.logStringMessage("no service is enabled, so not opening the socialbar!")
     }
@@ -62,7 +62,8 @@ const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 function buildSocialPopupContents(window, socialpanel)
 {
-  let registry = providerRegistry();
+  let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
+                          .getService(Ci.mozISocialRegistry);
 
   function renderNotificationRow(img, title, text) {
     let row = window.document.createElementNS(HTML_NS, "div");

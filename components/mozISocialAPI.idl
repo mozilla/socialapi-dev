@@ -1,0 +1,30 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Contributor(s):
+ *	Shane Caraveo <scaraveo@mozilla.com>
+ */
+
+#include "nsISupports.idl"
+
+/* Web Activities API
+ *
+ */
+interface nsIDOMWindow;
+
+[scriptable, function, uuid(508676cb-1640-7d48-b6db-f7da8fabf9de)]
+interface mozISocialProviderCallback: nsISupports {
+  void handle(in jsval data);
+};
+
+[scriptable, uuid(611f70de-ff64-1b45-afaf-7299b71ae38e)]
+interface mozISocialRegistry: nsISupports {
+  void register(in jsval aManifest);
+  attribute jsval currentProvider;
+  void get(in DOMString aOrigin, [retval] out jsval aSocialProviderInstance);
+  void each(in mozISocialProviderCallback aCallback);
+};
+
+
+
