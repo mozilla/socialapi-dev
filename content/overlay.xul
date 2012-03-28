@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<?xml-stylesheet href="resource://socialdev/data/styles/browser.css" type="text/css"?>
+<?xml-stylesheet href="resource://socialdev/skin/browser.css" type="text/css"?>
 
 <overlay id="socialdev-overlay"
          xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
@@ -41,7 +41,7 @@
       class="toolbarbutton-1 chromeclass-toolbar-additional"
       type="menu-button"
       tooltiptext="Social Browsing"
-      image="resource://socialdev/data/social.png"
+      image="resource://socialdev/skin/social.png"
       removable="true"
       oncommand="social.toolbarButton.oncommand(event);">
       <menupopup id="social-popup-panel"
