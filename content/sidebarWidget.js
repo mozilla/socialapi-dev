@@ -274,7 +274,7 @@ SocialSidebar.prototype = {
       sbrowser.removeEventListener("DOMContentLoaded", sb_contentListener, true);
       try {
         // Keep a reference to the listener so it doesn't get collected
-        sbrowser.watcher = new LocationWatcher(sbrowser.service.URLPrefix);
+        sbrowser.watcher = new SocialLocationWatcher(sbrowser.service.URLPrefix);
         sbrowser.addProgressListener(sbrowser.watcher, Ci.nsIWebProgress.NOTIFY_STATE_DOCUMENT);
       }
       catch (e) {
@@ -333,10 +333,10 @@ SocialSidebar.prototype = {
 }
 
 
-function LocationWatcher(prefix) {
+function SocialLocationWatcher(prefix) {
   this._prefix = prefix;
 }
-LocationWatcher.prototype = {
+SocialLocationWatcher.prototype = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIWebProgressListener,
                                          Ci.nsIWebProgressListener2,
                                          Ci.nsISupportsWeakReference]),
