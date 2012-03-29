@@ -4,7 +4,6 @@ const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-Cu.import("resource://socialdev/modules/unload+.js");
 
 const EXPORTED_SYMBOLS = ["baseWidget"];
 
@@ -17,11 +16,6 @@ function baseWidget(aWindow) {
   Services.obs.addObserver(this, 'social-service-changed', false);
   Services.obs.addObserver(this, 'social-browsing-enabled', false);
   Services.obs.addObserver(this, 'social-browsing-disabled', false);
-
-  let self = this;
-  unload(function() {
-    self.remove();
-  }, aWindow);
 
   let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
                           .getService(Ci.mozISocialRegistry);
