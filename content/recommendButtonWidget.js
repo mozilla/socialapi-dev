@@ -13,7 +13,10 @@ SocialRecommendButton.prototype = {
   setProvider: function(aProvider) {
     let self = this;
     let worker = aProvider.makeWorker(window);
-
+    if (!worker) {
+      this.disable();
+      return;
+    }
     worker.port.onmessage = function(evt) {
       if (evt.data.topic === 'user-recommend-prompt-response') {
         let data = evt.data.data;
@@ -23,13 +26,14 @@ SocialRecommendButton.prototype = {
     worker.port.postMessage({topic: "user-recommend-prompt"});
   },
   enable: function(aIconURL, aTooltiptext) {
-    let widget = window.document.getElementById("social-recommend-button");
+    let widget = document.getElementById("social-recommend-button");
     widget.setAttribute("tooltiptext", aTooltiptext); // XXX - 'message' not in spec.
     widget.setAttribute("src", aIconURL);
     widget.removeAttribute("hidden");
   },
   disable: function() {
-    let widget = window.document.getElementById("social-recommend-button");
+    let widget = document.getElementById("social-recommend-button");
+    if (!widget) return;
     widget.setAttribute("hidden", "true");
     widget.setAttribute("tooltiptext", "");
     widget.setAttribute("src", "");
