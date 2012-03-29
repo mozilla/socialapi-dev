@@ -36,6 +36,13 @@ function log(msg) {
 var _nextPortId = 1;
 var _numPortsAlive = 0;
 
+
+/**
+ * MessagePort
+ *
+ * An entagled message port is used for each connection from a content panel
+ * into a frameworker.
+ */
 function MessagePort(name) {
   this._name = name + "(" + _nextPortId++ + ")";
   this._entangled = null; // null, or another MessagePort object
@@ -63,6 +70,14 @@ MessagePort.prototype = {
     }
   },
 
+  /**
+   * postMessage
+   *
+   * Send data to the onmessage handler on the other end of the port.  The
+   * data object should have a topic property.
+   *
+   * @param {jsobj} data
+   */
   postMessage: function(data) {
     //log(this._name+ " postMessage "+data.topic);
     // dump("postMessage " + data + "\n");
@@ -79,6 +94,11 @@ MessagePort.prototype = {
     }
   },
 
+  /**
+   * close
+   *
+   * closes both ends of an entangled port
+   */
   close: function() {
     if (!this._entangled) {
       return; // already closed.
@@ -113,16 +133,22 @@ MessagePort.prototype = {
 
 
 
-// A Frameworker is an iframe that is attached to the hiddenWindow,
-// which contains a pair of MessagePorts.  It is constructed with the
-// URL of some JavaScript that will be run in the context of the window;
-// the script does not have a full DOM but is instead run in a sandbox
-// that has a select set of methods cloned from the URL's domain.
-//
-// The FrameWorker iframe is a singleton for a given script URL.  If one
-// alread, exists, the FrameWorker constructor will connect to it.
-//
 
+/**
+ * FrameWorker
+ *
+ * A Frameworker is an iframe that is attached to the hiddenWindow,
+ * which contains a pair of MessagePorts.  It is constructed with the
+ * URL of some JavaScript that will be run in the context of the window;
+ * the script does not have a full DOM but is instead run in a sandbox
+ * that has a select set of methods cloned from the URL's domain.
+ * 
+ * The FrameWorker iframe is a singleton for a given script URL.  If one
+ * alread, exists, the FrameWorker constructor will connect to it.
+ *
+ * @param {String} url
+ * @returns {Object} object containing a port and terminate function
+ */
 function FrameWorker(url) {
   log("creating worker for " + url);
   // first create the ports we are going to use and entangle them.
@@ -177,7 +203,6 @@ function FrameWorker(url) {
                          'navigator'];
         for each(let fn in workerAPI) {
           if (workerWindow[fn]) {
-            log("injecting " + fn);
             sandbox.importFunction(workerWindow[fn], fn);
           }
           else {
