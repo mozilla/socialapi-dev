@@ -18,7 +18,6 @@ Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://socialdev/modules/provider.js");
 Cu.import("resource://socialdev/modules/manifestDB.jsm");
 Cu.import("resource://socialdev/modules/defaultServices.jsm");
-Cu.import("resource://socialdev/modules/unload+.js");
 
 const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const FRECENCY = 100;
@@ -205,21 +204,7 @@ function ProviderRegistry() {
   Services.obs.addObserver(this, 'social-service-disabled', true);
   Services.obs.addObserver(this, 'social-browsing-enabled', true);
   Services.obs.addObserver(this, 'social-browsing-disabled', true);
-
-  // XXX watch for xpcom shutdown to do this
-  let self = this;
-  unload(function() {
-    try {
-      self._prefBranch.setCharPref("current", self._currentProvider.origin);
-    }
-    catch(e) {
-      // just during dev, otherwise we shouldn't log here
-      //Cu.reportError(e);
-    }
-    self.each(function(provider) {
-      provider.shutdown();
-    })
-  });
+  Services.obs.addObserver(this, 'quit-application', true);
 
   let self = this;
   ManifestDB.iterate(function(key, manifest) {
@@ -310,6 +295,18 @@ ProviderRegistry.prototype = {
       for each(let provider in this._providers) {
         provider.deactivate();
       }
+    }
+    else if (aTopic == 'quit-application') {
+      try {
+        this._prefBranch.setCharPref("current", self._currentProvider.origin);
+      }
+      catch(e) {
+        // just during dev, otherwise we shouldn't log here
+        //Cu.reportError(e);
+      }
+      this.each(function(provider) {
+        provider.shutdown();
+      })
     }
   },
 
