@@ -1,7 +1,7 @@
 "use strict";
 
 Components.utils.import("resource://gre/modules/Services.jsm");
-Components.utils.import("resource://socialdev/lib/baseWidget.js");
+Components.utils.import("resource://socialdev/modules/baseWidget.js");
 
 function SocialRecommendButton() {
   baseWidget.call(this, window);

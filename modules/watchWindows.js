@@ -10,7 +10,7 @@
 "use strict";
 
 const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
-Cu.import("resource://socialdev/lib/unload+.js");
+Cu.import("resource://socialdev/modules/unload+.js");
 Cu.import("resource://gre/modules/Services.jsm", this);
 
 const EXPORTED_SYMBOLS = ["watchWindows"];

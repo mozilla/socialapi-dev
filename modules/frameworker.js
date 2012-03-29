@@ -23,7 +23,7 @@ const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 
 var notification = {};
-Cu.import("resource://socialdev/lib/notification.js", notification);
+Cu.import("resource://socialdev/modules/notification.js", notification);
 
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 

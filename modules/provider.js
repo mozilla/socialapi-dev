@@ -15,8 +15,8 @@ const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 Cu.import("resource://gre/modules/Services.jsm");
 let frameworker = {};
-Cu.import("resource://socialdev/lib/frameworker.js", frameworker);
-Cu.import("resource://socialdev/lib/servicewindow.js");
+Cu.import("resource://socialdev/modules/frameworker.js", frameworker);
+Cu.import("resource://socialdev/modules/servicewindow.js");
 
 const EXPORTED_SYMBOLS = ["SocialProvider"];
 

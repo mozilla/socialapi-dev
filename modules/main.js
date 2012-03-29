@@ -16,11 +16,11 @@
 const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://socialdev/lib/unload+.js");
-Cu.import("resource://socialdev/lib/watchWindows.js");
-Cu.import("resource://socialdev/lib/sidebarWidget.js");
+Cu.import("resource://socialdev/modules/unload+.js");
+Cu.import("resource://socialdev/modules/watchWindows.js");
+Cu.import("resource://socialdev/modules/sidebarWidget.js");
 
-Cu.import("resource://socialdev/lib/servicewindow.js");
+Cu.import("resource://socialdev/modules/servicewindow.js");
 
 const EXPORTED_SYMBOLS = ["startup", "shutdown"];
 

@@ -1,7 +1,7 @@
 "use strict";
 
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://socialdev/lib/baseWidget.js");
+Cu.import("resource://socialdev/modules/baseWidget.js");
 
 
 function SocialToolbarButton() {
@@ -170,7 +170,7 @@ function buildSocialPopupContents(window, socialpanel)
         menuitem.addEventListener("click", function(event) {
           // cannot fire a notification from inside an event, setTimeout is our friend
           let notification = {};
-          Cu.import("resource://socialdev/lib/notification.js", notification);
+          Cu.import("resource://socialdev/modules/notification.js", notification);
           window.setTimeout(notification.addNotification, 0, {
               "_iconUrl": "http://1.gravatar.com/userimage/13041757/99cac03c3909baf0cd2f2a5e1cf1deed?size=36",
               "_title": "Michael Hanson",

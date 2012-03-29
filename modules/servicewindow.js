@@ -19,7 +19,7 @@ const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 const EXPORTED_SYMBOLS = ["createServiceWindow", "closeWindowsForService", "serviceWindowMaker"];
 
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://socialdev/lib/unload+.js");
+Cu.import("resource://socialdev/modules/unload+.js");
 
 const isMac = Services.appinfo.OS == "Darwin";
 const isWin = Services.appinfo.OS == "WINNT";
