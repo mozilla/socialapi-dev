@@ -19,7 +19,6 @@ const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 const EXPORTED_SYMBOLS = ["createServiceWindow", "closeWindowsForService", "serviceWindowMaker"];
 
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://socialdev/modules/unload+.js");
 
 const isMac = Services.appinfo.OS == "Darwin";
 const isWin = Services.appinfo.OS == "WINNT";
@@ -29,17 +28,6 @@ var xhtmlNs = "http://www.w3.org/1999/xhtml";
 
 const SOCIAL_WINDOWTYPE = "socialdev:window";
 
-unload(function() {
-  let windows = Services.wm.getEnumerator(null);
-  while (windows.hasMoreElements()) {
-    // Only run the watcher immediately if the window is completely loaded
-    let window = windows.getNext();
-    let {documentElement} = window.document;
-    if (documentElement.getAttribute("windowtype") == SOCIAL_WINDOWTYPE) {
-      window.close();
-    }
-  }
-});
 
 function serviceWindowMaker(options) {
 
