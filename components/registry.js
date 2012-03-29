@@ -213,7 +213,6 @@ function ProviderRegistry() {
 
   // we need to have our service injector running on startup of the
   // registry
-  dump("setup the observer to inject our api for service panels\n");
   this.injectController = function(doc, topic, data) {
     try {
       // if we have attached 'service' on to the social-browser for the window
@@ -297,13 +296,6 @@ ProviderRegistry.prototype = {
       }
     }
     else if (aTopic == 'quit-application') {
-      try {
-        this._prefBranch.setCharPref("current", self._currentProvider.origin);
-      }
-      catch(e) {
-        // just during dev, otherwise we shouldn't log here
-        //Cu.reportError(e);
-      }
       this.each(function(provider) {
         provider.shutdown();
       })
@@ -315,26 +307,34 @@ ProviderRegistry.prototype = {
     try {
       let provider = new SocialProvider(manifest);
       this._providers[manifest.origin] = provider
-      if (!this._currentProvider && provider.enabled)
-        this.currentProvider = this._providers[manifest.origin];
     }
     catch(e) {
       Cu.reportError(e);
     }
-    // double check and make sure we're setting the right provider
-    try {
-      var currentProviderOrigin = this._prefBranch.getCharPref("current");
-      let provider = this._providers[currentProviderOrigin];
-      if (provider && provider.enabled) {
-        this.currentProvider = provider;
-      }
-    }
-    catch(e) {
-      // just during dev, otherwise we shouldn't log here
-      //Cu.reportError(e);
-    }
   },
   get currentProvider() {
+    if (!this._currentProvider) {
+      let provider;
+      let currentProviderOrigin;
+      try {
+        currentProviderOrigin = this._prefBranch.getCharPref("current");
+        provider = this._providers[currentProviderOrigin];
+      }
+      catch(e) {}
+      if (!provider || !provider.enabled) {
+        // find one that is enabled
+        for each(let p in this._providers) {
+          if (p.enabled) {
+            provider = p;
+            break;
+          }
+        }
+      }
+      if (provider && provider.enabled) {
+        this._prefBranch.setCharPref("current", provider.origin);
+        this._currentProvider = provider;
+      }
+    }
     return this._currentProvider;
   },
   set currentProvider(provider) {
