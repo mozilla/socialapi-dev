@@ -81,6 +81,10 @@ SocialProvider.prototype = {
   },
   makeWorker: function(window) {
     // XXX - todo - check the window origin to match the service prefix
+    if (!this.workerURL) {
+      Services.console.logStringMessage("no workerURL for provider "+this.origin);
+      return null;
+    }
     if (!this.enabled) {
       throw new Error("cannot use disabled service "+this.origin);
     }
