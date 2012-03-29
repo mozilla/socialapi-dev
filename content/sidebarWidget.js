@@ -2,7 +2,6 @@
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-Cu.import("resource://socialdev/modules/listen.js");
 Cu.import("resource://socialdev/modules/baseWidget.js");
 
 
@@ -67,12 +66,12 @@ SocialSidebar.prototype = {
     cropper.appendChild(sbrowser);
   
     // Make sure the browser stretches and shrinks to fit
-    listen(window, window, "resize", function({target}) {
-      if (target == window) {
-        self.reflow();
-      }
-    });
-    listen(window, document.getElementById('navigator-toolbox'), "DOMAttrModified", function(event) {
+    window.addEventListener('resize', function(e) {
+      if (e.target == window) self.reflow();
+    }, true);
+    
+    let toolbox = document.getElementById('navigator-toolbox');
+    toolbox.addEventListener("DOMAttrModified", function(event) {
       if (event.attrName == "collapsed" || event.attrName == "tabsontop") {
         // so, one of the toolbars changed state.  If this means our "anchor"
         // changed then we need to reflow (which will re-anchor).
@@ -81,7 +80,7 @@ SocialSidebar.prototype = {
           self.reflow();
         }
       }
-    });
+    }, true);
   
     // XXX hardcode reflowing for the single sbrowser on initial load for now
     sbrowser.addEventListener("DOMContentLoaded", function onLoad() {
