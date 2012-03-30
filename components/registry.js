@@ -289,11 +289,13 @@ ProviderRegistry.prototype = {
       for each(let provider in this._providers) {
         provider.activate();
       }
+      this._prefBranch.setBoolPref("enabled", true);
     }
     else if (aTopic == 'social-browsing-disabled') {
       for each(let provider in this._providers) {
         provider.deactivate();
       }
+      this._prefBranch.setBoolPref("enabled", false);
     }
     else if (aTopic == 'quit-application') {
       this.each(function(provider) {
