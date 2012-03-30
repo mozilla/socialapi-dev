@@ -30,7 +30,7 @@ const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 var workerInfos = {}; // keyed by URL.
 
 function log(msg) {
-  Services.console.logStringMessage(new Date().toISOString(), "[frameworker]:", msg);
+  Services.console.logStringMessage(new Date().toISOString() + " [frameworker]: " + msg);
 };
 
 var _nextPortId = 1;
@@ -204,9 +204,6 @@ function FrameWorker(url) {
         for each(let fn in workerAPI) {
           if (workerWindow[fn]) {
             sandbox.importFunction(workerWindow[fn], fn);
-          }
-          else {
-            log("NOT injecting " + fn + " as it doesn't exist on the window");
           }
         }
 
