@@ -20,7 +20,26 @@ Cu.import("resource://socialdev/modules/servicewindow.js");
 
 const EXPORTED_SYMBOLS = ["SocialProvider"];
 
-
+/**
+ * SocialProvider
+ *
+ * The socialProvider manages shutdown of our shared frameworker, and handles
+ * injecting same-origin content with additional APIs used to interact
+ * with the frameworker and other social content spaces in the browser.  There
+ * is one instance of this class per installed social provider.
+ *
+ * @constructor
+ * @param {jsobj} portion of the manifest file describing this provider
+ *
+ * Several notifications are sent by this class:
+ *
+ * social-service-init-ready   sent after class initialization
+ * social-service-shutdown     sent upon shutdown of a service
+ * social-service-activated    sent when this provider is made active
+ * social-service-deactivated  sent when a different provider is made active
+ *
+ * The 'active' provider is the currently selected provider in the UI.
+ */
 function SocialProvider(input) {
   this._log("creating social provider for "+input.origin);
   this.name = input.name;
@@ -51,6 +70,13 @@ SocialProvider.prototype = {
     this.windowCreatorFn = windowCreatorFn;
     Services.obs.notifyObservers(null, "social-service-init-ready", this.origin);
   },
+  
+  /**
+   * shutdown
+   *
+   * called by the ProviderRegistry when the provider should shutdown the
+   * frameworker.
+   */
   shutdown: function() {
     try {
       this._log("shutdown");
@@ -64,6 +90,11 @@ SocialProvider.prototype = {
     this._active = false;
     Services.obs.notifyObservers(null, "social-service-shutdown", this.origin);
   },
+  
+  /**
+   * called by the ProviderRegistry to ensure the provider is initialized
+   * and ready.
+   */
   activate: function() {
     if (this.enabled) {
       this.init();
@@ -71,6 +102,10 @@ SocialProvider.prototype = {
       Services.obs.notifyObservers(null, "social-service-activated", this.origin);
     }
   },
+  
+  /**
+   * called by the ProviderRegistry to close down this provider.
+   */
   deactivate: function() {
     if (!this._active) return;
     closeWindowsForService(this);
@@ -79,6 +114,14 @@ SocialProvider.prototype = {
     // XXX is deactivate the same as shutdown?
     this.shutdown();
   },
+  
+  /**
+   * makeWorker
+   *
+   * creates a new message port connected to a shared frameworker
+   *
+   * @param {DOMWindow} window
+   */
   makeWorker: function(window) {
     // XXX - todo - check the window origin to match the service prefix
     if (!this.workerURL) {
@@ -96,6 +139,15 @@ SocialProvider.prototype = {
       throw new Error("makeWorker cannot create worker: no workerURL specified for "+this.origin);
     }
   },
+  
+  /**
+   * attachToWindow
+   *
+   * loads sandboxed support functions and socialAPI into content panels for
+   * this provider.
+   * 
+   * @param {DOMWindow}
+   */
   attachToWindow: function(targetWindow) {
     if (!this.enabled) {
       throw new Error("cannot use disabled service "+this.origin);
