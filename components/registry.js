@@ -228,7 +228,17 @@ function ProviderRegistry() {
       var sbrowser = xulWindow.document.getElementById("social-status-sidebar-browser") || xulWindow.browser;
       if (sbrowser && sbrowser.contentDocument == doc) {
         let service = sbrowser.service? sbrowser.service : xulWindow.service;
-        service.attachToWindow(doc.defaultView);
+        if (service.workerURL)
+          service.attachToWindow(doc.defaultView);
+      // XXX dev code, allows us to load social panels into tabs and still
+      // call attachToWindow on them
+      //} else {
+      //  for each(let svc in this._providers) {
+      //    if ((doc.location+"").indexOf(svc.URLPrefix) == 0) {
+      //      svc.attachToWindow(doc.defaultView);
+      //      break;
+      //    }
+      //  };
       }
     }
     catch(e) {
@@ -236,7 +246,7 @@ function ProviderRegistry() {
       dump(e.stack+"\n");
     }
   };
-  Services.obs.addObserver(this.injectController, 'document-element-inserted', false);
+  Services.obs.addObserver(this.injectController.bind(this), 'document-element-inserted', false);
 }
 ProviderRegistry.prototype = {
   classID: providerRegistryClassID,
