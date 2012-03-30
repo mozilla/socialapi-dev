@@ -8,12 +8,23 @@ Cu.import("resource://socialdev/modules/baseWidget.js");
 
 function SocialSidebar() {
   this._currentAnchorId = null;
-  // XXX - once we use a preference to store the visibility state between
-  // runs, we can probably drop _visibilityBeforeAutoHide - we'd just
-  // save the pref as we auto-hide and use that pref when we "undo" that.
-  this._visibilityBeforeAutoHide = null;
-  this._isAutoHidden = false;
+  this._prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
   baseWidget.call(this, window);
+  
+  // watch for when browser disables chrome in tabs, and hide the social sidebar
+  let _visibilityBeforeAutoHide = this.visibility;
+  document.addEventListener('DOMAttrModified', function(e) {
+    if (e.target == document.documentElement && e.attrName == "disablechrome") {
+      if (e.newValue) {
+        _visibilityBeforeAutoHide = this.visibility;
+        this.visibility = 'hidden';
+      }
+      else
+        this.visibility = _visibilityBeforeAutoHide;
+    }
+  }.bind(this));
+
+
 }
 SocialSidebar.prototype = {
   __proto__: baseWidget.prototype,
@@ -44,7 +55,6 @@ SocialSidebar.prototype = {
   
     // start with the sidebar closed.
     sbrowser._open = false;
-    this._visibilityBeforeAutoHide = "minimized";
   
     let after = document.getElementById('appcontent');
     let splitter = document.createElementNS(XUL_NS, "splitter");
@@ -70,8 +80,6 @@ SocialSidebar.prototype = {
     document.getElementById('browser').insertBefore(splitter, after.nextSibling);
   
     cropper.appendChild(sbrowser);
-
-    this._watchForAutoHides();
 
     // Make sure the browser stretches and shrinks to fit
     window.addEventListener('resize', function(e) {
@@ -105,9 +113,9 @@ SocialSidebar.prototype = {
         return;
       }
       if (sbrowser.visibility != "open") {
-        sbrowser.visibility = "open";
+        this.visibility = "open";
       }
-    });
+    }.bind(this));
   
     Object.defineProperty(sbrowser, "visibility", {
       get: function() {
@@ -138,6 +146,10 @@ SocialSidebar.prototype = {
         self.reflow();
       }
     });
+    try {
+      this.visibility = this._prefBranch.getBoolPref("enabled") ? this._prefBranch.getCharPref("visibility") : 'hidden';
+    }
+    catch (e) {}
   },
   attachContextMenu: function() {
     let {document, gBrowser} = this._widget.ownerDocument.defaultView;
@@ -254,15 +266,17 @@ SocialSidebar.prototype = {
   setProvider: function(aService) {
     let self = this;
 
-    if (!aService.enabled) {
+    if (!aService.enabled || this.disabled) {
       return;// sanity check
     }
   
     // retarget the sidebar
     var sbrowser = document.getElementById("social-status-sidebar-browser");
+    var make_visible = sbrowser.service && sbrowser.service !== aService;
     sbrowser.service = aService;
     // XXX when switching providers, always open
-    sbrowser.visibility = "open";
+    if (make_visible)
+      sbrowser.visibility = "open";
   
     // set up a locationwatcher
     try {
@@ -303,38 +317,6 @@ SocialSidebar.prototype = {
       }
     }, true);
   },
-  // do whatever needs to be done so we detect when we need to autohide
-  // the sidebar.
-  _watchForAutoHides: function () {
-    let listener = new SocialLocationWatcher({
-      onLocationChange: function(aWebProgress, aWebRequest, aLocation) {
-        // see browser.js's onLocationChange handler where the 'disablechrome'
-        // attribute is setup.
-        // XXX - we might want a slightly tighter definition here - eg, avoid
-        // some schemes etc?
-        if (aWebProgress.DOMWindow == window.content) {
-          let shouldShow = !window.document.documentElement.getAttribute("disablechrome");
-          if (shouldShow) {
-            // XXX - see comments above re dropping _visibilityBeforeAutoHide
-            this.visibility = this._visibilityBeforeAutoHide;
-            this._isAutoHidden = false;
-          } else {
-            if (!this._isAutoHidden) {
-              this._visibilityBeforeAutoHide = this.visibility;
-              this.visibility = "hidden";
-              this._isAutoHidden = true;
-            }
-          }
-        }
-      }.bind(this)
-    });
-    gBrowser.addProgressListener(listener);
-    let unloader = function() {
-      gBrowser.removeEventListener("unload", unloader);
-      gBrowser.removeProgressListener(listener);
-    }
-    gBrowser.addEventListener("unload", unloader);
-  },
   enable: function() {
     this.show();
     let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
@@ -364,12 +346,13 @@ SocialSidebar.prototype = {
   },
   set visibility(val) {
     this.browser.visibility = val;
+    this._prefBranch.setCharPref("visibility", val);
   },
   show: function() {
-    this.browser.visibility = this.browser._open ? "open" : "minimized";
+    this.visibility = this.browser._open ? "open" : "minimized";
   },
   hide: function() {
-    this.browser.visibility = "hidden";
+    this.visibility = "hidden";
   },
   remove: function() {
     this._widget.parentNode.removeChild(this._widget.previousSibling); // remove splitter
