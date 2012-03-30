@@ -7,8 +7,13 @@ Cu.import("resource://socialdev/modules/baseWidget.js");
 
 
 function SocialSidebar() {
-  baseWidget.call(this, window);
   this._currentAnchorId = null;
+  // XXX - once we use a preference to store the visibility state between
+  // runs, we can probably drop _visibilityBeforeAutoHide - we'd just
+  // save the pref as we auto-hide and use that pref when we "undo" that.
+  this._visibilityBeforeAutoHide = null;
+  this._isAutoHidden = false;
+  baseWidget.call(this, window);
 }
 SocialSidebar.prototype = {
   __proto__: baseWidget.prototype,
@@ -39,6 +44,7 @@ SocialSidebar.prototype = {
   
     // start with the sidebar closed.
     sbrowser._open = false;
+    this._visibilityBeforeAutoHide = "minimized";
   
     let after = document.getElementById('appcontent');
     let splitter = document.createElementNS(XUL_NS, "splitter");
@@ -59,12 +65,14 @@ SocialSidebar.prototype = {
     splitter.addEventListener("mouseup", function() {
       self.reflow();
     });
-  
+
     document.getElementById('browser').insertBefore(vbox, after.nextSibling);
     document.getElementById('browser').insertBefore(splitter, after.nextSibling);
   
     cropper.appendChild(sbrowser);
-  
+
+    this._watchForAutoHides();
+
     // Make sure the browser stretches and shrinks to fit
     window.addEventListener('resize', function(e) {
       if (e.target == window) self.reflow();
@@ -272,13 +280,60 @@ SocialSidebar.prototype = {
       sbrowser.removeEventListener("DOMContentLoaded", sb_contentListener, true);
       try {
         // Keep a reference to the listener so it doesn't get collected
-        sbrowser.watcher = new SocialLocationWatcher(sbrowser.service.URLPrefix);
+        sbrowser.watcher = new SocialLocationWatcher({
+          onStateChange: function(aWebProgress, aRequest, aStateFlags, aStatus) {
+            // We want to prevent the panel from loading any page that is not
+            // within it's domain/pathPrefix
+            if (aStateFlags & Components.interfaces.nsIWebProgressListener.STATE_START &&
+                aStateFlags & Components.interfaces.nsIWebProgressListener.STATE_IS_DOCUMENT) {
+              if (aRequest.name.indexOf(sbrowser.service.URLPrefix) != 0) {
+                Services.console.logStringMessage("blocking document change to "+aRequest.name);
+                aRequest.cancel(Cr.NS_BINDING_ABORTED);
+                let parentWin = Services.wm.getMostRecentWindow("navigator:browser");
+                let newTab = parentWin.gBrowser.addTab(aRequest.name);
+                parentWin.gBrowser.selectedTab = newTab;
+              }
+            }
+          }
+        });
         sbrowser.addProgressListener(sbrowser.watcher, Ci.nsIWebProgress.NOTIFY_STATE_DOCUMENT);
       }
       catch (e) {
         Cu.reportError(e);
       }
     }, true);
+  },
+  // do whatever needs to be done so we detect when we need to autohide
+  // the sidebar.
+  _watchForAutoHides: function () {
+    let listener = new SocialLocationWatcher({
+      onLocationChange: function(aWebProgress, aWebRequest, aLocation) {
+        // see browser.js's onLocationChange handler where the 'disablechrome'
+        // attribute is setup.
+        // XXX - we might want a slightly tighter definition here - eg, avoid
+        // some schemes etc?
+        if (aWebProgress.DOMWindow == window.content) {
+          let shouldShow = !window.document.documentElement.getAttribute("disablechrome");
+          if (shouldShow) {
+            // XXX - see comments above re dropping _visibilityBeforeAutoHide
+            this.visibility = this._visibilityBeforeAutoHide;
+            this._isAutoHidden = false;
+          } else {
+            if (!this._isAutoHidden) {
+              this._visibilityBeforeAutoHide = this.visibility;
+              this.visibility = "hidden";
+              this._isAutoHidden = true;
+            }
+          }
+        }
+      }.bind(this)
+    });
+    gBrowser.addProgressListener(listener);
+    let unloader = function() {
+      gBrowser.removeEventListener("unload", unloader);
+      gBrowser.removeProgressListener(listener);
+    }
+    gBrowser.addEventListener("unload", unloader);
   },
   enable: function() {
     this.show();
@@ -300,7 +355,6 @@ SocialSidebar.prototype = {
     sbrowser.watcher = null;
     sbrowser.contentWindow.location = "about:blank";
     sbrowser.visibility = "hidden";
-    this.reflow();
   },
   get disabled() {
     return this.browser.visibility == "hidden";
@@ -313,11 +367,9 @@ SocialSidebar.prototype = {
   },
   show: function() {
     this.browser.visibility = this.browser._open ? "open" : "minimized";
-    this.reflow();
   },
   hide: function() {
     this.browser.visibility = "hidden";
-    this.reflow();
   },
   remove: function() {
     this._widget.parentNode.removeChild(this._widget.previousSibling); // remove splitter
@@ -331,33 +383,23 @@ SocialSidebar.prototype = {
 }
 
 
-function SocialLocationWatcher(prefix) {
-  this._prefix = prefix;
+function SocialLocationWatcher(callbacks) {
+  this._callbacks = callbacks;
 }
+
 SocialLocationWatcher.prototype = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIWebProgressListener,
                                          Ci.nsIWebProgressListener2,
                                          Ci.nsISupportsWeakReference]),
-  // We want to prevent the panel from loading any page that is not
-  // within it's domain/pathPrefix
   onStateChange: function(/*in nsIWebProgress*/ aWebProgress,
                      /*in nsIRequest*/ aRequest,
                      /*in unsigned long*/ aStateFlags,
-                     /*in nsresult*/ aStatus)
-  {
-    if (aStateFlags & Components.interfaces.nsIWebProgressListener.STATE_START &&
-        aStateFlags & Components.interfaces.nsIWebProgressListener.STATE_IS_DOCUMENT) {
-      if (aRequest.name.indexOf(this._prefix) != 0) {
-        Services.console.logStringMessage("blocking document change to "+aRequest.name);
-        aRequest.cancel(Cr.NS_BINDING_ABORTED);
-        let parentWin = Services.wm.getMostRecentWindow("navigator:browser");
-        let newTab = parentWin.gBrowser.addTab(aRequest.name);
-        parentWin.gBrowser.selectedTab = newTab;
-      }
+                     /*in nsresult*/ aStatus) {
+    if (this._callbacks.onStateChange) {
+      this._callbacks.onStateChange(aWebProgress, aRequest, aStateFlags, aStatus);
     }
   },
 
-  // here for the interface, we don't care about any of these
   onProgressChange: function(/*in nsIWebProgress*/ aWebProgress,
                         /*in nsIRequest*/ aRequest,
                         /*in long*/ aCurSelfProgress,
@@ -366,7 +408,11 @@ SocialLocationWatcher.prototype = {
                         /*in long */aMaxTotalProgress) {},
   onLocationChange: function(/*in nsIWebProgress*/ aWebProgress,
                         /*in nsIRequest*/ aRequest,
-                        /*in nsIURI*/ aLocation) {},
+                        /*in nsIURI*/ aLocation) {
+    if (this._callbacks.onLocationChange) {
+      this._callbacks.onLocationChange(aWebProgress, aRequest, aLocation);
+    }
+  },
   onStatusChange: function(/*in nsIWebProgress*/ aWebProgress,
                       /*in nsIRequest*/ aRequest,
                       /*in nsresult*/ aStatus,
