@@ -17,16 +17,20 @@
     {
       // quick hack to move to an overlay
       window.social = {};
-      social.toolbarButton = new SocialToolbarButton(window);
-      social.recommendButton = new SocialRecommendButton(window);
       // due to what we are doing in the sidebar, we have to wait for the
       // chromeWindow to load before we do our magic
       window.addEventListener('load', function(e) {
+        social.recommendButton = new SocialRecommendButton(window);
         social.sidebar = new SocialSidebar(window);
+        social.toolbarButton = new SocialToolbarButton(window);
       });
     }
   ]]>
   </script>
+
+  <stringbundleset id="stringbundleset">  
+    <stringbundle src="chrome://socialdev/locale/social.properties" id="socialdev-strings" />   
+  </stringbundleset>
 
   <commandset id="mainCommandSet">
     <command id="cmd_socialRecommend" oncommand="social.recommendButton.oncommand(event);"/>
@@ -58,8 +62,8 @@
         onpopupshown="social.toolbarButton.onpopupshown(event)"
         onpopupshowing="social.toolbarButton.onpopupshowing(event)"
         onpopuphidden="social.toolbarButton.onpopuphidden(event)">
-        <menuitem id="social-socialtoolbar-menu" label="Minimize/Show Social Sidebar" command="cmd_socialToolbarToggle"/>
-        <menuitem id="social-socialbrowsing-menu" label="Enable/Disable Social Browsing" command="cmd_socialBrowsingToggle"/>
+        <menuitem id="social-socialtoolbar-menu" label="&socialtoobar.label;" command="cmd_socialToolbarToggle"/>
+        <menuitem id="social-socialbrowsing-menu" label="&socialenable.label;" command="cmd_socialBrowsingToggle"/>
         <menuseparator/>
         <menuseparator id="social-providers-separator"/>
         <menuitem id="social-demonotification-menu" label="Fire a demo notification" oncommand="social.toolbarButton.fireDemoNotification(event)"/>

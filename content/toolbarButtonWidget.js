@@ -13,7 +13,17 @@ function SocialToolbarButton() {
   var newset = navbar.currentSet + ",social-button-container";
   navbar.currentSet = newset;
   navbar.setAttribute("currentset", newset );
-  window.document.persist("nav-bar", "currentset");  
+  window.document.persist("nav-bar", "currentset");
+
+  // XXX i think we can use broadcasters for this state
+  let sidebar = window.social.sidebar;
+  let str = document.getElementById("socialdev-strings");
+  let label = (sidebar.visibility == "hidden" ? "browserEnable.label" : "browserDisable.label")
+  document.getElementById('social-socialbrowsing-menu').
+    setAttribute('label', str.getString(label));
+  label = (sidebar.visibility == "open" ? "minimizeSidebar.label" : "showSidebar.label")
+  document.getElementById('social-socialtoolbar-menu').
+    setAttribute('label', str.getString(label));
 }
 SocialToolbarButton.prototype = {
   __proto__: baseWidget.prototype,
@@ -37,14 +47,20 @@ SocialToolbarButton.prototype = {
     buildSocialPopupContents(aWindow, socialpanel);
   },
   onToggleEnabled: function() {
+    var str = document.getElementById("socialdev-strings");
     if (window.social.sidebar.visibility != "hidden") {
       Services.obs.notifyObservers(null, "social-browsing-disabled", null);
+      document.getElementById('social-socialbrowsing-menu').
+        setAttribute('label', str.getString("browserEnable.label"));
     }
     else {
       Services.obs.notifyObservers(null, "social-browsing-enabled", null);
+      document.getElementById('social-socialbrowsing-menu').
+        setAttribute('label', str.getString("browserDisable.label"));
     }
   },
   onToggleVisible: function() {
+    var str = document.getElementById("socialdev-strings");
     let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
                             .getService(Ci.mozISocialRegistry);
     if (!registry.currentProvider || !registry.currentProvider.enabled) {
@@ -54,9 +70,14 @@ SocialToolbarButton.prototype = {
       let sidebar = window.social.sidebar;
       if (sidebar.visibility == 'hidden') {
         Services.obs.notifyObservers(null, "social-browsing-enabled", null);
+        document.getElementById('social-socialbrowsing-menu').
+          setAttribute('label', str.getString("browserDisable.label"));
       }
       else {
         sidebar.visibility = (sidebar.visibility=="open" ? "minimized" : "open");
+        let label = (sidebar.visibility == "open" ? "minimizeSidebar.label" : "showSidebar.label")
+        document.getElementById('social-socialtoolbar-menu').
+          setAttribute('label', str.getString(label));
       }
     }
   },
