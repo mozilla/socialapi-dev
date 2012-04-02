@@ -36,17 +36,22 @@ SocialToolbarButton.prototype = {
     let socialpanel = aWindow.document.getElementById("social-toolbar-menu");
     buildSocialPopupContents(aWindow, socialpanel);
   },
-  oncommand: function(event) {
-    if (event.target.getAttribute("id") != "socialdev-button")
-      return;
-    let aWindow = event.target.ownerDocument.defaultView;
+  onToggleEnabled: function() {
+    if (window.social.sidebar.visibility != "hidden") {
+      Services.obs.notifyObservers(null, "social-browsing-disabled", null);
+    }
+    else {
+      Services.obs.notifyObservers(null, "social-browsing-enabled", null);
+    }
+  },
+  onToggleVisible: function() {
     let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
                             .getService(Ci.mozISocialRegistry);
     if (!registry.currentProvider || !registry.currentProvider.enabled) {
       Services.console.logStringMessage("no service is enabled, so not opening the socialbar!")
     }
     else {
-      let sidebar = aWindow.social.sidebar;
+      let sidebar = window.social.sidebar;
       if (sidebar.visibility == 'hidden') {
         Services.obs.notifyObservers(null, "social-browsing-enabled", null);
       }
@@ -54,6 +59,17 @@ SocialToolbarButton.prototype = {
         sidebar.visibility = (sidebar.visibility=="open" ? "minimized" : "open");
       }
     }
+  },
+  
+  fireDemoNotification: function(event) {
+    // cannot fire a notification from inside an event, setTimeout is our friend
+    let notification = {};
+    Cu.import("resource://socialdev/modules/notification.js", notification);
+    window.setTimeout(notification.addNotification, 0, {
+        "_iconUrl": "http://1.gravatar.com/userimage/13041757/99cac03c3909baf0cd2f2a5e1cf1deed?size=36",
+        "_title": "Michael Hanson",
+        "_body" : "has demoed a Firefox feature"
+      });
   }
 }
 
@@ -86,7 +102,7 @@ function buildSocialPopupContents(window, socialpanel)
     return row;
   }
 
-  function renderProviderMenuitem(service, container) {
+  function renderProviderMenuitem(service, container, before) {
 
     let menuitem = window.document.createElementNS(XUL_NS, "menuitem");
     menuitem.setAttribute("label", service.name);
@@ -103,7 +119,7 @@ function buildSocialPopupContents(window, socialpanel)
         registry.currentProvider = service;
       });
     }
-    container.appendChild(menuitem);
+    container.insertBefore(menuitem, before);
 
     // render notifications...
     for (let i in service.notifications) {
@@ -115,81 +131,20 @@ function buildSocialPopupContents(window, socialpanel)
   let menuitem;
   let disabled = window.social.sidebar.disabled;
   try {
-    while (socialpanel.firstChild) socialpanel.removeChild(socialpanel.lastChild);
-    // Create top-level items
-    if (registry.currentProvider) {
-      if (!disabled) {
-        menuitem = window.document.createElementNS(XUL_NS, "menuitem");
-        if (window.social.sidebar.visibility == "open") {
-          menuitem.setAttribute("label", "Minimize social sidebar");
-          menuitem.addEventListener("click", function(event) {
-            // open about:social
-            window.social.sidebar.visibility = "minimized";
-          });
-        }
-        else {
-          menuitem.setAttribute("label", "Show social sidebar");
-          menuitem.addEventListener("click", function(event) {
-            // open about:social
-            window.social.sidebar.visibility = "open";
-          });
-        }
-        socialpanel.appendChild(menuitem);
-      }
-
-      menuitem = window.document.createElementNS(XUL_NS, "menuitem");
-      if (window.social.sidebar.visibility != "hidden") {
-        menuitem.setAttribute("label", "Disable social browsing");
-        menuitem.addEventListener("click", function(event) {
-          // open about:social
-          Services.obs.notifyObservers(null, "social-browsing-disabled", null);
-        });
-      }
-      else {
-        menuitem.setAttribute("label", "Enable social browsing");
-        menuitem.addEventListener("click", function(event) {
-          // open about:social
-          Services.obs.notifyObservers(null, "social-browsing-enabled", null);
-        });
-      }
-      socialpanel.appendChild(menuitem);
-
-      if (!disabled) {
-        socialpanel.appendChild(window.document.createElementNS(XUL_NS, "menuseparator"));
-    
-        // Create network rows...
-        registry.each(function(service) {
-          if (service.enabled)
-            renderProviderMenuitem(service, socialpanel);
-        });
-
-        // Add some demo stuff
-        socialpanel.appendChild(window.document.createElementNS(XUL_NS, "menuseparator"));
-        menuitem= window.document.createElementNS(XUL_NS, "menuitem");
-        menuitem.setAttribute("label", "Fire a demo notification");
-        menuitem.addEventListener("click", function(event) {
-          // cannot fire a notification from inside an event, setTimeout is our friend
-          let notification = {};
-          Cu.import("resource://socialdev/modules/notification.js", notification);
-          window.setTimeout(notification.addNotification, 0, {
-              "_iconUrl": "http://1.gravatar.com/userimage/13041757/99cac03c3909baf0cd2f2a5e1cf1deed?size=36",
-              "_title": "Michael Hanson",
-              "_body" : "has demoed a Firefox feature"
-            });
-        });
-        socialpanel.appendChild(menuitem);
-      }
-  
-      socialpanel.appendChild(window.document.createElementNS(XUL_NS, "menuseparator"));
+    let providerSep = document.getElementById('social-providers-separator');
+    let fc = providerSep.previousSibling;
+    while (fc.localName != 'menuseparator') {
+      socialpanel.removeChild(fc);
+      fc = providerSep.previousSibling;
     }
-
-    menuitem = window.document.createElementNS(XUL_NS, "menuitem");
-    menuitem.setAttribute("label", "Preferences");
-    menuitem.addEventListener("click", function(event) {
-      // open about:social
-      window.gBrowser.selectedTab = window.gBrowser.addTab("about:social");
-    });
-    socialpanel.appendChild(menuitem);
+    // Create top-level items
+    if (!disabled && registry.currentProvider) {
+      // Create network rows...
+      registry.each(function(service) {
+        if (service.enabled)
+          renderProviderMenuitem(service, socialpanel, providerSep);
+      });
+    }
 
   }
   catch (e) {

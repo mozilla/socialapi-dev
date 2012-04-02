@@ -1,4 +1,8 @@
 <?xml version="1.0"?>
+<!DOCTYPE overlay [
+<!ENTITY % socialDTD SYSTEM "chrome://socialdev/locale/social.dtd">
+%socialDTD;
+]>
 
 <?xml-stylesheet href="resource://socialdev/skin/browser.css" type="text/css"?>
 
@@ -26,10 +30,15 @@
 
   <commandset id="mainCommandSet">
     <command id="cmd_socialRecommend" oncommand="social.recommendButton.oncommand(event);"/>
+    <command id="cmd_socialPreferences" oncommand="openUILink('about:social')"/>
+    <command id="cmd_socialBrowsingToggle" oncommand="social.toolbarButton.onToggleEnabled()"/>
+    <command id="cmd_socialToolbarToggle" oncommand="social.toolbarButton.onToggleVisible()"/>
   </commandset>
   
   <keyset id="mainKeyset">
     <key id="key_socialRecommend" keycode="VK_F2" command="cmd_socialRecommend"/>
+    <!--<key id="key_socialBrowsingToggle" keycode="VK_F2" command="cmd_socialBrowsingToggle"/>-->
+    <!--<key id="key_socialToolbarToggle" keycode="VK_F2" command="cmd_socialToolbarToggle"/>-->
   </keyset>
 
 <toolbarpalette id="BrowserToolbarPalette">
@@ -37,18 +46,26 @@
     id="social-button-container"
     class= "chromeclass-toolbar-additional"
     removable="true"
-    title="Social">
+    title="&socialdev.label;">
     <toolbarbutton
       id="socialdev-button"
       class="toolbarbutton-1"
       type="menu-button"
-      tooltiptext="Social Browsing"
+      tooltiptext="&socialdev.toolbartext;"
       removable="true"
-      oncommand="social.toolbarButton.oncommand(event);">
+      command="cmd_socialToolbarToggle">
       <menupopup id="social-toolbar-menu"
         onpopupshown="social.toolbarButton.onpopupshown(event)"
         onpopupshowing="social.toolbarButton.onpopupshowing(event)"
-        onpopuphidden="social.toolbarButton.onpopuphidden(event)"/>
+        onpopuphidden="social.toolbarButton.onpopuphidden(event)">
+        <menuitem id="social-socialtoolbar-menu" label="Minimize/Show Social Sidebar" command="cmd_socialToolbarToggle"/>
+        <menuitem id="social-socialbrowsing-menu" label="Enable/Disable Social Browsing" command="cmd_socialBrowsingToggle"/>
+        <menuseparator/>
+        <menuseparator id="social-providers-separator"/>
+        <menuitem id="social-demonotification-menu" label="Fire a demo notification" oncommand="social.toolbarButton.fireDemoNotification(event)"/>
+        <menuseparator/>
+        <menuitem id="social-pref-menu" label="&socialdev.prefslabel;" command="cmd_socialPreferences"/>
+      </menupopup>
     </toolbarbutton>
   </toolbaritem>
 </toolbarpalette>
