@@ -6,6 +6,8 @@ skin      socialdev classic/1.0     skin/
 locale    socialdev en-US           locale/en-US/
 
 overlay	chrome://browser/content/browser.xul   chrome://socialdev/content/overlay.xul
+overlay	chrome://socialdev/content/socialWindow.xul chrome://socialdev/content/winSocial.xul       os=WINNT
+overlay	chrome://socialdev/content/socialWindow.xul chrome://browser/content/macBrowserOverlay.xul os=Darwin
 resource socialdev ./
 
 component {1a60fb78-b2d2-104b-b16a-7f497be5626d} components/registry.js
