@@ -132,7 +132,7 @@ SocialProvider.prototype = {
       throw new Error("cannot use disabled service "+this.origin);
     }
     if (this.workerURL) {
-      return frameworker.FrameWorker(this.workerURL);
+      return frameworker.FrameWorker(this.workerURL, this);
     }
     else {
       this._log("makeWorker cannot create worker: no workerURL specified");
@@ -209,6 +209,39 @@ SocialProvider.prototype = {
       }
     }, false);
   
-  }
+  },
 
+  setAmbientNotificationBackground: function(background) {
+    this.ambientNotificationBackground = background;
+    Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
+  },
+
+  createAmbientNotificationIcon: function(name) {
+    // if we already have one named, return that
+    if (!this.ambientNotificationIcons) this.ambientNotificationIcons = {};
+    if (this.ambientNotificationIcons[name]) {
+      return this.ambientNotificationIcons[name];      
+    }
+    var icon = {
+      setBackground: function(backgroundText) {
+        icon.background = backgroundText;
+        Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
+      },
+      setCounter: function(counter) {
+        icon.counter = counter;
+        Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
+      },
+      setContentPanel: function(url) {
+        icon.contentPanel = url;
+      }
+      // XXX change counter color, font, etc?
+    };
+    this.ambientNotificationIcons[name] = icon;
+    return icon;
+  },
+
+  setAmbientNotificationPortrait: function(url) {
+    this.ambientNotificationPortrait = url;
+    Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?    
+  }
 }

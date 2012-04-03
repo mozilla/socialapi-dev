@@ -19,7 +19,9 @@ function baseWidget(aWindow) {
 
   let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
                           .getService(Ci.mozISocialRegistry);
+
   let service = registry.currentProvider;
+  dump("baseWidget constructor: service is " + service + "\n");
   if (service) {
     this.setProvider(service);
   }
@@ -43,6 +45,9 @@ baseWidget.prototype = {
     }
     else if (aTopic == 'social-browsing-disabled') {
       this.disable();
+    } else if (aTopic == 'social-browsing-ambient-notification-changed') {
+      dump("baseWidget got ambientNotificationChanged\n");
+      this.ambientNotificationChanged();
     }
   },
   setProvider: function(aProvider) {},
@@ -50,6 +55,7 @@ baseWidget.prototype = {
   disable: function() {},
   show: function() {},
   hide: function() {},
+  ambientNotificationChanged: function() {},
   remove: function() {
     this._widget.parentNode.removeChild(this._widget);
   }

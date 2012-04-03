@@ -74,7 +74,7 @@ SocialToolbarButton.prototype = {
           setAttribute('label', str.getString("browserDisable.label"));
       }
       else {
-        sidebar.visibility = (sidebar.visibility=="open" ? "minimized" : "open");
+        sidebar.visibility = (sidebar.visibility=="open" ? "hidden" : "open");
         let label = (sidebar.visibility == "open" ? "minimizeSidebar.label" : "showSidebar.label")
         document.getElementById('social-socialtoolbar-menu').
           setAttribute('label', str.getString(label));

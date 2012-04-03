@@ -149,7 +149,7 @@ MessagePort.prototype = {
  * @param {String} url
  * @returns {Object} object containing a port and terminate function
  */
-function FrameWorker(url) {
+function FrameWorker(url, service) {
   log("creating worker for " + url);
   // first create the ports we are going to use and entangle them.
   let clientPort = new MessagePort('client');
@@ -209,6 +209,7 @@ function FrameWorker(url) {
 
         // chrome functions we want to have accessible to the sandbox
         sandbox.importFunction(notification.Notification, "Notification");
+        sandbox.importFunction(notification.createAmbientNotification(service), "AmbientNotification");
         sandbox.importFunction(function importScripts(uris) {
           if (uris instanceof Array) {
             for each(let uri in uris) {
@@ -261,7 +262,7 @@ function FrameWorker(url) {
         }, true);
       }
       catch(e) {
-        Cu.reportError("frameworker unable to inject for "+doc.location);
+        Cu.reportError("frameworker unable to inject for "+doc.location + " ("+ e + ")");
       }
     };
     Services.obs.addObserver(injectController, 'document-element-inserted', false);

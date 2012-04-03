@@ -11,6 +11,7 @@
   
   <script type="application/x-javascript" src="chrome://socialdev/content/recommendButtonWidget.js"/>
   <script type="application/x-javascript" src="chrome://socialdev/content/toolbarButtonWidget.js"/>
+  <script type="application/x-javascript" src="chrome://socialdev/content/toolbarStatusWidget.js"/>
   <script type="application/x-javascript" src="chrome://socialdev/content/sidebarWidget.js"/>
   <script type="application/x-javascript">
   <![CDATA[
@@ -23,6 +24,7 @@
         social.recommendButton = new SocialRecommendButton(window);
         social.sidebar = new SocialSidebar(window);
         social.toolbarButton = new SocialToolbarButton(window);
+        social.toolbarStatusArea = new SocialToolbarStatusArea(window);
       });
     }
   ]]>
@@ -71,6 +73,16 @@
         <menuitem id="social-pref-menu" label="&socialdev.prefslabel;" command="cmd_socialPreferences"/>
       </menupopup>
     </toolbarbutton>
+  </toolbaritem>
+
+  <toolbaritem
+    id="social-status-area-container"
+    class="chromeclass-toolbar-additional"
+    removable="true"
+    title="Social status area">
+
+    <div>This is the status area</div>
+
   </toolbaritem>
 </toolbarpalette>
 

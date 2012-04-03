@@ -51,4 +51,22 @@ function Notification(iconUrl, title, body) {
   return self;
 }
 
-var EXPORTED_SYMBOLS = ["addNotification", "Notification", "injectNotificationAPI"];
+function createAmbientNotification(service) {
+  // need to return per-service accessors...
+  return {
+    setBackground: function(background) {
+      service.setAmbientNotificationBackground(background);
+    },
+    
+    createNotificationIcon: function(name) {
+      return service.createAmbientNotificationIcon(name);
+    },
+
+    setPortrait: function(url) {
+      service.setAmbientNotificationPortrait(url);
+    }
+
+  }
+}
+
+var EXPORTED_SYMBOLS = ["addNotification", "Notification", "createAmbientNotification"];

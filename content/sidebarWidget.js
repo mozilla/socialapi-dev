@@ -38,7 +38,7 @@ SocialSidebar.prototype = {
     // We insert a vbox as a child of 'browser', as an immediate sibling of 'appcontent'
     let vbox = this._widget = document.createElementNS(XUL_NS, "vbox");
     vbox.setAttribute("id", "social-vbox");
-    vbox.setAttribute("width", "240");
+    vbox.setAttribute("width", "140");
     vbox.style.overflow = "hidden";
   
     let cropper = document.createElementNS(XUL_NS, "vbox");
@@ -215,16 +215,30 @@ SocialSidebar.prototype = {
     let cropper = document.getElementById('social-cropper');
   
     // Include the visual border thickness when calculating navbar height
+    if (!open) {
+      vbox.style.height = 0;
+    } else {
+      let sideWidth = vbox.getAttribute("width");
+      let openHeight = window.gBrowser.boxObject.height;// + navHeight;
+
+      //anchor.style.paddingRight = sideWidth + "px";
+      cropper.style.height = openHeight + "px";
+      sbrowser.style.height = openHeight + "px";
+    }
+
+    /*
     let isMac = Services.appinfo.OS == "Darwin";
-    let navHeight = anchor.clientHeight + (isMac ? 2 : 1);
-    let openHeight = window.gBrowser.boxObject.height + navHeight;
+    let navHeight = 0;//anchor.clientHeight + (isMac ? 2 : 1);
+    let openHeight = window.gBrowser.boxObject.height;// + navHeight;
     let sideWidth = vbox.getAttribute("width");
   
     let targetWindow = sbrowser.contentWindow.wrappedJSObject;
+
+    // MRH put it in content 
     anchor.style.paddingRight = sideWidth + "px";
-    cropper.style.height = (open ? openHeight : navHeight) + "px";
-    vbox.style.marginLeft = open ? "" : "-" + sideWidth + "px";
-    vbox.style.marginTop =  "-" + navHeight + "px";
+    cropper.style.height = (open ? openHeight : 0) + "px";
+    vbox.style.marginLeft = 0;//open ? "" : "-" + sideWidth + "px";
+    // vbox.style.marginTop =  "-" + navHeight + "px";
     sbrowser.style.height = openHeight + "px";
   
     // TODO XXX Need an API to inform the content page how big to make the header
@@ -233,7 +247,10 @@ SocialSidebar.prototype = {
       var headerStyle = header.style;
       headerStyle.height = navHeight - 1 + "px";
       headerStyle.overflow = "hidden";
-    }
+      
+      // MRH hack:
+      headerStyle.display = "none";
+    }*/
   },
   _findAnchor: function() {
     // Find the element which is our "anchor" - ie, the bottom toolbar which
