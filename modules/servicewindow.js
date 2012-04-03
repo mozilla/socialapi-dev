@@ -30,39 +30,6 @@ const SOCIAL_WINDOWTYPE = "socialdev:window";
 
 
 function serviceWindowMaker(options) {
-
-  // xul here is unused, keeping for reference until we finish the xul files.
-  var chatXul = '<?xml version="1.0"?>' +
-    (isMac ? '<?xul-overlay href="chrome://browser/content/macBrowserOverlay.xul"?>' : '<?xml-stylesheet href="chrome://browser/skin/" type="text/css"?>') +
-             '<window id="main-window" windowtype="' + SOCIAL_WINDOWTYPE + '" xmlns:html="'+ xhtmlNs+'" xmlns="' + xulNs + '" chromemargin="0,-1,-1,-1">';
-
-  // On Windows Vista/7, we attach an app menu:
-  if (isWin) {
-    if (options.title) {
-      chatXul +='<vbox style="-moz-appearance: -moz-window-titlebar; -moz-binding: url(\'chrome://global/content/bindings/general.xml#windowdragbox\')" '+
-    'id="titlebar"><hbox id="titlebar-content"><hbox id="appmenu-button-container"><button id="appmenu-button" type="menu" label="' +
-    options.title + '" style="-moz-user-focus: ignore;">' +
-    '<menupopup id="appmenu-popup"><menuitem id="appmenu_closeWindow" class="closeWindow" label="Close window" oncommand="closeWindow();" disabled="false"/></menupopup>'+
-          '</button>   </hbox> <spacer id="titlebar-spacer" flex="1"/>  <hbox id="titlebar-buttonbox-container" align="start"><hbox id="titlebar-buttonbox">     '+
-    '<toolbarbutton class="titlebar-button" id="titlebar-min" oncommand="window.minimize();"/>  '+
-    '<toolbarbutton class="titlebar-button" id="titlebar-max" oncommand="onTitlebarMaxClick();"/>  '+
-    '<toolbarbutton class="titlebar-button" id="titlebar-close" command="cmd_closeWindow"/></hbox></hbox>  </hbox></vbox>';
-    }
-  }
-  chatXul += '<browser id="browser" src="'+options.url+'" disablehistory="indeed" type="content-primary" flex="1" height="100%"/>' +
-      // #include browserMountPoints.inc
-      (isMac ? '<stringbundleset id="stringbundleset"/><commandset id="mainCommandSet"/><commandset id="baseMenuCommandSet"/><commandset id="placesCommands"/><broadcasterset id="mainBroadcasterSet"/><keyset id="mainKeyset"/><keyset id="baseMenuKeyset"/><menubar id="main-menubar"/>' : '') +
-      '<statusbar>'+
-        '<statusbarpanel id="security-display" crop="end" flex="1"/>'+
-        '<statusbarpanel id="security-status" crop="end" collapsed="true"/>'+
-        '<statusbarpanel class="statusbarpanel-progress" collapsed="true" id="statusbar-status">'+
-          '<progressmeter class="progressmeter-statusbar" id="statusbar-icon" mode="normal" value="0"/>'+
-        '</statusbarpanel>'+
-        '<statusbarpanel id="security-button" class="statusbarpanel-iconic"/>'+
-      '</statusbar>'+
-      '</window>';
-
-
   /* We now pass the options.url, which is the user app directly
     inserting it in the window, instead using the xul browser element
     that was here. This helped to make the session history work. */
@@ -76,6 +43,11 @@ function serviceWindowMaker(options) {
   // We catch the first DOMContentLoaded, which means the XUL
   // document has loaded.
   var onXULReady = function(evt) {
+    // for windows where we may have an app button.
+    let appButton = window.document.getElementById("appmenu-button");
+    if (appButton) {
+      appButton.setAttribute("label", options.title || '');
+    }
     if (options.onClose) {
       window.addEventListener("unload", function(e) {
         if (e.target == window.document) {
