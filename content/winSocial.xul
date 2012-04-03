@@ -4,6 +4,8 @@
 <overlay id="overlay"
          xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 
+  <menubar id="main-menubar" style="display: none"/>
+
   <vbox id="titlebar" style="-moz-appearance: -moz-window-titlebar; -moz-binding: url(\'chrome://global/content/bindings/general.xml#windowdragbox\')">
     <hbox id="titlebar-content">
       <hbox id="appmenu-button-container">
