@@ -25,6 +25,7 @@
   <broadcasterset id="mainBroadcasterSet"/>
   <keyset id="mainKeyset"/>
   <keyset id="baseMenuKeyset"/>
+  <vbox id="titlebar"/>
   <menubar id="main-menubar"/>
 
   <browser id="browser" src="about:blank" disablehistory="indeed" type="content-primary" flex="1" height="100%"/>

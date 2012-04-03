@@ -9,7 +9,7 @@
       <hbox id="appmenu-button-container">
         <button id="appmenu-button" type="menu" label="WindowTitleHere" style="-moz-user-focus: ignore;">
           <menupopup id="appmenu-popup">
-            <menuitem id="appmenu_closeWindow" class="closeWindow" label="Close window" oncommand="closeWindow();" disabled="false"/>
+            <menuitem id="appmenu_closeWindow" class="closeWindow" label="Close window" oncommand="window.close();" disabled="false"/>
           </menupopup>
         </button>
       </hbox>
