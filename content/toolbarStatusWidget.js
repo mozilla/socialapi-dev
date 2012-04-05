@@ -30,42 +30,7 @@ SocialToolbarStatusArea.prototype = {
   },
 
   renderAmbientNotification: function() {
-    try {
-      dump("Rendering Ambient Notification region\n");
-    // create some elements...
-    var XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
-
-    // XXX is window safe to use here?
-    var container = window.document.getElementById("social-status-area-container");
-    while (container.firstChild) container.removeChild(container.firstChild);
-
-    let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                            .getService(Ci.mozISocialRegistry);
-    if (!registry.currentProvider || !registry.currentProvider.enabled) {
-      Services.console.logStringMessage("no service is enabled, so not rendering status area");
-      return;
-    }
-
-    if (registry.currentProvider.ambientNotificationBackground) {
-      container.style.background = registry.currentProvider.ambientNotificationBackground;
-    } else {
-      container.style.backgroundColor = "rgb(152,152,152)";
-    }
-
-    // fiddly height adjustments.  There must be a CSS way to do this.
-    container.style.width="140px";
-    container.style.height="38px";//container.parentNode.clientHeight + "px";//"27px";
-    //dump("the container's parent node's paddingTop is " + container.parentNode.style.paddingTop + "\n");
-    container.style.paddingTop="6px";
-    container.style.paddingLeft="4px";
-    container.style.marginTop="-16px";
-    container.style.marginBottom="-16px";
-    container.style.marginRight="-4px";
-    
-    var iconBox = window.document.createElementNS(XUL_NS, "hbox");
-    iconBox.setAttribute("flex", 1);
-    for each (var icon in registry.currentProvider.ambientNotificationIcons)
-    {
+    function createNotificationIcon(icon) {
         var iconContainer = window.document.createElementNS("http://www.w3.org/1999/xhtml", "div");
         iconContainer.style.cursor = "pointer";
         iconContainer.style.height = "27px";
@@ -96,17 +61,89 @@ SocialToolbarStatusArea.prototype = {
         iconCounter.style.top= "-1px";
         iconCounter.style.zIndex= "1";
         iconCounter.style.textAlign= "center";
-        iconCounter.style.display = "none";
         
-        //iconCounter.style.display = "none";
-        //iconCounter.appendChild(window.document.createTextNode("1"));
-            
+        if (icon.counter) {
+          iconCounter.appendChild(window.document.createTextNode(icon.counter));
+        } else {
+          iconCounter.style.display = "none";
+        }
+
         iconContainer.appendChild(iconBackground);
         iconContainer.appendChild(iconImage);
         iconContainer.appendChild(iconCounter);  
         iconBox.appendChild(iconContainer);
+
+        iconContainer.addEventListener("click", function(e) {
+          var panel = window.document.getElementById("social-notification-panel");
+          var notifBrowser = window.document.getElementById("social-notification-browser");
+          
+          var resizer = function() {
+            var body = notifBrowser.contentDocument.getElementById("notif");
+            notifBrowser.width = body.clientWidth;
+            notifBrowser.height = body.clientHeight;
+            panel.width = body.clientWidth;
+            panel.height = body.clientHeight;              
+            notifBrowser.removeEventListener("DOMContentLoaded", resizer);
+          }
+          notifBrowser.addEventListener("DOMContentLoaded", resizer, false);
+          notifBrowser.setAttribute("src", icon.contentPanel);
+          panel.openPopup(iconContainer, "after_start",0,0,false, false);
+
+        }, false);
     }
-    container.appendChild(iconBox);
+
+
+    try {
+      dump("Rendering Ambient Notification region\n");
+    // create some elements...
+    var XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+
+    // XXX is window safe to use here?
+    var container = window.document.getElementById("social-status-area-container");
+    while (container.firstChild) container.removeChild(container.firstChild);
+
+    let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
+                            .getService(Ci.mozISocialRegistry);
+    if (!registry.currentProvider || !registry.currentProvider.enabled) {
+      Services.console.logStringMessage("no service is enabled, so not rendering status area");
+      return;
+    }
+
+   /* if (registry.currentProvider.ambientNotificationBackground) {
+      container.style.background = registry.currentProvider.ambientNotificationBackground;
+    } else {*/
+      //container.style.backgroundColor = "rgb(152,152,152)";
+    //}
+
+    // fiddly height adjustments.  There must be a CSS way to do this.
+    container.style.width="114px";
+    container.style.height="38px";//container.parentNode.clientHeight + "px";//"27px";
+    //dump("the container's parent node's paddingTop is " + container.parentNode.style.paddingTop + "\n");
+    container.style.paddingTop="6px";
+    container.style.paddingLeft="4px";
+    container.style.marginTop="-16px";
+    container.style.marginBottom="-16px";
+    container.style.marginRight="-4px";
+    
+    var iconStack = window.document.createElementNS(XUL_NS, "stack");
+
+    var iconBox = window.document.createElementNS(XUL_NS, "hbox");
+    iconBox.setAttribute("flex", 1);
+
+    var prettyGradient = window.document.createElementNS(XUL_NS, "div");
+    prettyGradient.style.background = "-moz-linear-gradient(to bottom, #e0e0e0, #333333)";
+    prettyGradient.style.border = "1px inset #333333";
+    prettyGradient.style.opacity = "0.2";
+    prettyGradient.style.width = "100%";
+    prettyGradient.style.height = "100%";
+    
+    for each (var icon in registry.currentProvider.ambientNotificationIcons)
+    {
+      createNotificationIcon(icon);   
+    }
+    iconStack.appendChild(prettyGradient);
+    iconStack.appendChild(iconBox);
+    container.appendChild(iconStack);
 
     if (registry.currentProvider.ambientNotificationPortrait) {
       var portrait = window.document.createElementNS(XUL_NS, "img");
@@ -118,7 +155,12 @@ SocialToolbarStatusArea.prototype = {
       portrait.style.border = "1px solid rgb(41,74,143)";
       portrait.style.height = "24px";// this is ignored.  why?
       portrait.style.width = "24px";
-      container.appendChild(portrait);
+      
+      // portrait on left:
+      container.insertBefore(portrait, container.firstChild);
+
+      // portrait on right:
+      // container.appendChild(portrait);
     }
 
     } catch (e) {
