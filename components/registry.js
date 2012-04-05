@@ -23,6 +23,19 @@ const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const FRECENCY = 100;
 
 dump("loading registry\n");
+
+function normalizeOriginPort(aURL) {
+  try {
+    let uri = Services.io.newURI(aURL, null, null);
+    if (uri.scheme == 'resource') return aURL;
+    return uri.hostPort;
+  }
+  catch(e) {
+    Cu.reportError(e);
+  }
+  return aURL;
+}
+
 /**
  * manifestRegistry is our internal api for registering manfist files that
    contain data for various services. It holds a registry of installed activity
@@ -30,6 +43,7 @@ dump("loading registry\n");
    services.
  */
 function ManifestRegistry() {
+  this._prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
   Services.obs.addObserver(this, "document-element-inserted", true);
   //Services.obs.addObserver(this, "origin-manifest-registered", true);
   //Services.obs.addObserver(this, "origin-manifest-unregistered", true);
@@ -57,7 +71,8 @@ ManifestRegistry.prototype = {
     }
   },
 
-  askUserInstall: function(aWindow, aCallback) {
+  askUserInstall: function(aWindow, aCallback, location) {
+    let origin = normalizeOriginPort(location);
     // BUG 732263 remember if the user says no, use that as a check in
     // discoverActivity so we bypass a lot of work.
     let nId = "manifest-ask-install";
@@ -66,6 +81,7 @@ ManifestRegistry.prototype = {
 
     // Check that we aren't already displaying our notification
     if (!notification) {
+      let self = this;
       let message = "This site supports additional functionality for Firefox, would you like to install it?";
 
       buttons = [{
@@ -76,9 +92,17 @@ ManifestRegistry.prototype = {
             aCallback();
           }, 0);
         }
+      },
+      {
+        label: "Don't ask again",
+        accessKey: 'd',
+        callback: function() {
+          self._prefBranch.setBoolPref(origin+".ignore", true);
+        }
       }];
       nBox.appendNotification(message, nId, null,
-                  nBox.PRIORITY_INFO_MEDIUM, buttons);
+                nBox.PRIORITY_INFO_MEDIUM,
+                buttons);
     }
   },
 
@@ -92,7 +116,9 @@ ManifestRegistry.prototype = {
       manifest.contentPatchPath = undefined;
       manifest.enabled = true;
       ManifestDB.put(location, manifest);
-      providerRegistryService.register(manifest);
+      let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
+                          .getService(Ci.mozISocialRegistry);
+      registry.register(manifest);
       // XXX notification of installation
     }
 
@@ -115,7 +141,7 @@ ManifestRegistry.prototype = {
                      .rootTreeItem
                      .QueryInterface(Ci.nsIInterfaceRequestor)
                      .getInterface(Ci.nsIDOMWindow);
-      this.askUserInstall(xulWindow, installManifest)
+      this.askUserInstall(xulWindow, installManifest, location)
       return;
     }
   },
@@ -156,6 +182,12 @@ ManifestRegistry.prototype = {
     // 2. does the user have a login for the site, if so, load it
     // 3. does the fecency for the site warrent loading the manifest and
     //    offering to the user?
+    try {
+      if (this._prefBranch.getBoolPref(aDocument.defaultView.location.host+".ignore")) {
+        return;
+      }
+    } catch(e) {}
+
     let self = this;
     let links = aDocument.getElementsByTagName('link');
     for (let index=0; index < links.length; index++) {
