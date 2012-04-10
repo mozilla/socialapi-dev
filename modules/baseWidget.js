@@ -9,13 +9,19 @@ const EXPORTED_SYMBOLS = ["baseWidget"];
 
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
+const topics = [
+  'social-service-init-ready',
+  'social-service-changed',
+  'social-browsing-enabled',
+  'social-browsing-disabled'
+];
+
 function baseWidget(aWindow) {
   this.create(aWindow);
 
-  Services.obs.addObserver(this, 'social-service-init-ready', false);
-  Services.obs.addObserver(this, 'social-service-changed', false);
-  Services.obs.addObserver(this, 'social-browsing-enabled', false);
-  Services.obs.addObserver(this, 'social-browsing-disabled', false);
+  for each (let topic in topics) {
+    Services.obs.addObserver(this, topic, false);
+  }
 
   let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
                           .getService(Ci.mozISocialRegistry);
@@ -57,6 +63,11 @@ baseWidget.prototype = {
   hide: function() {},
   ambientNotificationChanged: function() {},
   remove: function() {
-    this._widget.parentNode.removeChild(this._widget);
+    for each (let topic in topics) {
+      Services.obs.removeObserver(this, topic, false);
+    }
+    if (this._widget) {
+      this._widget.parentNode.removeChild(this._widget);
+    }
   }
 }
