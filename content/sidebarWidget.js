@@ -217,7 +217,11 @@ SocialSidebar.prototype = {
     let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
                             .getService(Ci.mozISocialRegistry);
     this.setProvider(registry.currentProvider);
-    this.visible = true; // always visible when re-enabled.
+    try {
+      this.visible = this._prefBranch.getBoolPref("visible"); 
+    } catch(e) {
+      this.visible = true;
+    }
   },
   disable: function() {
     // turn everything off.
