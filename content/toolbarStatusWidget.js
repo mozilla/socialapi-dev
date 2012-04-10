@@ -15,19 +15,13 @@ function SocialToolbarStatusArea() {
   window.document.persist("nav-bar", "currentset");
   
   Services.obs.addObserver(this, 'social-browsing-ambient-notification-changed', false);
-
-  // this is a bit screwed up, but works for now.
-  if (window.social.sidebar.enabled) {
-    this.enable();
-  } else {
-    this.disable();
-  }
 }
 
 SocialToolbarStatusArea.prototype = {
   __proto__: baseWidget.prototype,
   create: function(aWindow) {
   },
+
   remove: function() {
   },
 
@@ -174,67 +168,57 @@ SocialToolbarStatusArea.prototype = {
       dump("\n\n\n" + e + "\n\n\n");
     } 
   },
+
   onpopupshown: function(event) {
     let aWindow = event.target.ownerDocument.defaultView;
-    var sbrowser = aWindow.social.sidebar.browser;
-    sbrowser.style.opacity = 0.3;
+    if (aWindow.social.sidebar && aWindow.social.sidebar.browser) {
+      aWindow.social.sidebar.browser.style.opacity = 0.3;
+    }
   },
   onpopuphidden: function(event) {
     let aWindow = event.target.ownerDocument.defaultView;
-    var sbrowser = aWindow.social.sidebar.browser;
-    sbrowser.style.opacity = 1;
+    if (aWindow.social.sidebar && aWindow.social.sidebar.browser) {
+      aWindow.social.sidebar.browser.style.opacity = 1;
+    }
   },
   onpopupshowing: function(event) {
     let aWindow = event.target.ownerDocument.defaultView;
     let popup = aWindow.document.getElementById("social-statusarea-popup");
     buildSocialPopupContents(aWindow, popup);
+    // and the other misc elements on the popup.
+    // sidebar visiblity
+    let uieltSidebar = document.getElementById('social-statusarea-togglesidebar');
+    if (aWindow.social.enabled) {
+      let str = document.getElementById("socialdev-strings");
+      let visible = aWindow.social.sidebar && aWindow.social.sidebar.visible;
+      let label = visible ? "hideSidebar.label" : "showSidebar.label";
+      uieltSidebar.setAttribute('label', str.getString(label));
+      uieltSidebar.removeAttribute("hidden");
+    } else {
+      uieltSidebar.setAttribute("hidden", "true");
+    }
   },
 
   enable: function() {
     let str = document.getElementById("socialdev-strings");
     let uieltSocial = document.getElementById('social-statusarea-togglesocial');
-    let uieltSidebar = document.getElementById('social-statusarea-togglesidebar');
-    let uicontainer = document.getElementById("social-status-content-container");
-    uieltSidebar.removeAttribute("hidden");
     uieltSocial.setAttribute('label', str.getString("browserDisable.label"));
-    // is it visible?
-    let label = window.social.sidebar.visible ? "hideSidebar.label" : "showSidebar.label";
-    uieltSidebar.setAttribute('label', str.getString(label));
+    let uicontainer = document.getElementById("social-status-content-container");
     uicontainer.removeAttribute("hidden");
   },
 
   disable: function() {
     let str = document.getElementById("socialdev-strings");
     let uieltSocial = document.getElementById('social-statusarea-togglesocial');
-    let uieltSidebar = document.getElementById('social-statusarea-togglesidebar');
-    let uicontainer = document.getElementById("social-status-content-container");
     uieltSocial.setAttribute('label', str.getString("browserEnable.label"));
-    // Hide the disabled items.
-    uieltSidebar.setAttribute("hidden", "true");
     // reset the image to the default.
     var image = window.document.getElementById("social-statusarea-service-image");
     image.setAttribute("src", "chrome://socialdev/skin/social.png");
     // hide the container for the notifications.
+    let uicontainer = document.getElementById("social-status-content-container");
     uicontainer.setAttribute("hidden", "true");
-    // XXX - other items???
   },
 
-  onToggleEnabled: function() {
-    var str = document.getElementById("socialdev-strings");
-    let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                            .getService(Ci.mozISocialRegistry);
-    if (!registry.currentProvider || !registry.currentProvider.enabled) {
-      Services.console.logStringMessage("no service is enabled, so not opening the socialbar!")
-      return;
-    }
-
-    window.social.sidebar.enabled = !window.social.sidebar.enabled;
-    if (window.social.sidebar.enabled) {
-      Services.obs.notifyObservers(null, "social-browsing-enabled", null);
-    } else {
-      Services.obs.notifyObservers(null, "social-browsing-disabled", null);
-    }
-  },
   onToggleVisible: function() {
     var str = document.getElementById("socialdev-strings");
     let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
@@ -243,12 +227,8 @@ SocialToolbarStatusArea.prototype = {
       Services.console.logStringMessage("no service is enabled, so not opening the socialbar!")
       return;
     }
-    let sidebar = window.social.sidebar;
-    sidebar.visible = !sidebar.visible;
-    // call .enable - that also checks visibility...
-    this.enable();
   },
-  
+
   ambientNotificationChanged: function() {
     this.renderAmbientNotification();
   }
@@ -305,7 +285,7 @@ function buildSocialPopupContents(window, socialpanel)
 
   try {
     let menuitem;
-    let disabled = !window.social.sidebar.enabled;
+    let disabled = !window.social.enabled;
     let providerSep = document.getElementById('social-statusarea-providers-separator');
     let fc = providerSep.previousSibling;
     while (fc.localName != 'menuseparator') {

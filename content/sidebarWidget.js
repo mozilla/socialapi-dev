@@ -105,20 +105,6 @@ SocialSidebar.prototype = {
         self.reflow();
       }
     });
-    try {
-      // XXX - this is all messed up.  If we aren't enabled we shouldn't have
-      // bothered to create the elements.  If we attempt to create them
-      // hidden things go wrong when setProvider() is called (as
-      // sbrowser.contentWindow will not yet exist).
-      // so for now, we force things visible if not enabled.
-      if (this._prefBranch.getBoolPref("enabled")) {
-        this._set_enabled(true);
-        this.visible = this._prefBranch.getBoolPref("visible");
-      } else {
-        this.visible = false;
-      }
-    }
-    catch (e) {Cu.reportError(e);}
   },
   attachContextMenu: function() {
     let {document, gBrowser} = this._widget.ownerDocument.defaultView;
@@ -177,7 +163,7 @@ SocialSidebar.prototype = {
   setProvider: function(aService) {
     let self = this;
 
-    if (!aService.enabled || !this.enabled) {
+    if (!aService.enabled || !window.social.enabled) {
       return;// sanity check
     }
   
@@ -228,38 +214,26 @@ SocialSidebar.prototype = {
       }
     }, true);
   },
-  // Sets the enabled property but does *not* change visibility
-  _set_enabled: function(val) {
-    if (val === this.enabled) {
-      return; // nothing to do!
-    }
+  enable: function() {
     let sbrowser = this.browser;
-    if (val) {
-      let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                              .getService(Ci.mozISocialRegistry);
-      this.setProvider(registry.currentProvider);
-    } else {
-      // this sidebar is displaying this service;
-      // turn everything off.
-      try {
-        if (sbrowser.watcher)
-          sbrowser.removeProgressListener(sbrowser.watcher);
-      }
-      catch(e) {
-        Cu.reportError(e);
-      }
-      sbrowser.watcher = null;
-      sbrowser.contentWindow.location = "about:blank";
+    let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
+                            .getService(Ci.mozISocialRegistry);
+    this.setProvider(registry.currentProvider);
+    this.visible = true; // always visible when re-enabled.
+  },
+  disable: function() {
+    // turn everything off.
+    let sbrowser = this.browser;
+    try {
+      if (sbrowser.watcher)
+        sbrowser.removeProgressListener(sbrowser.watcher);
     }
-    this._prefBranch.setBoolPref("enabled", val);
-  },
-  set enabled(val) {
-    this._set_enabled(val);
-    // if it is being enabled, we want it visible (and obviously vice-versa)
-    this.browser.visible = val;
-  },
-  get enabled() {
-    return this._prefBranch.getBoolPref("enabled")
+    catch(e) {
+      Cu.reportError(e);
+    }
+    sbrowser.visible = false;
+    sbrowser.watcher = null;
+    sbrowser.contentWindow.location = "about:blank";
   },
   get visible() {
     return this.browser.visible;

@@ -13,21 +13,7 @@
   <script type="application/x-javascript" src="chrome://socialdev/content/recommendButtonWidget.js"/>
   <script type="application/x-javascript" src="chrome://socialdev/content/toolbarStatusWidget.js"/>
   <script type="application/x-javascript" src="chrome://socialdev/content/sidebarWidget.js"/>
-  <script type="application/x-javascript">
-  <![CDATA[
-    {
-      // quick hack to move to an overlay
-      window.social = {};
-      // due to what we are doing in the sidebar, we have to wait for the
-      // chromeWindow to load before we do our magic
-      window.addEventListener('load', function(e) {
-        social.recommendButton = new SocialRecommendButton(window);
-        social.sidebar = new SocialSidebar(window);
-        social.toolbarStatusArea = new SocialToolbarStatusArea(window);
-      });
-    }
-  ]]>
-  </script>
+  <script type="application/x-javascript" src="chrome://socialdev/content/main.js"/>
 
   <stringbundleset id="stringbundleset">  
     <stringbundle src="chrome://socialdev/locale/social.properties" id="socialdev-strings" />   
@@ -36,8 +22,8 @@
   <commandset id="mainCommandSet">
     <command id="cmd_socialRecommend" oncommand="social.recommendButton.oncommand(event);"/>
     <command id="cmd_socialPreferences" oncommand="openUILink('about:social')"/>
-    <command id="cmd_socialBrowsingToggle" oncommand="social.toolbarStatusArea.onToggleEnabled()"/>
-    <command id="cmd_socialToolbarToggle" oncommand="social.toolbarStatusArea.onToggleVisible()"/>
+    <command id="cmd_socialBrowsingToggle" oncommand="social.enabled = !social.enabled;"/>
+    <command id="cmd_socialToolbarToggle" oncommand="social.sidebar.visible = !social.sidebar.visible;"/>
   </commandset>
   
   <keyset id="mainKeyset">
