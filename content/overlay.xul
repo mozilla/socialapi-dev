@@ -32,11 +32,17 @@
     <!--<key id="key_socialToolbarToggle" keycode="VK_F2" command="cmd_socialToolbarToggle"/>-->
   </keyset>
 
+  <menupopup id="menu_ToolsPopup">
+    <menuitem id="social-togglenable-toolsmenu" label="Enable Social Browsing"
+              command='cmd_socialBrowsingToggle'/>
+  </menupopup>
+
 <toolbarpalette id="BrowserToolbarPalette">
   <toolbaritem
     id="social-status-area-container"
     class="chromeclass-toolbar-additional social-status-area-container"
     removable="true"
+    hidden="true"
     title="Social status area">
 
     <div class="social-statusarea-contentbox" flex="1">

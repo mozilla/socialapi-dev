@@ -32,35 +32,17 @@ SocialToolbarStatusArea.prototype = {
   renderAmbientNotification: function() {
     function createNotificationIcon(icon) {
         var iconContainer = window.document.createElementNS("http://www.w3.org/1999/xhtml", "div");
-        iconContainer.style.cursor = "pointer";
-        iconContainer.style.height = "27px";
-        iconContainer.style.width = "24px";
-        iconContainer.style.position = "relative";
-        iconContainer.style.marginTop = "-5px";
-        //iconContainer.style.border = "1px solid rgb(59,89,152)";
-                
+        iconContainer.setAttribute("class", "social-notification-icon-container");
+
         var iconBackground = window.document.createElementNS("http://www.w3.org/1999/xhtml", "div");
         iconBackground.setAttribute("class", "social-notification-icon-background-highlight");
 
         var iconImage = window.document.createElementNS("http://www.w3.org/1999/xhtml", "div");
+        iconImage.setAttribute("class", "social-notification-icon-image");
         iconImage.style.background = icon.background;
-        iconImage.style.width = "24px";
-        iconImage.style.height = "31px";
         
         var iconCounter = window.document.createElementNS(XUL_NS, "div");        
-        iconCounter.style.backgroundColor = "rgb(240,61,37)";
-        iconCounter.style.border = "1px solid rgb(216,55,34)";
-        iconCounter.style.boxShadow = "0px 1px 0px rgba(0,39,121,0.77)";
-        iconCounter.style.paddingRight = "1px";
-        iconCounter.style.paddingLeft = "1px";
-        iconCounter.style.color = "white";
-        iconCounter.style.fontSize = "9px";
-        iconCounter.style.fontWeight = "bold";
-        iconCounter.style.position= "absolute";
-        iconCounter.style.right= "-3px";
-        iconCounter.style.top= "-1px";
-        iconCounter.style.zIndex= "1";
-        iconCounter.style.textAlign= "center";
+        iconCounter.setAttribute("class", "social-notification-icon-counter");
         
         if (icon.counter) {
           iconCounter.appendChild(window.document.createTextNode(icon.counter));
@@ -134,29 +116,16 @@ SocialToolbarStatusArea.prototype = {
     container.appendChild(iconStack);
 
     var portraitBox = window.document.createElementNS(XUL_NS, "div");
+    portraitBox.setAttribute("class", "social-portrait-box");
     portraitBox.align = "start";
-    portraitBox.style.marginRight = "4px";
-    portraitBox.style.marginTop = "0px";
-    portraitBox.style.marginBottom = "2px";
-    //portraitBox.style.border = "1px solid rgb(41,74,143)";
-    portraitBox.style.height = "20px";// this is ignored.  why?
-    portraitBox.style.width = "20px";
     container.insertBefore(portraitBox, container.firstChild);
 
     if (registry.currentProvider.ambientNotificationPortrait) {
 
 //      var portrait = window.document.createElementNS("http://www.w3.org/1999/xhtml", "div");
       var portrait = window.document.createElementNS(XUL_NS, "image");
-      //portrait.style.backgroundImage = "url('" + registry.currentProvider.ambientNotificationPortrait + "')"; 
+      portrait.setAttribute("class", "social-portrait-image");
       portrait.setAttribute("src", registry.currentProvider.ambientNotificationPortrait);
-      
-      //portrait.style.display = "inline-block";
-      //portrait.style.backgroundSize = "cover";
-      portrait.width = "20px";
-      portrait.height = "20px";
-      portrait.style.height = "20px";
-      portrait.style.width = "20px";
-      
       // portrait on left:
       portraitBox.appendChild(portrait);
 
@@ -203,20 +172,26 @@ SocialToolbarStatusArea.prototype = {
     let str = document.getElementById("socialdev-strings");
     let uieltSocial = document.getElementById('social-statusarea-togglesocial');
     uieltSocial.setAttribute('label', str.getString("browserDisable.label"));
+    let menu = document.getElementById('social-togglenable-toolsmenu');
+    menu.setAttribute('label', str.getString("browserDisable.label"));
     let uicontainer = document.getElementById("social-status-content-container");
     uicontainer.removeAttribute("hidden");
+    document.getElementById("social-status-area-container").removeAttribute('hidden');
   },
 
   disable: function() {
     let str = document.getElementById("socialdev-strings");
     let uieltSocial = document.getElementById('social-statusarea-togglesocial');
     uieltSocial.setAttribute('label', str.getString("browserEnable.label"));
+    let menu = document.getElementById('social-togglenable-toolsmenu');
+    menu.setAttribute('label', str.getString("browserEnable.label"));
     // reset the image to the default.
     var image = window.document.getElementById("social-statusarea-service-image");
     image.setAttribute("src", "chrome://socialdev/skin/social.png");
     // hide the container for the notifications.
     let uicontainer = document.getElementById("social-status-content-container");
     uicontainer.setAttribute("hidden", "true");
+    document.getElementById("social-status-area-container").setAttribute('hidden', true);
   },
 
   onToggleVisible: function() {
