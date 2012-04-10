@@ -300,7 +300,9 @@ SocialSidebar.prototype = {
             // within it's domain/pathPrefix
             if (aStateFlags & Components.interfaces.nsIWebProgressListener.STATE_START &&
                 aStateFlags & Components.interfaces.nsIWebProgressListener.STATE_IS_DOCUMENT) {
-              if (aRequest.name.indexOf(sbrowser.service.URLPrefix) != 0) {
+              // XXX allow file urls for demo purposes
+              if (aRequest.name.indexOf("file://") != 0 &&
+                  aRequest.name.indexOf(sbrowser.service.URLPrefix) != 0) {
                 Services.console.logStringMessage("blocking document change to "+aRequest.name);
                 aRequest.cancel(Cr.NS_BINDING_ABORTED);
                 let parentWin = Services.wm.getMostRecentWindow("navigator:browser");

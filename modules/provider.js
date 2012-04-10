@@ -155,10 +155,11 @@ SocialProvider.prototype = {
     let self = this;
     this._log("attachToWindow");
     var worker = this.makeWorker(targetWindow.wrappedJSObject);
-  
-    worker.port.onmessage = function(e) {
-      self._log("worker message: " + JSON.stringify(e));
-    };
+    if (worker) {
+      worker.port.onmessage = function(e) {
+        self._log("worker message: " + JSON.stringify(e));
+      };
+    }
 
     let sandbox = new Cu.Sandbox(targetWindow, {
       sandboxPrototype: targetWindow,
