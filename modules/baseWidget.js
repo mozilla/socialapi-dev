@@ -22,17 +22,6 @@ function baseWidget(aWindow) {
   for each (let topic in topics) {
     Services.obs.addObserver(this, topic, false);
   }
-
-  let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                          .getService(Ci.mozISocialRegistry);
-
-  let service = registry.currentProvider;
-  dump("baseWidget constructor: service is " + service + "\n");
-  if (service) {
-    if (registry.currentProvider)
-      this.enable();
-    this.setProvider(service);
-  }
 }
 baseWidget.prototype = {
   create: function(aWindow) {},
