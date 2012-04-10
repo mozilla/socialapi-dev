@@ -14,8 +14,9 @@ function SocialToolbarStatusArea() {
   navbar.setAttribute("currentset", newset );
   window.document.persist("nav-bar", "currentset");
   
-
   Services.obs.addObserver(this, 'social-browsing-ambient-notification-changed', false);
+
+  this.renderPopupFromCurrentState();
 }
 
 SocialToolbarStatusArea.prototype = {
@@ -170,31 +171,54 @@ SocialToolbarStatusArea.prototype = {
   },
   onpopupshown: function(event) {
     let aWindow = event.target.ownerDocument.defaultView;
-    var sbrowser = aWindow.document.getElementById("social-status-sidebar-browser");
+    var sbrowser = aWindow.social.sidebar.browser;
     sbrowser.style.opacity = 0.3;
   },
   onpopuphidden: function(event) {
     let aWindow = event.target.ownerDocument.defaultView;
-    var sbrowser = aWindow.document.getElementById("social-status-sidebar-browser");
+    var sbrowser = aWindow.social.sidebar.browser;
     sbrowser.style.opacity = 1;
   },
   onpopupshowing: function(event) {
     let aWindow = event.target.ownerDocument.defaultView;
-    //let socialpanel = aWindow.document.getElementById("social-toolbar-menu");
-    //buildSocialPopupContents(aWindow, socialpanel);
+    let popup = aWindow.document.getElementById("social-statusarea-popup");
+    buildSocialPopupContents(aWindow, popup);
   },
+
+  renderPopupFromCurrentState: function() {
+    var str = document.getElementById("socialdev-strings");
+    let uieltSocial = document.getElementById('social-statusarea-togglesocial');
+    let uieltSidebar = document.getElementById('social-statusarea-togglesidebar');
+    if (window.social.sidebar.enabled) {
+      uieltSidebar.removeAttribute("hidden");
+      uieltSocial.setAttribute('label', str.getString("browserDisable.label"));
+      // is it visible?
+      let label = window.social.sidebar.visible ? "hideSidebar.label" : "showSidebar.label";
+      uieltSidebar.setAttribute('label', str.getString(label));
+    } else {
+      uieltSocial.setAttribute('label', str.getString("browserEnable.label"));
+      // Hide the disabled items.
+      uieltSidebar.setAttribute("hidden", "true");
+      // XXX - other items???
+    }
+  },
+
   onToggleEnabled: function() {
     var str = document.getElementById("socialdev-strings");
-    if (window.social.sidebar.visibility != "hidden") {
-      Services.obs.notifyObservers(null, "social-browsing-disabled", null);
-      document.getElementById('social-socialbrowsing-menu').
-        setAttribute('label', str.getString("browserEnable.label"));
+    let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
+                            .getService(Ci.mozISocialRegistry);
+    if (!registry.currentProvider || !registry.currentProvider.enabled) {
+      Services.console.logStringMessage("no service is enabled, so not opening the socialbar!")
+      return;
     }
-    else {
+
+    window.social.sidebar.enabled = !window.social.sidebar.enabled;
+    if (window.social.sidebar.enabled) {
       Services.obs.notifyObservers(null, "social-browsing-enabled", null);
-      document.getElementById('social-socialbrowsing-menu').
-        setAttribute('label', str.getString("browserDisable.label"));
+    } else {
+      Services.obs.notifyObservers(null, "social-browsing-disabled", null);
     }
+    this.renderPopupFromCurrentState();
   },
   onToggleVisible: function() {
     var str = document.getElementById("socialdev-strings");
@@ -202,21 +226,11 @@ SocialToolbarStatusArea.prototype = {
                             .getService(Ci.mozISocialRegistry);
     if (!registry.currentProvider || !registry.currentProvider.enabled) {
       Services.console.logStringMessage("no service is enabled, so not opening the socialbar!")
+      return;
     }
-    else {
-      let sidebar = window.social.sidebar;
-      if (sidebar.visibility == 'hidden') {
-        Services.obs.notifyObservers(null, "social-browsing-enabled", null);
-        document.getElementById('social-socialbrowsing-menu').
-          setAttribute('label', str.getString("browserDisable.label"));
-      }
-      else {
-        sidebar.visibility = (sidebar.visibility=="open" ? "minimized" : "open");
-        let label = (sidebar.visibility == "open" ? "minimizeSidebar.label" : "showSidebar.label")
-        document.getElementById('social-socialtoolbar-menu').
-          setAttribute('label', str.getString(label));
-      }
-    }
+    let sidebar = window.social.sidebar;
+    sidebar.visible = !sidebar.visible;
+    this.renderPopupFromCurrentState();
   },
   
   ambientNotificationChanged: function() {
@@ -225,3 +239,78 @@ SocialToolbarStatusArea.prototype = {
 }
 
 
+const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+
+function buildSocialPopupContents(window, socialpanel)
+{
+  let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
+                          .getService(Ci.mozISocialRegistry);
+
+  function renderNotificationRow(img, title, text) {
+    let row = window.document.createElementNS(HTML_NS, "div");
+    row.setAttribute("style", "clear:all;cursor:pointer;margin-left:8px;height:32px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:-moz-system-font;border-right:");
+    
+    let imgElem = window.document.createElementNS(HTML_NS, "img");
+    imgElem.setAttribute("src", img);
+    imgElem.setAttribute("style", "width:28px;height:28px;margin-right:8px;float:left");
+
+    let titleElem = window.document.createElementNS(HTML_NS, "span");
+    titleElem.appendChild(window.document.createTextNode(title));
+    titleElem.setAttribute("style", "font-weight:bold");
+
+    let textElem = window.document.createElementNS(HTML_NS, "span");
+    textElem.appendChild(window.document.createTextNode(((text.length > 0 && text[0] != ' ') ? " " : "")+ text));
+
+    row.appendChild(imgElem);
+    row.appendChild(titleElem);
+    row.appendChild(textElem);
+    return row;
+  }
+
+  function renderProviderMenuitem(service, container, before) {
+
+    let menuitem = window.document.createElementNS(XUL_NS, "menuitem");
+    menuitem.setAttribute("label", service.name);
+    menuitem.setAttribute("class", "menuitem-iconic");
+    menuitem.setAttribute("image", service.iconURL);
+    menuitem.setAttribute("type", "radio");
+    menuitem.setAttribute("name", "socialprovider");
+    if (service == registry.currentProvider) {
+      // no need for a click handler if we're selected
+      menuitem.setAttribute("checked", true);
+    }
+    else {
+      menuitem.addEventListener("click", function(event) {
+        registry.currentProvider = service;
+      });
+    }
+    container.insertBefore(menuitem, before);
+  }
+
+  try {
+    let menuitem;
+    let disabled = !window.social.sidebar.enabled;
+    let providerSep = document.getElementById('social-statusarea-providers-separator');
+    let fc = providerSep.previousSibling;
+    while (fc.localName != 'menuseparator') {
+      socialpanel.removeChild(fc);
+      fc = providerSep.previousSibling;
+    }
+    // if we are disabled we don't want the list of providers nor the separators
+    if (disabled) {
+      fc.setAttribute("hidden", "true");
+      providerSep.setAttribute("hidden", "true");
+    } else {
+      fc.removeAttribute("hidden");
+      providerSep.removeAttribute("hidden");
+      // Create top-level items
+      registry.each(function(service) {
+        if (service.enabled)
+          renderProviderMenuitem(service, socialpanel, providerSep);
+      });
+    }
+  }
+  catch (e) {
+    Cu.reportError("Error creating socialpopupcontents: " + e);
+  }
+}

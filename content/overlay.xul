@@ -11,7 +11,6 @@
          xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
   
   <script type="application/x-javascript" src="chrome://socialdev/content/recommendButtonWidget.js"/>
-  <script type="application/x-javascript" src="chrome://socialdev/content/toolbarButtonWidget.js"/>
   <script type="application/x-javascript" src="chrome://socialdev/content/toolbarStatusWidget.js"/>
   <script type="application/x-javascript" src="chrome://socialdev/content/sidebarWidget.js"/>
   <script type="application/x-javascript">
@@ -24,7 +23,6 @@
       window.addEventListener('load', function(e) {
         social.recommendButton = new SocialRecommendButton(window);
         social.sidebar = new SocialSidebar(window);
-        social.toolbarButton = new SocialToolbarButton(window);
         social.toolbarStatusArea = new SocialToolbarStatusArea(window);
       });
     }
@@ -38,8 +36,8 @@
   <commandset id="mainCommandSet">
     <command id="cmd_socialRecommend" oncommand="social.recommendButton.oncommand(event);"/>
     <command id="cmd_socialPreferences" oncommand="openUILink('about:social')"/>
-    <command id="cmd_socialBrowsingToggle" oncommand="social.toolbarButton.onToggleEnabled()"/>
-    <command id="cmd_socialToolbarToggle" oncommand="social.toolbarButton.onToggleVisible()"/>
+    <command id="cmd_socialBrowsingToggle" oncommand="social.toolbarStatusArea.onToggleEnabled()"/>
+    <command id="cmd_socialToolbarToggle" oncommand="social.toolbarStatusArea.onToggleVisible()"/>
   </commandset>
   
   <keyset id="mainKeyset">
@@ -49,33 +47,6 @@
   </keyset>
 
 <toolbarpalette id="BrowserToolbarPalette">
-  <toolbaritem
-    id="social-button-container"
-    class= "chromeclass-toolbar-additional"
-    removable="true"
-    title="&socialdev.label;">
-    <toolbarbutton
-      id="socialdev-button"
-      class="toolbarbutton-1"
-      type="menu-button"
-      tooltiptext="&socialdev.toolbartext;"
-      removable="true"
-      command="cmd_socialToolbarToggle">
-      <menupopup id="social-toolbar-menu"
-        onpopupshown="social.toolbarButton.onpopupshown(event)"
-        onpopupshowing="social.toolbarButton.onpopupshowing(event)"
-        onpopuphidden="social.toolbarButton.onpopuphidden(event)">
-        <menuitem id="social-socialtoolbar-menu" label="&socialtoobar.label;" command="cmd_socialToolbarToggle"/>
-        <menuitem id="social-socialbrowsing-menu" label="&socialenable.label;" command="cmd_socialBrowsingToggle"/>
-        <menuseparator/>
-        <menuseparator id="social-providers-separator"/>
-        <menuitem id="social-demonotification-menu" label="Fire a demo notification" oncommand="social.toolbarButton.fireDemoNotification(event)"/>
-        <menuseparator/>
-        <menuitem id="social-pref-menu" label="&socialdev.prefslabel;" command="cmd_socialPreferences"/>
-      </menupopup>
-    </toolbarbutton>
-  </toolbaritem>
-
   <toolbaritem
     id="social-status-area-container"
     class="chromeclass-toolbar-additional social-status-area-container"
@@ -92,13 +63,19 @@
               class="social-statusarea-service-image"/>
 
             <image class="social-statusarea-dropmarker-image"/>
-            <menupopup class="social-statusarea-popup"
-                           anonid="social-statusarea-popup">
+            <menupopup
+              class="social-statusarea-popup"
+              id="social-statusarea-popup"
+              anonid="social-statusarea-popup"
+              onpopupshown="social.toolbarStatusArea.onpopupshown(event)"
+              onpopupshowing="social.toolbarStatusArea.onpopupshowing(event)"
+              onpopuphidden="social.toolbarStatusArea.onpopuphidden(event)">
+              <menuitem id="social-statusarea-togglesidebar" command="cmd_socialToolbarToggle"/>
+              <menuitem id="social-statusarea-togglesocial" command="cmd_socialBrowsingToggle"/>
               <menuseparator/>
-              <menuitem class="open-socialservice-manager"
-                            anonid="open-socialservice-manager"
-                            label="Manage Social Services..."
-                            oncommand="openSocialServiceManager(event);"/>
+              <!-- list of enabled services goes here -->
+              <menuseparator id="social-statusarea-providers-separator"/>
+              <menuitem id="social-pref-menu" label="&socialdev.prefslabel;" command="cmd_socialPreferences"/>
             </menupopup>
           </button>
         </box>

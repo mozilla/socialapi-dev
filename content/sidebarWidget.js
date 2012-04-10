@@ -11,15 +11,15 @@ function SocialSidebar() {
   baseWidget.call(this, window);
   
   // watch for when browser disables chrome in tabs, and hide the social sidebar
-  let _visibilityBeforeAutoHide = this.visibility;
+  let _visibleBeforeAutoHide = this.visible;
   document.addEventListener('DOMAttrModified', function(e) {
     if (e.target == document.documentElement && e.attrName == "disablechrome") {
       if (e.newValue) {
-        _visibilityBeforeAutoHide = this.visibility;
-        this.visibility = 'hidden';
+        _visibleBeforeAutoHide = this.visible;
+        this.visible = false;
       }
       else
-        this.visibility = _visibilityBeforeAutoHide;
+        this.visible = _visibleBeforeAutoHide;
     }
   }.bind(this));
 
@@ -90,34 +90,28 @@ SocialSidebar.prototype = {
   
     this.attachContextMenu();
   
-    Object.defineProperty(sbrowser, "visibility", {
+    Object.defineProperty(sbrowser, "visible", {
       get: function() {
-        if (vbox.getAttribute("hidden") == "true") {
-          return "hidden";
-        }
-        return "open";
+        return vbox.getAttribute("hidden") != "true";
       },
       set: function(newVal) {
-        let hiddenVal;
-        switch (newVal) {
-          case "open":
-            hiddenVal = false;
-            break;
-          case "hidden":
-            hiddenVal = true;
-            break;
-          default:
-            throw "invalid visibility state";
+        if (newVal) {
+          vbox.removeAttribute("hidden");
+          splitter.removeAttribute("hidden");
+        } else {
+          vbox.setAttribute("hidden", "true");
+          splitter.setAttribute("hidden", "true");
         }
-        vbox.setAttribute("hidden", hiddenVal);
-        splitter.setAttribute("hidden", hiddenVal);
         self.reflow();
       }
     });
     try {
-      this.visibility = this._prefBranch.getBoolPref("enabled") ? this._prefBranch.getCharPref("visibility") : 'hidden';
+      if (this._prefBranch.getBoolPref("enabled")) {
+        this._set_enabled(true);
+        this.visible = this._prefBranch.getBoolPref("visible");
+      }
     }
-    catch (e) {}
+    catch (e) {Cu.reportError(e);}
   },
   attachContextMenu: function() {
     let {document, gBrowser} = this._widget.ownerDocument.defaultView;
@@ -157,8 +151,8 @@ SocialSidebar.prototype = {
   reflow: function() {
     let sbrowser = document.getElementById('social-status-sidebar-browser');
 
-    let visibility = sbrowser.visibility;
-    if (visibility == "hidden") {
+    let visible = sbrowser.visible;
+    if (!visible) {
       // is this class still correct?
       document.documentElement.classList.remove("social-open");
       return;
@@ -176,17 +170,17 @@ SocialSidebar.prototype = {
   setProvider: function(aService) {
     let self = this;
 
-    if (!aService.enabled || this.disabled) {
+    if (!aService.enabled || !this.enabled) {
       return;// sanity check
     }
   
     // retarget the sidebar
     var sbrowser = document.getElementById("social-status-sidebar-browser");
-    var make_visible = sbrowser.service && sbrowser.service !== aService;
+    var make_visible = !sbrowser.service || sbrowser.service !== aService;
     sbrowser.service = aService;
     // XXX when switching providers, always open
     if (make_visible)
-      sbrowser.visibility = "open";
+      sbrowser.visible = true;
   
     // set up a locationwatcher
     try {
@@ -227,42 +221,51 @@ SocialSidebar.prototype = {
       }
     }, true);
   },
-  enable: function() {
-    this.show();
-    let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                            .getService(Ci.mozISocialRegistry);
-    this.setProvider(registry.currentProvider);
-  },
-  disable: function() {
-    // this sidebar is displaying this service;
-    // turn everything off.
+  // Sets the enabled property but does *not* change visibility
+  _set_enabled: function(val) {
+    if (val === this.enabled) {
+      return; // nothing to do!
+    }
     let sbrowser = this.browser;
-    try {
-      if (sbrowser.watcher)
-        sbrowser.removeProgressListener(sbrowser.watcher);
+    if (val) {
+      let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
+                              .getService(Ci.mozISocialRegistry);
+      this.setProvider(registry.currentProvider);
+    } else {
+      // this sidebar is displaying this service;
+      // turn everything off.
+      try {
+        if (sbrowser.watcher)
+          sbrowser.removeProgressListener(sbrowser.watcher);
+      }
+      catch(e) {
+        Cu.reportError(e);
+      }
+      sbrowser.watcher = null;
+      sbrowser.contentWindow.location = "about:blank";
     }
-    catch(e) {
-      Cu.reportError(e);
-    }
-    sbrowser.watcher = null;
-    sbrowser.contentWindow.location = "about:blank";
-    sbrowser.visibility = "hidden";
+    this._prefBranch.setBoolPref("enabled", val);
   },
-  get disabled() {
-    return this.browser.visibility == "hidden";
+  set enabled(val) {
+    this._set_enabled(val);
+    // if it is being enabled, we want it visible (and obviously vice-versa)
+    this.browser.visible = val;
   },
-  get visibility() {
-    return this.browser.visibility;
+  get enabled() {
+    return this._prefBranch.getBoolPref("enabled")
   },
-  set visibility(val) {
-    this.browser.visibility = val;
-    this._prefBranch.setCharPref("visibility", val);
+  get visible() {
+    return this.browser.visible;
+  },
+  set visible(val) {
+    this.browser.visible = val;
+    this._prefBranch.setBoolPref("visible", val);
   },
   show: function() {
-    this.visibility = "open";
+    this.visible = true;
   },
   hide: function() {
-    this.visibility = "hidden";
+    this.visible = false;
   },
   remove: function() {
     this._widget.parentNode.removeChild(this._widget.previousSibling); // remove splitter
