@@ -118,35 +118,29 @@ SocialToolbarStatusArea.prototype = {
     } else {*/
       //container.style.backgroundColor = "rgb(152,152,152)";
     //}
-
-    // fiddly height adjustments.  There must be a CSS way to do this.
-    /*container.style.width="114px";
-    container.style.height="38px";//container.parentNode.clientHeight + "px";//"27px";
-    //dump("the container's parent node's paddingTop is " + container.parentNode.style.paddingTop + "\n");
-    container.style.paddingTop="6px";
-    container.style.paddingLeft="4px";
-    container.style.marginTop="-16px";
-    container.style.marginBottom="-16px";
-    container.style.marginRight="-4px";
-    */
     var iconStack = window.document.createElementNS(XUL_NS, "stack");
 
     var iconBox = window.document.createElementNS(XUL_NS, "hbox");
     iconBox.setAttribute("flex", 1);
-    for each (var icon in registry.currentProvider.ambientNotificationIcons)
-    {
-      createNotificationIcon(icon);   
+    if (registry.currentProvider.ambientNotificationIcons) {
+      for each (var icon in registry.currentProvider.ambientNotificationIcons)
+      {
+        createNotificationIcon(icon);   
+      }
+      iconBox.style.minWidth = (26 * registry.currentProvider.ambientNotificationIcons.length) + "px";
     }
+
     iconStack.appendChild(iconBox);
     container.appendChild(iconStack);
 
     var portraitBox = window.document.createElementNS(XUL_NS, "div");
-    portraitBox.style.marginRight = "8px";
-    portraitBox.style.marginTop = "2px";
+    portraitBox.align = "start";
+    portraitBox.style.marginRight = "4px";
+    portraitBox.style.marginTop = "0px";
     portraitBox.style.marginBottom = "2px";
-    portraitBox.style.border = "1px solid rgb(41,74,143)";
-    portraitBox.style.height = "24px";// this is ignored.  why?
-    portraitBox.style.width = "24px";
+    //portraitBox.style.border = "1px solid rgb(41,74,143)";
+    portraitBox.style.height = "20px";// this is ignored.  why?
+    portraitBox.style.width = "20px";
     container.insertBefore(portraitBox, container.firstChild);
 
     if (registry.currentProvider.ambientNotificationPortrait) {
@@ -158,10 +152,10 @@ SocialToolbarStatusArea.prototype = {
       
       //portrait.style.display = "inline-block";
       //portrait.style.backgroundSize = "cover";
-      portrait.width = "24px";
-      portrait.height = "24px";
-      portrait.style.height = "24px";
-      portrait.style.width = "24px";
+      portrait.width = "20px";
+      portrait.height = "20px";
+      portrait.style.height = "20px";
+      portrait.style.width = "20px";
       
       // portrait on left:
       portraitBox.appendChild(portrait);
