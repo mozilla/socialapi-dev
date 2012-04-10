@@ -29,6 +29,8 @@ function baseWidget(aWindow) {
   let service = registry.currentProvider;
   dump("baseWidget constructor: service is " + service + "\n");
   if (service) {
+    if (registry.currentProvider)
+      this.enable();
     this.setProvider(service);
   }
 }
@@ -43,6 +45,7 @@ baseWidget.prototype = {
     else if (aTopic == 'social-service-init-ready') {
       let service = registry.get(aData);
       if (service == registry.currentProvider) {
+        this.enable();
         this.setProvider(service);
       }
     }

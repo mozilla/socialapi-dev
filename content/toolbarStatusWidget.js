@@ -203,20 +203,26 @@ SocialToolbarStatusArea.prototype = {
     let str = document.getElementById("socialdev-strings");
     let uieltSocial = document.getElementById('social-statusarea-togglesocial');
     uieltSocial.setAttribute('label', str.getString("browserDisable.label"));
+    let menu = document.getElementById('social-togglenable-toolsmenu');
+    menu.setAttribute('label', str.getString("browserDisable.label"));
     let uicontainer = document.getElementById("social-status-content-container");
     uicontainer.removeAttribute("hidden");
+    document.getElementById("social-status-area-container").removeAttribute('hidden');
   },
 
   disable: function() {
     let str = document.getElementById("socialdev-strings");
     let uieltSocial = document.getElementById('social-statusarea-togglesocial');
     uieltSocial.setAttribute('label', str.getString("browserEnable.label"));
+    let menu = document.getElementById('social-togglenable-toolsmenu');
+    menu.setAttribute('label', str.getString("browserEnable.label"));
     // reset the image to the default.
     var image = window.document.getElementById("social-statusarea-service-image");
     image.setAttribute("src", "chrome://socialdev/skin/social.png");
     // hide the container for the notifications.
     let uicontainer = document.getElementById("social-status-content-container");
     uicontainer.setAttribute("hidden", "true");
+    document.getElementById("social-status-area-container").setAttribute('hidden', true);
   },
 
   onToggleVisible: function() {
