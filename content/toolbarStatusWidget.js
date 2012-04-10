@@ -16,7 +16,12 @@ function SocialToolbarStatusArea() {
   
   Services.obs.addObserver(this, 'social-browsing-ambient-notification-changed', false);
 
-  this.renderPopupFromCurrentState();
+  // this is a bit screwed up, but works for now.
+  if (window.social.sidebar.enabled) {
+    this.enable();
+  } else {
+    this.disable();
+  }
 }
 
 SocialToolbarStatusArea.prototype = {
@@ -185,22 +190,33 @@ SocialToolbarStatusArea.prototype = {
     buildSocialPopupContents(aWindow, popup);
   },
 
-  renderPopupFromCurrentState: function() {
-    var str = document.getElementById("socialdev-strings");
+  enable: function() {
+    let str = document.getElementById("socialdev-strings");
     let uieltSocial = document.getElementById('social-statusarea-togglesocial');
     let uieltSidebar = document.getElementById('social-statusarea-togglesidebar');
-    if (window.social.sidebar.enabled) {
-      uieltSidebar.removeAttribute("hidden");
-      uieltSocial.setAttribute('label', str.getString("browserDisable.label"));
-      // is it visible?
-      let label = window.social.sidebar.visible ? "hideSidebar.label" : "showSidebar.label";
-      uieltSidebar.setAttribute('label', str.getString(label));
-    } else {
-      uieltSocial.setAttribute('label', str.getString("browserEnable.label"));
-      // Hide the disabled items.
-      uieltSidebar.setAttribute("hidden", "true");
-      // XXX - other items???
-    }
+    let uicontainer = document.getElementById("social-status-content-container");
+    uieltSidebar.removeAttribute("hidden");
+    uieltSocial.setAttribute('label', str.getString("browserDisable.label"));
+    // is it visible?
+    let label = window.social.sidebar.visible ? "hideSidebar.label" : "showSidebar.label";
+    uieltSidebar.setAttribute('label', str.getString(label));
+    uicontainer.removeAttribute("hidden");
+  },
+
+  disable: function() {
+    let str = document.getElementById("socialdev-strings");
+    let uieltSocial = document.getElementById('social-statusarea-togglesocial');
+    let uieltSidebar = document.getElementById('social-statusarea-togglesidebar');
+    let uicontainer = document.getElementById("social-status-content-container");
+    uieltSocial.setAttribute('label', str.getString("browserEnable.label"));
+    // Hide the disabled items.
+    uieltSidebar.setAttribute("hidden", "true");
+    // reset the image to the default.
+    var image = window.document.getElementById("social-statusarea-service-image");
+    image.setAttribute("src", "chrome://socialdev/skin/social.png");
+    // hide the container for the notifications.
+    uicontainer.setAttribute("hidden", "true");
+    // XXX - other items???
   },
 
   onToggleEnabled: function() {
@@ -218,7 +234,6 @@ SocialToolbarStatusArea.prototype = {
     } else {
       Services.obs.notifyObservers(null, "social-browsing-disabled", null);
     }
-    this.renderPopupFromCurrentState();
   },
   onToggleVisible: function() {
     var str = document.getElementById("socialdev-strings");
@@ -230,7 +245,8 @@ SocialToolbarStatusArea.prototype = {
     }
     let sidebar = window.social.sidebar;
     sidebar.visible = !sidebar.visible;
-    this.renderPopupFromCurrentState();
+    // call .enable - that also checks visibility...
+    this.enable();
   },
   
   ambientNotificationChanged: function() {

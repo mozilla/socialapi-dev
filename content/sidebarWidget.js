@@ -106,9 +106,16 @@ SocialSidebar.prototype = {
       }
     });
     try {
+      // XXX - this is all messed up.  If we aren't enabled we shouldn't have
+      // bothered to create the elements.  If we attempt to create them
+      // hidden things go wrong when setProvider() is called (as
+      // sbrowser.contentWindow will not yet exist).
+      // so for now, we force things visible if not enabled.
       if (this._prefBranch.getBoolPref("enabled")) {
         this._set_enabled(true);
         this.visible = this._prefBranch.getBoolPref("visible");
+      } else {
+        this.visible = false;
       }
     }
     catch (e) {Cu.reportError(e);}
