@@ -99,7 +99,8 @@ SocialToolbarStatusArea.prototype = {
     var XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
     // XXX is window safe to use here?
-    var container = window.document.getElementById("social-status-area-container");
+    var container = window.document.getElementById("social-status-content-container");
+      //social-status-area-container");
     while (container.firstChild) container.removeChild(container.firstChild);
 
     let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
@@ -109,6 +110,9 @@ SocialToolbarStatusArea.prototype = {
       return;
     }
 
+    var image = window.document.getElementById("social-statusarea-service-image");
+    image.setAttribute("src", registry.currentProvider.iconURL);
+
    /* if (registry.currentProvider.ambientNotificationBackground) {
       container.style.background = registry.currentProvider.ambientNotificationBackground;
     } else {*/
@@ -116,7 +120,7 @@ SocialToolbarStatusArea.prototype = {
     //}
 
     // fiddly height adjustments.  There must be a CSS way to do this.
-    container.style.width="114px";
+    /*container.style.width="114px";
     container.style.height="38px";//container.parentNode.clientHeight + "px";//"27px";
     //dump("the container's parent node's paddingTop is " + container.parentNode.style.paddingTop + "\n");
     container.style.paddingTop="6px";
@@ -124,40 +128,43 @@ SocialToolbarStatusArea.prototype = {
     container.style.marginTop="-16px";
     container.style.marginBottom="-16px";
     container.style.marginRight="-4px";
-    
+    */
     var iconStack = window.document.createElementNS(XUL_NS, "stack");
 
     var iconBox = window.document.createElementNS(XUL_NS, "hbox");
     iconBox.setAttribute("flex", 1);
-
-    var prettyGradient = window.document.createElementNS(XUL_NS, "div");
-    prettyGradient.style.background = "-moz-linear-gradient(to bottom, #e0e0e0, #333333)";
-    prettyGradient.style.border = "1px inset #333333";
-    prettyGradient.style.opacity = "0.2";
-    prettyGradient.style.width = "100%";
-    prettyGradient.style.height = "100%";
-    
     for each (var icon in registry.currentProvider.ambientNotificationIcons)
     {
       createNotificationIcon(icon);   
     }
-    iconStack.appendChild(prettyGradient);
     iconStack.appendChild(iconBox);
     container.appendChild(iconStack);
 
+    var portraitBox = window.document.createElementNS(XUL_NS, "div");
+    portraitBox.style.marginRight = "8px";
+    portraitBox.style.marginTop = "2px";
+    portraitBox.style.marginBottom = "2px";
+    portraitBox.style.border = "1px solid rgb(41,74,143)";
+    portraitBox.style.height = "24px";// this is ignored.  why?
+    portraitBox.style.width = "24px";
+    container.insertBefore(portraitBox, container.firstChild);
+
     if (registry.currentProvider.ambientNotificationPortrait) {
-      var portrait = window.document.createElementNS(XUL_NS, "img");
-      portrait.style.backgroundImage = "url('" + registry.currentProvider.ambientNotificationPortrait + "')"; 
-      portrait.style.backgroundSize = "cover";
-      portrait.style.marginRight = "8px";
-      portrait.style.marginTop = "2px";
-      portrait.style.marginBottom = "2px";
-      portrait.style.border = "1px solid rgb(41,74,143)";
-      portrait.style.height = "24px";// this is ignored.  why?
+
+//      var portrait = window.document.createElementNS("http://www.w3.org/1999/xhtml", "div");
+      var portrait = window.document.createElementNS(XUL_NS, "image");
+      //portrait.style.backgroundImage = "url('" + registry.currentProvider.ambientNotificationPortrait + "')"; 
+      portrait.setAttribute("src", registry.currentProvider.ambientNotificationPortrait);
+      
+      //portrait.style.display = "inline-block";
+      //portrait.style.backgroundSize = "cover";
+      portrait.width = "24px";
+      portrait.height = "24px";
+      portrait.style.height = "24px";
       portrait.style.width = "24px";
       
       // portrait on left:
-      container.insertBefore(portrait, container.firstChild);
+      portraitBox.appendChild(portrait);
 
       // portrait on right:
       // container.appendChild(portrait);

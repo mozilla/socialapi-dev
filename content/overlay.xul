@@ -5,6 +5,7 @@
 ]>
 
 <?xml-stylesheet href="resource://socialdev/skin/browser.css" type="text/css"?>
+<?xml-stylesheet href="resource://socialdev/skin/socialstatus.css" type="text/css"?>
 
 <overlay id="socialdev-overlay"
          xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
@@ -77,12 +78,34 @@
 
   <toolbaritem
     id="social-status-area-container"
-    class="chromeclass-toolbar-additional"
+    class="chromeclass-toolbar-additional social-status-area-container"
     removable="true"
     title="Social status area">
 
-    <div>This is the status area</div>
+    <div class="social-statusarea-contentbox" flex="1">
+      <box>
+        <button class="social-statusarea-service-button"
+                      type="menu"
+                      anonid="social-statusarea-service-button">
+          <image 
+              id="social-statusarea-service-image"
+              class="social-statusarea-service-image"/>
 
+            <image class="social-statusarea-dropmarker-image"/>
+            <menupopup class="social-statusarea-popup"
+                           anonid="social-statusarea-popup">
+              <menuseparator/>
+              <menuitem class="open-socialservice-manager"
+                            anonid="open-socialservice-manager"
+                            label="Manage Social Services..."
+                            oncommand="openSocialServiceManager(event);"/>
+            </menupopup>
+          </button>
+        </box>
+
+        <hbox id="social-status-content-container" class="social-status-content-container">
+      </hbox>
+    </div>
   </toolbaritem>
 </toolbarpalette>
 
