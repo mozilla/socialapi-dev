@@ -275,7 +275,8 @@ function buildSocialPopupContents(window, socialpanel)
           notificationCount += service.ambientNotificationIcons[i].counter;
         }
       }
-      itemText += " (" + notificationCount + " notifications)";
+      if (notificationCount)
+        itemText += " (" + notificationCount + " notifications)";
     }
     menuitem.setAttribute("label", itemText);
 
