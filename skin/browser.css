@@ -32,6 +32,14 @@
   padding: 1px;
 }
 
+#social-sidebar-splitter {
+  -moz-border-start:none;
+  -moz-border-end:1px solid #404040;
+  min-width:1px;
+  width:1px;
+  background-image:none !important;
+}
+
 #socialdev-button {
   list-style-image: url("chrome://socialdev/skin/social.png");
 }

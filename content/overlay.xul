@@ -56,11 +56,13 @@
               onpopupshown="social.toolbarStatusArea.onpopupshown(event)"
               onpopupshowing="social.toolbarStatusArea.onpopupshowing(event)"
               onpopuphidden="social.toolbarStatusArea.onpopuphidden(event)">
-              <menuitem id="social-statusarea-togglesidebar" command="cmd_socialToolbarToggle"/>
-              <menuitem id="social-statusarea-togglesocial" command="cmd_socialBrowsingToggle"/>
-              <menuseparator/>
+
               <!-- list of enabled services goes here -->
               <menuseparator id="social-statusarea-providers-separator"/>
+              <menuitem id="social-statusarea-togglesidebar" command="cmd_socialToolbarToggle"/>
+              <menuitem id="social-statusarea-togglesocial" command="cmd_socialBrowsingToggle"/>
+
+              <menuseparator/>
               <menuitem id="social-pref-menu" label="&socialdev.prefslabel;" command="cmd_socialPreferences"/>
             </menupopup>
           </button>

@@ -36,7 +36,7 @@ SocialToolbarStatusArea.prototype = {
         iconContainer.style.height = "27px";
         iconContainer.style.width = "24px";
         iconContainer.style.position = "relative";
-        iconContainer.style.marginTop = "-1px";
+        iconContainer.style.marginTop = "-5px";
         //iconContainer.style.border = "1px solid rgb(59,89,152)";
                 
         var iconBackground = window.document.createElementNS("http://www.w3.org/1999/xhtml", "div");
@@ -266,7 +266,19 @@ function buildSocialPopupContents(window, socialpanel)
   function renderProviderMenuitem(service, container, before) {
 
     let menuitem = window.document.createElementNS(XUL_NS, "menuitem");
-    menuitem.setAttribute("label", service.name);
+
+    let itemText = service.name;
+    let notificationCount = 0;
+    if (service.ambientNotificationIcons) {
+      for (var i in service.ambientNotificationIcons) {
+        if (service.ambientNotificationIcons[i].counter) {
+          notificationCount += service.ambientNotificationIcons[i].counter;
+        }
+      }
+      itemText += " (" + notificationCount + " notifications)";
+    }
+    menuitem.setAttribute("label", itemText);
+
     menuitem.setAttribute("class", "menuitem-iconic");
     menuitem.setAttribute("image", service.iconURL);
     menuitem.setAttribute("type", "radio");
@@ -287,17 +299,14 @@ function buildSocialPopupContents(window, socialpanel)
     let menuitem;
     let disabled = !window.social.enabled;
     let providerSep = document.getElementById('social-statusarea-providers-separator');
-    let fc = providerSep.previousSibling;
-    while (fc.localName != 'menuseparator') {
-      socialpanel.removeChild(fc);
-      fc = providerSep.previousSibling;
+    while (providerSep.previousSibling) {
+      socialpanel.removeChild(providerSep.previousSibling);
     }
+
     // if we are disabled we don't want the list of providers nor the separators
     if (disabled) {
-      fc.setAttribute("hidden", "true");
       providerSep.setAttribute("hidden", "true");
     } else {
-      fc.removeAttribute("hidden");
       providerSep.removeAttribute("hidden");
       // Create top-level items
       registry.each(function(service) {

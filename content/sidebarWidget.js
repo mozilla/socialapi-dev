@@ -37,7 +37,7 @@ SocialSidebar.prototype = {
     // We insert a vbox as a child of 'browser', as an immediate sibling of 'appcontent'
     let vbox = this._widget = document.createElementNS(XUL_NS, "vbox");
     vbox.setAttribute("id", "social-vbox");
-    vbox.setAttribute("width", "140");
+    vbox.setAttribute("width", "240");
     vbox.style.overflow = "hidden";
   
     let cropper = document.createElementNS(XUL_NS, "vbox");
@@ -54,15 +54,11 @@ SocialSidebar.prototype = {
   
     let after = document.getElementById('appcontent');
     let splitter = document.createElementNS(XUL_NS, "splitter");
-    splitter.setAttribute("id", "social-splitter");
+    splitter.setAttribute("id", "social-sidebar-splitter");
     splitter.className = "chromeclass-extrachrome";
   
     // XXX FIX THIS LATER, os-specific css files should be loaded
-    splitter.style.mozBorderStart = "none";
-    splitter.style.mozBorderEnd = "1px solid #404040";
-    splitter.style.minWidth = "1px";
-    splitter.style.width = "1px";
-    splitter.style.backgroundImage = "none !important";
+    // CSS is not OS-specific yet
   
     // Resize the sidebar when the user drags the splitter
     splitter.addEventListener("mousemove", function() {
