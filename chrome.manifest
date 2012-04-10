@@ -1,8 +1,8 @@
 content   socialdev                 content/
 skin      socialdev classic/1.0     skin/
-#skin      socialdev classic/1.0     skin/gnomestripe/ os=Linux
-#skin      socialdev classic/1.0     skin/winstripe/   os=WINNT
-#skin      socialdev classic/1.0     skin/pinstripe/   os=Darwin
+skin      socialdev-plat classic/1.0     skin/gnomestripe/ os=Linux
+skin      socialdev-plat classic/1.0     skin/winstripe/   os=WINNT
+skin	  socialdev-plat classic/1.0     skin/pinstripe/   os=Darwin
 locale    socialdev en-US           locale/en-US/
 
 overlay	chrome://browser/content/browser.xul   chrome://socialdev/content/overlay.xul

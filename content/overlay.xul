@@ -4,8 +4,8 @@
 %socialDTD;
 ]>
 
-<?xml-stylesheet href="resource://socialdev/skin/browser.css" type="text/css"?>
-<?xml-stylesheet href="resource://socialdev/skin/socialstatus.css" type="text/css"?>
+<?xml-stylesheet href="chrome://socialdev/skin/browser.css" type="text/css"?>
+<?xml-stylesheet href="chrome://socialdev-plat/skin/socialstatus.css" type="text/css"?>
 
 <overlay id="socialdev-overlay"
          xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
