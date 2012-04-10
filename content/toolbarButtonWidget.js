@@ -21,7 +21,7 @@ function SocialToolbarButton() {
   let label = (sidebar.visibility == "hidden" ? "browserEnable.label" : "browserDisable.label")
   document.getElementById('social-socialbrowsing-menu').
     setAttribute('label', str.getString(label));
-  label = (sidebar.visibility == "open" ? "minimizeSidebar.label" : "showSidebar.label")
+  label = (sidebar.visibility == "open" ? "hideSidebar.label" : "showSidebar.label")
   document.getElementById('social-socialtoolbar-menu').
     setAttribute('label', str.getString(label));
 }
@@ -75,7 +75,7 @@ SocialToolbarButton.prototype = {
       }
       else {
         sidebar.visibility = (sidebar.visibility=="open" ? "hidden" : "open");
-        let label = (sidebar.visibility == "open" ? "minimizeSidebar.label" : "showSidebar.label")
+        let label = (sidebar.visibility == "open" ? "hideSidebar.label" : "showSidebar.label")
         document.getElementById('social-socialtoolbar-menu').
           setAttribute('label', str.getString(label));
       }

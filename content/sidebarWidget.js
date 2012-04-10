@@ -7,7 +7,6 @@ Cu.import("resource://socialdev/modules/baseWidget.js");
 
 
 function SocialSidebar() {
-  this._currentAnchorId = null;
   this._prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
   baseWidget.call(this, window);
   
@@ -53,9 +52,6 @@ SocialSidebar.prototype = {
     sbrowser.setAttribute("flex", "1");
     sbrowser.style.overflow = "hidden";
   
-    // start with the sidebar closed.
-    sbrowser._open = false;
-  
     let after = document.getElementById('appcontent');
     let splitter = document.createElementNS(XUL_NS, "splitter");
     splitter.setAttribute("id", "social-splitter");
@@ -86,18 +82,6 @@ SocialSidebar.prototype = {
       if (e.target == window) self.reflow();
     }, true);
     
-    let toolbox = document.getElementById('navigator-toolbox');
-    toolbox.addEventListener("DOMAttrModified", function(event) {
-      if (event.attrName == "collapsed" || event.attrName == "tabsontop") {
-        // so, one of the toolbars changed state.  If this means our "anchor"
-        // changed then we need to reflow (which will re-anchor).
-        let newAnchor = self._findAnchor();
-        if (self._currentAnchorId && newAnchor.getAttribute("id") != self._currentAnchorId) {
-          self.reflow();
-        }
-      }
-    }, true);
-  
     // XXX hardcode reflowing for the single sbrowser on initial load for now
     sbrowser.addEventListener("DOMContentLoaded", function onLoad() {
       sbrowser.removeEventListener("DOMContentLoaded", onLoad);
@@ -105,35 +89,19 @@ SocialSidebar.prototype = {
     });
   
     this.attachContextMenu();
-    // Automatically open (and keep open) the sidebar if minimized when clicked
-    vbox.addEventListener("click", function(event) {
-      // ack - this is wrong - ideally we want "command" but it doesn't work.
-      // check the button so a right-click doesn't do this *and* show the popup
-      if (event.button != 0) {
-        return;
-      }
-      if (sbrowser.visibility != "open") {
-        this.visibility = "open";
-      }
-    }.bind(this));
   
     Object.defineProperty(sbrowser, "visibility", {
       get: function() {
         if (vbox.getAttribute("hidden") == "true") {
           return "hidden";
         }
-        return sbrowser._open ? "open" : "minimized";
+        return "open";
       },
       set: function(newVal) {
         let hiddenVal;
         switch (newVal) {
           case "open":
             hiddenVal = false;
-            sbrowser._open = true;
-            break;
-          case "minimized":
-            hiddenVal = false;
-            sbrowser._open = false;
             break;
           case "hidden":
             hiddenVal = true;
@@ -189,96 +157,21 @@ SocialSidebar.prototype = {
   reflow: function() {
     let sbrowser = document.getElementById('social-status-sidebar-browser');
 
-    let anchor = this._findAnchor();
-    if (this._currentAnchorId && anchor.getAttribute("id") != this._currentAnchorId) {
-      // reset the old anchor.
-      let old = document.getElementById(this._currentAnchorId);
-      old.style.paddingRight = "";
-    }
-    this._currentAnchorId = anchor.getAttribute("id");
-
     let visibility = sbrowser.visibility;
     if (visibility == "hidden") {
-      // just reset the navbar stuff.
-      anchor.style.paddingRight = "";
-      // anything else?
+      // is this class still correct?
+      document.documentElement.classList.remove("social-open");
       return;
     }
-    let open = visibility == "open";
-  
-    if (open)
-      document.documentElement.classList.add("social-open");
-    else
-      document.documentElement.classList.remove("social-open");
-  
+    document.documentElement.classList.add("social-open");
     let vbox = document.getElementById('social-vbox');
     let cropper = document.getElementById('social-cropper');
   
     // Include the visual border thickness when calculating navbar height
-    if (!open) {
-      vbox.style.height = 0;
-    } else {
-      let sideWidth = vbox.getAttribute("width");
-      let openHeight = window.gBrowser.boxObject.height;// + navHeight;
-
-      //anchor.style.paddingRight = sideWidth + "px";
-      cropper.style.height = openHeight + "px";
-      sbrowser.style.height = openHeight + "px";
-    }
-
-    /*
-    let isMac = Services.appinfo.OS == "Darwin";
-    let navHeight = 0;//anchor.clientHeight + (isMac ? 2 : 1);
-    let openHeight = window.gBrowser.boxObject.height;// + navHeight;
     let sideWidth = vbox.getAttribute("width");
-  
-    let targetWindow = sbrowser.contentWindow.wrappedJSObject;
-
-    // MRH put it in content 
-    anchor.style.paddingRight = sideWidth + "px";
-    cropper.style.height = (open ? openHeight : 0) + "px";
-    vbox.style.marginLeft = 0;//open ? "" : "-" + sideWidth + "px";
-    // vbox.style.marginTop =  "-" + navHeight + "px";
+    let openHeight = window.gBrowser.boxObject.height;// + navHeight;
+    cropper.style.height = openHeight + "px";
     sbrowser.style.height = openHeight + "px";
-  
-    // TODO XXX Need an API to inform the content page how big to make the header
-    var header = targetWindow.document.getElementById("header");
-    if (header) {
-      var headerStyle = header.style;
-      headerStyle.height = navHeight - 1 + "px";
-      headerStyle.overflow = "hidden";
-      
-      // MRH hack:
-      headerStyle.display = "none";
-    }*/
-  },
-  _findAnchor: function() {
-    // Find the element which is our "anchor" - ie, the bottom toolbar which
-    // we overlap and thus adjust its padding.
-    // I tried using the "box" model, but failed - boxes can theoretically be
-    // traversed in layout order, but:
-    // EG: last = document.getElementById('navigator-toolbox').boxObject.lastChild;
-    // Now - "last" is an element but doesn't itself have a "boxObject", so it's
-    // not clear how to continue traversing back from there in layout order.
-    // (and the same basic issue may exist traversing forward)
-    // So - just use the bounding rects.
-    let anchor = null;
-    let lowestBottom = 0;
-    let look = document.getElementById('navigator-toolbox').firstChild;
-    while (look) {
-      if (look.getBoundingClientRect().bottom > lowestBottom) {
-        anchor = look;
-        lowestBottom = look.getBoundingClientRect().bottom;
-      }
-      look = look.nextSibling;
-    }
-    if (!anchor) {
-      // should be impossible (but nothing is impossible ;)
-      dump("EEEK - failed to find the last toolbar - using nav-bar\n");
-      anchor = document.getElementById('nav-bar');
-      // throw "failed to find the anchor"
-    }
-    return anchor;
   },
   setProvider: function(aService) {
     let self = this;
@@ -366,7 +259,7 @@ SocialSidebar.prototype = {
     this._prefBranch.setCharPref("visibility", val);
   },
   show: function() {
-    this.visibility = this.browser._open ? "open" : "minimized";
+    this.visibility = "open";
   },
   hide: function() {
     this.visibility = "hidden";
@@ -374,11 +267,6 @@ SocialSidebar.prototype = {
   remove: function() {
     this._widget.parentNode.removeChild(this._widget.previousSibling); // remove splitter
     this._widget.parentNode.removeChild(this._widget);
-    // restore the toolbar style stuff we mangled.
-    if (this._currentAnchorId) {
-      let anchor = document.getElementById(this._currentAnchorId);
-      anchor.style.paddingRight = "";
-    }
   }
 }
 
