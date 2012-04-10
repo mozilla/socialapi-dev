@@ -38,6 +38,7 @@ SocialSidebar.prototype = {
     let vbox = this._widget = document.createElementNS(XUL_NS, "vbox");
     vbox.setAttribute("id", "social-vbox");
     vbox.setAttribute("width", "240");
+    vbox.setAttribute("hidden", "true");
     vbox.style.overflow = "hidden";
   
     let cropper = document.createElementNS(XUL_NS, "vbox");
@@ -55,6 +56,7 @@ SocialSidebar.prototype = {
     let after = document.getElementById('appcontent');
     let splitter = document.createElementNS(XUL_NS, "splitter");
     splitter.setAttribute("id", "social-sidebar-splitter");
+    splitter.setAttribute("hidden", "true");
     splitter.className = "chromeclass-extrachrome";
   
     // XXX FIX THIS LATER, os-specific css files should be loaded
