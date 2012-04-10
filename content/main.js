@@ -47,6 +47,10 @@ function social_main() {
   window.addEventListener('load', function loadHandler(e) {
     window.removeEventListener('load', loadHandler);
     let prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
+
+    // XXX this should be in a proper preferences.js
+    if (!prefBranch.prefHasUserValue("enabled")) prefBranch.setBoolPref("enabled", true);
+
     let _enabled = prefBranch.getBoolPref("enabled"); // poor-mans cache.
     window.social = {
       get enabled() {
