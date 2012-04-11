@@ -73,7 +73,8 @@
                       anonid="social-statusarea-service-button">
           <image 
               id="social-statusarea-service-image"
-              class="social-statusarea-service-image"/>
+              class="social-statusarea-service-image"
+              src="chrome://socialdev/skin/social.png"/>
 
             <image class="social-statusarea-dropmarker-image"/>
             <menupopup

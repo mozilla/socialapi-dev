@@ -93,8 +93,10 @@ SocialToolbarStatusArea.prototype = {
       return;
     }
 
-    var image = window.document.getElementById("social-statusarea-service-image");
-    image.setAttribute("src", registry.currentProvider.iconURL);
+    if (window.social.enabled) {
+      var image = window.document.getElementById("social-statusarea-service-image");
+      image.setAttribute("src", registry.currentProvider.iconURL);
+    }
 
    /* if (registry.currentProvider.ambientNotificationBackground) {
       container.style.background = registry.currentProvider.ambientNotificationBackground;
