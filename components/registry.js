@@ -22,8 +22,6 @@ Cu.import("resource://socialdev/modules/defaultServices.jsm");
 const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const FRECENCY = 100;
 
-dump("loading registry\n");
-
 function normalizeOriginPort(aURL) {
   try {
     let uri = Services.io.newURI(aURL, null, null);
@@ -228,7 +226,7 @@ const providerRegistryClassID = Components.ID("{1a60fb78-b2d2-104b-b16a-7f497be5
 const providerRegistryCID = "@mozilla.org/socialProviderRegistry;1";
 
 function ProviderRegistry() {
-  dump("registery service initializing\n");
+  dump("social registry service initializing\n");
   this.manifestRegistry = new ManifestRegistry();
   this._prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
 
@@ -396,5 +394,3 @@ ProviderRegistry.prototype = {
 
 const components = [ProviderRegistry];
 const NSGetFactory = XPCOMUtils.generateNSGetFactory(components);
-
-dump("...loading registry\n");
