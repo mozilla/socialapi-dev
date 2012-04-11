@@ -118,6 +118,7 @@
 <hbox id="urlbar-icons">
   <image id="social-recommend-button"
          insertbefore="star-button"
+         observes="socialEnabled"
          hidden="true"
          class="social-recommend-button"
          onclick="social.recommendButton.oncommand(event);"/>

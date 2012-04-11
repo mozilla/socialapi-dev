@@ -49,7 +49,7 @@ baseWidget.prototype = {
     }
   },
   setProvider: function(aProvider) {},
-  enable: function(aIconURL, aTooltiptext) {},
+  enable: function() {},
   disable: function() {},
   show: function() {},
   hide: function() {},

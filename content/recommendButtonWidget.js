@@ -13,6 +13,10 @@ SocialRecommendButton.prototype = {
   setProvider: function(aProvider) {
     let self = this;
     let worker = aProvider.makeWorker(window);
+    let widget = document.getElementById("social-recommend-button");
+    // ensure the old service data isn't there while we wait...
+    widget.setAttribute("tooltiptext", ""); // XXX - 'message' not in spec.
+    widget.setAttribute("src", "");
     if (!worker) {
       this.disable();
       return;
@@ -20,26 +24,11 @@ SocialRecommendButton.prototype = {
     worker.port.onmessage = function(evt) {
       if (evt.data.topic === 'user-recommend-prompt-response') {
         let data = evt.data.data;
-        self.enable(data.img, data.message);
+        widget.setAttribute("tooltiptext", data.message); // XXX - 'message' not in spec.
+        widget.setAttribute("src", data.img);
       };
     };
     worker.port.postMessage({topic: "user-recommend-prompt"});
-  },
-  enable: function(aIconURL, aTooltiptext) {
-    let widget = document.getElementById("social-recommend-button");
-    widget.setAttribute("tooltiptext", aTooltiptext); // XXX - 'message' not in spec.
-    widget.setAttribute("src", aIconURL);
-    widget.removeAttribute("hidden");
-  },
-  disable: function() {
-    let widget = document.getElementById("social-recommend-button");
-    if (!widget) return;
-    widget.setAttribute("hidden", "true");
-    widget.setAttribute("tooltiptext", "");
-    widget.setAttribute("src", "");
-  },
-  remove: function() {
-    this.disable();
   },
   oncommand: function(event) {
     let providerRegistry = Cc["@mozilla.org/socialProviderRegistry;1"]
