@@ -65,6 +65,9 @@ MessagePort.prototype = {
         Cu.reportError("Port handler failed: " + e);
       }
     }
+    if (!this._entangled) {
+      throw new Error("port closed");
+    }
     while (this._pendingMessages.length) {
       handler(JSON.parse(JSON.stringify(this._pendingMessages.shift())));
     }
@@ -255,7 +258,7 @@ function FrameWorker(url, service) {
             }
           }
           catch(e) {
-            Cu.reportError("Failed to dequeue pending worker events", e, "\n", e.stack);
+            Cu.reportError("Failed to dequeue pending worker events: " + e + "\n" + e.stack);
           }
           // save the sandbox somewhere convenient
           frame.sandbox = sandbox;
