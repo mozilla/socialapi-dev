@@ -15,15 +15,35 @@
   <script type="application/x-javascript" src="chrome://socialdev/content/sidebarWidget.js"/>
   <script type="application/x-javascript" src="chrome://socialdev/content/main.js"/>
 
-  <stringbundleset id="stringbundleset">  
-    <stringbundle src="chrome://socialdev/locale/social.properties" id="socialdev-strings" />   
-  </stringbundleset>
+  <broadcasterset>
+    <broadcaster id="socialInstalled" checked="false" hidden="true"/>
+    <broadcaster id="socialEnabled" checked="false" hidden="true"/>
+    <broadcaster id="socialSidebarVisible" checked="false"/>
+  </broadcasterset>
 
   <commandset id="mainCommandSet">
     <command id="cmd_socialRecommend" oncommand="social.recommendButton.oncommand(event);"/>
-    <command id="cmd_socialPreferences" oncommand="openUILink('about:social')"/>
-    <command id="cmd_socialBrowsingToggle" oncommand="social.enabled = !social.enabled;"/>
-    <command id="cmd_socialToolbarToggle" oncommand="social.sidebar.visible = !social.sidebar.visible;"/>
+    <command id="cmd_socialPreferences"
+             label="&socialdev.prefslabel;"
+             oncommand="openUILink('about:social')"/>
+    <command id="cmd_socialBrowsingToggle"
+             label="&socialenable.label;"
+             oncommand="social.enabled = !social.enabled;">
+      <observes element="socialEnabled" attribute="checked"/>
+    </command>
+
+    <command id="cmd_socialSidebarToggle"
+             checked="false"
+             hidden="true"
+             label="&socialsidebar.label;"
+             oncommand="social.sidebar.visible = !social.sidebar.visible;">
+      <!-- *sob* - the "hidden" thing doesn't seem to work, so the observers
+           are duplicated below on the menuitem.
+           But the "checked" observer on cmd_socialBrowsingToggle *does*?
+      -->
+      <observes element="socialSidebarVisible" attribute="checked"/>
+      <observes element="socialEnabled" attribute="hidden"/>
+    </command>
   </commandset>
   
   <keyset id="mainKeyset">
@@ -33,8 +53,9 @@
   </keyset>
 
   <menupopup id="menu_ToolsPopup">
-    <menuitem id="social-togglenable-toolsmenu" label="Enable Social Browsing"
-              command='cmd_socialBrowsingToggle'/>
+    <menuitem id="social-togglenable-toolsmenu"
+              command='cmd_socialBrowsingToggle'
+              type="checkbox"/>
   </menupopup>
 
 <toolbarpalette id="BrowserToolbarPalette">
@@ -42,7 +63,7 @@
     id="social-status-area-container"
     class="chromeclass-toolbar-additional social-status-area-container"
     removable="true"
-    hidden="true"
+    observes="socialInstalled"
     title="Social status area">
 
     <div class="social-statusarea-contentbox" flex="1">
@@ -65,16 +86,29 @@
 
               <!-- list of enabled services goes here -->
               <menuseparator id="social-statusarea-providers-separator"/>
-              <menuitem id="social-statusarea-togglesidebar" command="cmd_socialToolbarToggle"/>
-              <menuitem id="social-statusarea-togglesocial" command="cmd_socialBrowsingToggle"/>
+              <menuitem id="social-statusarea-togglesidebar"
+                        type="checkbox"
+                        command="cmd_socialSidebarToggle">
+                <!-- See above - why don't the observers set directly on the
+                     command work such that we we need to have them here???
+                -->
+                <observes element="socialSidebarVisible" attribute="checked"/>
+                <observes element="socialEnabled" attribute="hidden"/>
+              </menuitem>
+
+              <menuitem id="social-statusarea-togglesocial"
+                        type="checkbox"
+                        command="cmd_socialBrowsingToggle"/>
 
               <menuseparator/>
-              <menuitem id="social-pref-menu" label="&socialdev.prefslabel;" command="cmd_socialPreferences"/>
+              <menuitem id="social-pref-menu" command="cmd_socialPreferences"/>
             </menupopup>
-          </button>
-        </box>
-
-        <hbox id="social-status-content-container" class="social-status-content-container">
+        </button>
+      </box>
+      <hbox id="social-status-content-container"
+            class="social-status-content-container"
+            observes="socialEnabled"
+            hidden="true">
       </hbox>
     </div>
   </toolbaritem>

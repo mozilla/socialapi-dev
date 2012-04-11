@@ -243,6 +243,9 @@ SocialSidebar.prototype = {
   set visible(val) {
     this.browser.visible = val;
     this._prefBranch.setBoolPref("visible", val);
+    // let the UI know.
+    let broadcaster = document.getElementById("socialSidebarVisible");
+    broadcaster.setAttribute("checked", val ? "true" : "false");
   },
   show: function() {
     this.visible = true;
