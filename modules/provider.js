@@ -49,7 +49,7 @@ function SocialProvider(input) {
   this.iconURL = input.iconURL;
   this.origin = input.origin;
   this.enabled = input.enabled;  // disabled services cannot be used
-  this._active = input.enabled;   // active when we have a frameworker running
+  this._active = false; // must call .activate() to be active.
   // we only patch content for builtins
   if (input.contentPatchPath && input.contentPatchPath.indexOf('resource:')==0)
     this.contentPatchPath = input.contentPatchPath;
