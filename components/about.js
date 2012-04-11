@@ -7,7 +7,7 @@ Cu.import("resource://socialdev/modules/manifestDB.jsm");
 const ABOUTURL = "chrome://socialdev/content/about.html";
 const EXPORTED_SYMBOLS = [];
 
-//----- about:passwords implementation
+//----- about:social implementation
 const AboutSocialUUID = Components.ID("{ddf3f2e0-c819-b843-b32c-c8834d98ef49}");
 const AboutSocialContract = "@mozilla.org/network/protocol/about;1?what=social";
 
