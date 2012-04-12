@@ -172,6 +172,11 @@ SocialSidebar.prototype = {
     // XXX when switching providers, always open
     if (make_visible)
       sbrowser.visible = true;
+
+    // avoid resetting the sidebar if we're already loaded.  this fixes
+    // browserid use in demoservice, removes a double reload that is
+    // happening from somthing upstream.
+    if (sbrowser.contentWindow.location == aService.sidebarURL) return;
   
     // set up a locationwatcher
     try {
