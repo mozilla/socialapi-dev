@@ -70,6 +70,14 @@ function social_main() {
   // chromeWindow to load before we do our magic
   window.addEventListener('load', function loadHandler(e) {
     window.removeEventListener('load', loadHandler);
+    
+    // if chrome is hidden, dont enable anything
+    if (document.documentElement.getAttribute('disablechrome') ||
+        document.documentElement.getAttribute('chromehidden').indexOf("extrachrome") >= 0) {
+      dump("chrome is hidden, dont enable social UI\n");
+      return;
+    }
+    
     let prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
 
     // XXX this should be in a proper preferences.js
