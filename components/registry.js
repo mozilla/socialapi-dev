@@ -272,7 +272,7 @@ function ProviderRegistry() {
       }
     }
     catch(e) {
-      Cu.reportError("unable to attachToWindow for "+doc.location);
+      Cu.reportError("unable to attachToWindow for "+doc.location+":" + e);
       dump(e.stack+"\n");
     }
   };
@@ -358,7 +358,9 @@ ProviderRegistry.prototype = {
           this.currentProvider = provider;
         }
       }
-      catch(e) {}
+      catch(e) {
+        Cu.reportError(e);
+      }
     }
     catch(e) {
       Cu.reportError(e);
