@@ -35,11 +35,17 @@ stateWidget.prototype = {
   enable: function() {
     dump("social initial enable\n")
     window.social.enabled = true;
+    // get the default provider so we can set them on the widgets.
+    let provider = Cc["@mozilla.org/socialProviderRegistry;1"]
+                 .getService(Ci.mozISocialRegistry)
+                 .currentProvider;
+
     for (let name in widgetMap) {
       if (typeof window.social[name] === "undefined") {
         try {
           let w = window.social[name] = new widgetMap[name](window);
           w.enable();
+          w.setProvider(provider);
         } catch (ex) {
           Cu.reportError(ex);
         }
