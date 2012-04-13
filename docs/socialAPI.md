@@ -75,26 +75,37 @@ A Service Worker inherits all the limitations and behaviors available to HTML5 S
 
 The Worker can use the `ononline`, `onoffline`, and `navigator.online` methods and properties that are available to all Workers to obtain notification of the browser's online/offline status.
 
-In addition to the standard methods, Service Workers have access these to these methods and events:
+In addition to the standard methods, Service Workers have access to additional functionality, all of which are implemented using messages sent and received by worker "message ports".  As message ports are inherently asynchronous, any message that requires a response will involve 2 messages - one for the request and one for the response.  Not all message require a response - this is part of the message specification.  Messages which don't require a response are analogous to an unsolicitied 'event'.  If a message does require a response, then the response must always be sent on the same port as the request and in general, the 'topic' of the response will be the topic of the request with "-response" appended.
 
-Methods available to Service Workers
-------------------------------------
-`navigator.mozNotification.createNotification`
+Every message has a data element with 2 fields; 'topic' and 'data'.  The topic identifies which method or event is being used, and the data specifies additional data unique to the topic.  All standardized methods and events have topics that begin with "social." - this means services are free to use topics without this prefix as a private implementation detail (for example, to communicate between some content from the service and the service's worker)
 
-Creates a Notification object. By constructing and showing a Notification, the Worker requests that the browser notify the user of an immediately-relevant change in state. See https://developer.mozilla.org/en/DOM/navigator.mozNotification for more detail. The Worker may attach an `onclick` or `onclose` handler to the notification, if desired.
+Methods sent by Service Workers
+-------------------------------
+
+### `social.notification-create`
+
+Creates and displays a notification object. This requests that the browser notify the user of an immediately-relevant change in state. See https://developer.mozilla.org/en/DOM/navigator.mozNotification for more detail.  There is no 'response' sent back to the worker upon creation, however, if the user clicks on the notification a `social.notification-click` will be sent back with the ID of the notification.
 
 NOTE: We want to augment the mozNotification object defined in the docs with an additional "type" field. Details TBD.
+NOTE: No way of allowing duration and no way exposed to "cancel" a notification (assumption is they are very short-lived).  Is this OK?
 
-Messages Sent by Service Workers
----------------------------------
-### `observe-isidle`
-By constructing and posting an observe-isidle message, the Worker requests notification when the user has become idle.
+*Arguments:*
 
-* For more see https://wiki.mozilla.org/WebAPI/IdleAPI
+** icon **
+> String/null. The URL of an image to be placed in the notification.  While this can be any valid URL, implementors are strongly encouraged to use a data URL to minimize latency.
 
-### `user-recommend-prompt-response`
+** title **
+> String: The title or heading displayed in the notification.
 
-The Worker constructs and posts a user-recommend-prompt-response in response to a user-recommend-prompt message received from the browser.
+** body **
+> String: The body of the notification message.  This body will be rendered as a hyperlink and may be clicked.  HTML markup is not supported.
+
+** id **
+> String: An optional ID for the notification.  This ID will not be displayed but will be passed back via a `social.notification-click` event if the user clicks on the notification.  If null or an empty string, the body will not be rendered as a hyperlink and no notification will be sent on click.  
+
+### `social.user-recommend-prompt-response`
+
+The Worker constructs and posts a user-recommend-prompt-response in response to a `social.user-recommend-prompt` message received from the browser.  See `social.user-recommend-prompt` for more details.
 
 *Arguments:*
 
@@ -104,11 +115,58 @@ The Worker constructs and posts a user-recommend-prompt-response in response to 
 **img**
 > String. Will be set as the "src" property of an image contained in the user-facing click target for the "recommend" action. It can contain a web-addressible image or a data URL containing dynamically-generated image data. Implementors are strongly encouraged to use a data URL to minimize latency.
 
+**message**
+> String.  Will be used as the tooltip on the Recommend UI widget.
+
 Note that for some configurations, the browser will never provide a domain or url property in the user-recommend-prompt event; the Worker should be prepared to serve up static (e.g. data URL) content in these cases. (TODO: do we want to come up with a system to signal that it hasn't changed to speed up rendering?)
+
+### `social.ambient-notification-area`
+
+Set the properties for the ambient notification area.
+
+*Argument:*
+**background**
+> String, optional.  If supplied, specifies the CSS value for the background
+of the area.  Typically this will just supply a background color.
+
+**portrait**
+> String, optional.  If supplied, specifies the URL to a small, square image
+of the user.
+
+### `social.ambient-notification-update`
+
+Updates or creates an ambient notification icon.
+
+*Argument:*
+**name**
+> String.  An identifier for the icon.  The first time a given name is seen,
+it effectively creates a new icon.  If the same name is used in subsequent
+calls, the existing icon is updated.
+
+**background**
+> String, optional.  If supplied, specifies the CSS value for the background
+of the icon.  This string will typically include a `url()` portion which
+specifies an image to use.
+
+**counter**
+> Number, optional.  Specifies a number that will be overlaid over the icon,
+typically used to convey an `unread` concept.
+
+**contentPanel**
+> String, optional.  Specifies the URL of content that will be displayed in
+the popup panel for the icon.
+
 
 Messages Sent To Service Workers
 --------------------------------
-### `user-recommend-prompt`
+### `social.notification-click`
+
+*Arguments:*
+**id**
+> String: the ID of the notification that was clicked.
+
+
+### `social.user-recommend-prompt`
 
 Sent by the browser to request the visual prompt for the "user recommendation" interface element. The user agent MAY include a "url" or "domain" property with the request, indicating the current browsing context. The Worker should respond with a user-recommend-prompt-response
 
@@ -122,7 +180,7 @@ Note that most user agents will NOT include the domain and url in user-recommend
 **url**
 > String, optional. If present, indicates the full URL, including query string, but minus any hash text, of the root of the current browser viewing context.
 
-###  `user-recommend`
+###  `social.user-recommend`
 
 Indicates that the user has clicked the "user recommendation" interface element. The message includes:
 
@@ -131,7 +189,7 @@ Indicates that the user has clicked the "user recommendation" interface element.
 **url**
 > String, required. The URL that the user is viewing, including query string, but minus any hash text, of the root of the current browser viewing context.
 
-No response is necessary; however, the service may respond with a user-recommend-prompt-response if the click target should change its appearance.
+No response is necessary; however, the service may respond on the same port with a user-recommend-prompt-response if the click target should change its appearance.
 
 ### `user-isidle`
 
@@ -146,15 +204,13 @@ Service Content API Reference
 
 These methods are available to all Widget and ServiceWindow content.
 
-TODO: Can Widget and ServiceWindow content send and receive the same messages as the Service Worker, or does that complicate things?
-
 Methods:
 --------
 ### `navigator.mozSocial.getWorker()`
 
 returns a reference to the Service Worker. 
 
-The content can then call postMessage on it as normal.
+The content can then call postMessage on it as normal.  Messages posted this way may be private implementation messages or any of the standard `social.` messages described above.
 
 ### `openServiceWindow( url, name, options, title, readyCallback)`
 NOTE The openServiceWindow call is likely to change.

@@ -19,16 +19,29 @@
 
 const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
-function addNotification(aNotification, aSecurityOrigin)
+function addNotification(aNotification)
 {
   var alertsService = Cc["@mozilla.org/alerts-service;1"].getService(Ci.nsIAlertsService);
 
+  var listener = {
+    observe: function(subject, topic, data) {
+      if (topic === "alertclickcallback") {
+        if (aNotification._onclick) {
+          aNotification._onclick();
+        }
+      } else if (topic === "alertfinished") {
+        if (aNotification._onhide) {
+          aNotification._onhide();
+        }
+      }
+    }
+  }
   alertsService.showAlertNotification(aNotification._iconUrl,
       aNotification._title,
       aNotification._body,
-      false, // text clicakble
+      !!aNotification._notificationid, // text clicakble if an ID was provided.
       null, // cookie
-      null, // listener
+      listener, // listener
       null); // name
 }
 
@@ -37,13 +50,16 @@ function cancelNotification(aNotification)
 
 }
 
-function Notification(iconUrl, title, body) {
+function Notification(iconUrl, title, body, notificationid, onclick, onhide) {
   var self= {};
   self._iconUrl = iconUrl;
   self._title = title;
   self._body = body;
+  self._notificationid = notificationid
+  self._onclick = onclick;
+  self._onhide = onhide;
   self.show = function() {
-    addNotification(this, this._domain);
+    addNotification(this);
   }
   self.cancel = function() {
     cancelNotification(this, this._domain);

@@ -17,6 +17,7 @@ Cu.import("resource://gre/modules/Services.jsm");
 let frameworker = {};
 Cu.import("resource://socialdev/modules/frameworker.js", frameworker);
 Cu.import("resource://socialdev/modules/servicewindow.js");
+Cu.import("resource://socialdev/modules/workerapi.js");
 
 const EXPORTED_SYMBOLS = ["SocialProvider"];
 
@@ -50,6 +51,7 @@ function SocialProvider(input) {
   this.origin = input.origin;
   this.enabled = input.enabled;  // disabled services cannot be used
   this._active = false; // must call .activate() to be active.
+  this._workerapi = null;
   // we only patch content for builtins
   if (input.contentPatchPath && input.contentPatchPath.indexOf('resource:')==0)
     this.contentPatchPath = input.contentPatchPath;
@@ -68,6 +70,7 @@ SocialProvider.prototype = {
     if (!this.enabled) return;
     this._log("init");
     this.windowCreatorFn = windowCreatorFn;
+
     Services.obs.notifyObservers(null, "social-service-init-ready", this.origin);
   },
   
@@ -87,6 +90,10 @@ SocialProvider.prototype = {
     catch (e) {
       this._log(e);
     }
+    if (this._workerapi) {
+      this._workerapi.shutdown();
+      this._workerapi = null;
+    }
     this._active = false;
     Services.obs.notifyObservers(null, "social-service-shutdown", this.origin);
   },
@@ -98,6 +105,7 @@ SocialProvider.prototype = {
   activate: function() {
     if (this.enabled) {
       this.init();
+      this._workerapi = new workerAPI(this.makeWorker(), this);
       this._active = true;
       Services.obs.notifyObservers(null, "social-service-activated", this.origin);
     }
@@ -131,13 +139,11 @@ SocialProvider.prototype = {
     if (!this.enabled) {
       throw new Error("cannot use disabled service "+this.origin);
     }
-    if (this.workerURL) {
-      return frameworker.FrameWorker(this.workerURL, this);
-    }
-    else {
+    if (!this.workerURL) {
       this._log("makeWorker cannot create worker: no workerURL specified");
       throw new Error("makeWorker cannot create worker: no workerURL specified for "+this.origin);
     }
+    return frameworker.FrameWorker(this.workerURL);
   },
   
   /**

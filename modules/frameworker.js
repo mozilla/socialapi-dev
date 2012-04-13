@@ -22,9 +22,6 @@
 const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 
-var notification = {};
-Cu.import("resource://socialdev/modules/notification.js", notification);
-
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 var workerInfos = {}; // keyed by URL.
@@ -152,7 +149,7 @@ MessagePort.prototype = {
  * @param {String} url
  * @returns {Object} object containing a port and terminate function
  */
-function FrameWorker(url, service) {
+function FrameWorker(url) {
   log("creating worker for " + url);
   // first create the ports we are going to use and entangle them.
   let clientPort = new MessagePort('client');
@@ -210,9 +207,6 @@ function FrameWorker(url, service) {
           }
         }
 
-        // chrome functions we want to have accessible to the sandbox
-        sandbox.importFunction(notification.Notification, "Notification");
-        sandbox.importFunction(notification.createAmbientNotification(service), "AmbientNotification");
         sandbox.importFunction(function importScripts(uris) {
           if (uris instanceof Array) {
             for each(let uri in uris) {
@@ -241,8 +235,7 @@ function FrameWorker(url, service) {
               let scriptText = workerWindow.document.body.textContent;
               Cu.evalInSandbox(scriptText, sandbox, "1.8", workerWindow.location.href, 1);  
             } catch (e) {
-              log("Error while evaluating worker script for " + url + ": " + e, e.stack);
-              log(e.stack);
+              Cu.reportError("Error evaluating worker script for " + url + ": " + e + "\n" + e.stack);
               return;
             }
 
@@ -250,7 +243,6 @@ function FrameWorker(url, service) {
             workerInfo.loaded = true;
             let pending = workerInfo.pendingWorkers;
             log("worker window " + url + " loaded - connecting " + pending.length + " workers");
-            log("worker window is " + workerWindow);
             while (pending.length) {
               let port = pending.shift();
               port._worker = sandbox;

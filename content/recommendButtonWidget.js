@@ -9,36 +9,46 @@ function SocialRecommendButton() {
 SocialRecommendButton.prototype = {
   __proto__: baseWidget.prototype,
   create: function(aWindow) {
+    this.worker = null;
+  },
+  disable: function() {
+    if (this.worker) {
+      this.worker.port.close();
+    }
   },
   setProvider: function(aProvider) {
     let self = this;
-    let worker = aProvider.makeWorker(window);
-    let widget = document.getElementById("social-recommend-button");
-    // ensure the old service data isn't there while we wait...
-    widget.setAttribute("tooltiptext", ""); // XXX - 'message' not in spec.
-    widget.setAttribute("src", "");
-    if (!worker) {
-      this.disable();
+    // maybe just swapping providers; close old port.
+    if (this.worker) {
+      this.worker.port.close();
+    }
+    this.worker = aProvider.makeWorker(window);
+    if (!this.worker) {
       return;
     }
-    worker.port.onmessage = function(evt) {
-      if (evt.data.topic === 'user-recommend-prompt-response') {
+    let widget = document.getElementById("social-recommend-button");
+    // ensure the old service data isn't there while we wait...
+    widget.setAttribute("tooltiptext", "");
+    widget.setAttribute("src", "");
+    this.worker.port.onmessage = function(evt) {
+      if (evt.data.topic === 'social.user-recommend-prompt-response') {
         let data = evt.data.data;
-        widget.setAttribute("tooltiptext", data.message); // XXX - 'message' not in spec.
+        widget.setAttribute("tooltiptext", data.message);
         widget.setAttribute("src", data.img);
       };
     };
-    worker.port.postMessage({topic: "user-recommend-prompt"});
+    this.worker.port.postMessage({topic: "social.user-recommend-prompt"});
   },
   oncommand: function(event) {
     let providerRegistry = Cc["@mozilla.org/socialProviderRegistry;1"]
                             .getService(Ci.mozISocialRegistry);
     let url = window.gBrowser.currentURI.cloneIgnoringRef().spec;
-    let worker = providerRegistry.currentProvider.makeWorker(window)
-    worker.port.postMessage({topic: "user-recommend",
-                             data: {
-                              url: url}
+    this.worker.port.postMessage({topic: "social.user-recommend",
+                                  data: {
+                                  url: url}
                             });
     Services.console.logStringMessage("recommending "+ url);
+    // Note the service may respond back with a -response, which we are
+    // already looking for an will update the UI.
   }
 }
