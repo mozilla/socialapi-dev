@@ -81,6 +81,10 @@ SocialProvider.prototype = {
    * frameworker.
    */
   shutdown: function() {
+    if (this._workerapi) {
+      this._workerapi.shutdown();
+      this._workerapi = null;
+    }
     try {
       this._log("shutdown");
       var worker = this.makeWorker(null);
@@ -89,10 +93,6 @@ SocialProvider.prototype = {
     }
     catch (e) {
       this._log(e);
-    }
-    if (this._workerapi) {
-      this._workerapi.shutdown();
-      this._workerapi = null;
     }
     this._active = false;
     Services.obs.notifyObservers(null, "social-service-shutdown", this.origin);
