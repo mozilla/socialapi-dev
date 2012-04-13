@@ -103,6 +103,10 @@ MessagePort.prototype = {
     if (!this._entangled) {
       return; // already closed.
     }
+    // not sure it is 100% correct, but we also close the other side.
+    let other = this._entangled;
+    this._entangled = null; // must reset early to avoid recursion death.
+
     // XXX - note that the W3C spec for workers doesn't define an ondisconnect
     // method, but we need one so the worker removes the broadcast ports.
     if (this._worker) {
@@ -110,9 +114,6 @@ MessagePort.prototype = {
       this._worker = null;
     }
 
-    // not sure this is 100% correct, but also close the other side.
-    let other = this._entangled;
-    this._entangled = null; // must reset early to avoid recursion death.
     other.close();
     this._onmessage = null;
     this._pendingMessages = null;
