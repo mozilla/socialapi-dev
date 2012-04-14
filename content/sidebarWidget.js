@@ -31,82 +31,12 @@ SocialSidebar.prototype = {
     return document.getElementById("social-status-sidebar-browser");
   },
   create: function(aWindow) {
-    let self = this;
-    let XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
-
-    // We insert a vbox as a child of 'browser', as an immediate sibling of 'appcontent'
-    let vbox = this._widget = document.createElementNS(XUL_NS, "vbox");
-    vbox.setAttribute("id", "social-vbox");
-    vbox.setAttribute("width", "240");
-    vbox.setAttribute("hidden", "true");
-    vbox.style.overflow = "hidden";
-  
-    let cropper = document.createElementNS(XUL_NS, "vbox");
-    cropper.setAttribute("id", "social-cropper");
-    cropper.style.overflow = "hidden";
-    vbox.appendChild(cropper);
-  
-    // Create the sidebar browser
-    var sbrowser = document.createElementNS(XUL_NS, "browser");
-    sbrowser.setAttribute("id", "social-status-sidebar-browser");
-    sbrowser.setAttribute("type", "content");
-    sbrowser.setAttribute("flex", "1");
-    sbrowser.style.overflow = "hidden";
-  
-    let after = document.getElementById('appcontent');
-    let splitter = document.createElementNS(XUL_NS, "splitter");
-    splitter.setAttribute("id", "social-sidebar-splitter");
-    splitter.setAttribute("hidden", "true");
-    splitter.className = "chromeclass-extrachrome";
-  
-    // XXX FIX THIS LATER, os-specific css files should be loaded
-    // CSS is not OS-specific yet
-  
-    // Resize the sidebar when the user drags the splitter
-    splitter.addEventListener("mousemove", function() {
-      self.reflow();
-    });
-    splitter.addEventListener("mouseup", function() {
-      self.reflow();
-    });
-
-    document.getElementById('browser').insertBefore(vbox, after.nextSibling);
-    document.getElementById('browser').insertBefore(splitter, after.nextSibling);
-  
-    cropper.appendChild(sbrowser);
-
-    // Make sure the browser stretches and shrinks to fit
-    window.addEventListener('resize', function(e) {
-      if (e.target == window) self.reflow();
-    }, true);
-    
-    // XXX hardcode reflowing for the single sbrowser on initial load for now
-    sbrowser.addEventListener("DOMContentLoaded", function onLoad() {
-      sbrowser.removeEventListener("DOMContentLoaded", onLoad);
-      self.reflow();
-    });
-  
+    // XXX - todo - move the context menu to the overlay!
     this.attachContextMenu();
-  
-    Object.defineProperty(sbrowser, "visible", {
-      get: function() {
-        return vbox.getAttribute("hidden") != "true";
-      },
-      set: function(newVal) {
-        if (newVal) {
-          vbox.removeAttribute("hidden");
-          splitter.removeAttribute("hidden");
-        } else {
-          vbox.setAttribute("hidden", "true");
-          splitter.setAttribute("hidden", "true");
-        }
-        self.reflow();
-      }
-    });
+
   },
   attachContextMenu: function() {
-    let {document, gBrowser} = this._widget.ownerDocument.defaultView;
-    let vbox = this._widget;
+    let {document, gBrowser} = this.browser.ownerDocument.defaultView;
     // create a popup menu for the browser.
     // XXX - can we consolidate the context menu with toolbar items etc
     // in a commandset?
@@ -137,26 +67,6 @@ SocialSidebar.prototype = {
       }
     }, false);
     popupSet.appendChild(menu);
-    vbox.setAttribute("context", "social-context-menu");    
-  },
-  reflow: function() {
-    let sbrowser = document.getElementById('social-status-sidebar-browser');
-
-    let visible = sbrowser.visible;
-    if (!visible) {
-      // is this class still correct?
-      document.documentElement.classList.remove("social-open");
-      return;
-    }
-    document.documentElement.classList.add("social-open");
-    let vbox = document.getElementById('social-vbox');
-    let cropper = document.getElementById('social-cropper');
-  
-    // Include the visual border thickness when calculating navbar height
-    let sideWidth = vbox.getAttribute("width");
-    let openHeight = window.gBrowser.boxObject.height;// + navHeight;
-    cropper.style.height = openHeight + "px";
-    sbrowser.style.height = openHeight + "px";
   },
   setProvider: function(aService) {
     let self = this;
@@ -171,7 +81,7 @@ SocialSidebar.prototype = {
     sbrowser.service = aService;
     // XXX when switching providers, always open
     if (make_visible)
-      sbrowser.visible = true;
+      this.visible = true;
 
     // avoid resetting the sidebar if we're already loaded.  this fixes
     // browserid use in demoservice, removes a double reload that is
@@ -238,19 +148,25 @@ SocialSidebar.prototype = {
     catch(e) {
       Cu.reportError(e);
     }
-    sbrowser.visible = false;
     sbrowser.watcher = null;
+    this.visible = false;
     sbrowser.contentWindow.location = "about:blank";
   },
   get visible() {
-    return this.browser.visible;
+    let broadcaster = document.getElementById("socialSidebarVisible");
+    return broadcaster.getAttribute("hidden") != "true";
   },
   set visible(val) {
-    this.browser.visible = val;
-    this._prefBranch.setBoolPref("visible", val);
-    // let the UI know.
+    // if social is disabled we don't set the pref as the visibility state
+    // is being changed due to that.
+    if (window.social.enabled) {
+      this._prefBranch.setBoolPref("visible", val);
+    }
+    // let the UI know - the "observes" magic means this is all that is
+    // necessary to show or hide it.
     let broadcaster = document.getElementById("socialSidebarVisible");
     broadcaster.setAttribute("checked", val ? "true" : "false");
+    broadcaster.setAttribute("hidden", val ? "false" : "true");
   },
   show: function() {
     this.visible = true;
@@ -259,8 +175,7 @@ SocialSidebar.prototype = {
     this.visible = false;
   },
   remove: function() {
-    this._widget.parentNode.removeChild(this._widget.previousSibling); // remove splitter
-    this._widget.parentNode.removeChild(this._widget);
+    // no concept of "remove" in our overlay based world!
   }
 }
 

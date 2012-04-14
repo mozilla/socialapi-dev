@@ -18,7 +18,7 @@
   <broadcasterset>
     <broadcaster id="socialInstalled" checked="false" hidden="true"/>
     <broadcaster id="socialEnabled" checked="false" hidden="true"/>
-    <broadcaster id="socialSidebarVisible" checked="false"/>
+    <broadcaster id="socialSidebarVisible" checked="false" hidden="true"/>
   </broadcasterset>
 
   <commandset id="mainCommandSet">
@@ -129,5 +129,27 @@
     <browser id="social-notification-browser" style="width:300px;height:300px" />
   </panel>
 </popupset>
+
+<!-- the social sidebar -->
+<hbox id="browser">
+  <splitter id="social-sidebar-splitter"
+            hidden="true"
+            class="chromeclass-extrachrome"
+            observes="socialSidebarVisible">
+  </splitter>
+
+  <vbox id="social-vbox"
+        width="240"
+        hidden="true"
+        style="overflow: hidden"
+        context="social-context-menu"
+        observes="socialSidebarVisible">
+    <browser id="social-status-sidebar-browser"
+             type="content"
+             flex="1"
+             style="overflow: hidden">
+    </browser>
+  </vbox>
+</hbox>
 
 </overlay>
