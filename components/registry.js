@@ -338,7 +338,7 @@ ProviderRegistry.prototype = {
     }
     this._currentProvider = provider;
     try {
-      this._prefBranch.setCharPref("current", origin);
+      this._prefBranch.setCharPref("current", provider.origin);
     }
     catch(e) {
       // just during dev, otherwise we shouldn't log here
@@ -346,7 +346,7 @@ ProviderRegistry.prototype = {
     }
     Services.obs.notifyObservers(null,
                                  "social-browsing-current-service-changed",
-                                 this._currentProvider.origin);
+                                 provider.origin);
   },
   get: function pr_get(origin) {
     return this._providers[origin];
