@@ -28,7 +28,7 @@
              oncommand="openUILink('about:social')"/>
     <command id="cmd_socialBrowsingToggle"
              label="&socialenable.label;"
-             oncommand="social.enabled = !social.enabled;">
+             oncommand="social_toggle();">
       <observes element="socialEnabled" attribute="checked"/>
     </command>
 
@@ -36,7 +36,7 @@
              checked="false"
              hidden="true"
              label="&socialsidebar.label;"
-             oncommand="social.sidebar.visible = !social.sidebar.visible;">
+             oncommand="social_sidebar_toggle();">
       <!-- *sob* - the "hidden" thing doesn't seem to work, so the observers
            are duplicated below on the menuitem.
            But the "checked" observer on cmd_socialBrowsingToggle *does*?

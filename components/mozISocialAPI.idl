@@ -24,6 +24,16 @@ interface mozISocialRegistry: nsISupports {
   attribute jsval currentProvider;
   void get(in DOMString aOrigin, [retval] out jsval aSocialProviderInstance);
   void each(in mozISocialProviderCallback aCallback);
+  // Get and set the "social browsing enabled" state.  Note however that
+  // attempting to enable it when isAvailable() returns false isn't going
+  // to work (ie, it will stay disabled in that case)
+  // Also note that while this is the *global* state, it may still be disabled
+  // on a specific top-level window depending on what URL is being shown.
+  // eg, it can be globally enabled, but disabled on a window showing
+  // about:addons etc.
+  attribute jsval enabled;
+  void enableProvider(in jsval origin);
+  void disableProvider(in jsval origin);
 };
 
 

@@ -7,23 +7,7 @@ Cu.import("resource://socialdev/modules/baseWidget.js");
 
 
 function SocialSidebar() {
-  this._prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
   baseWidget.call(this, window);
-  
-  // watch for when browser disables chrome in tabs, and hide the social sidebar
-  let _visibleBeforeAutoHide = this.visible;
-  document.addEventListener('DOMAttrModified', function(e) {
-    if (e.target == document.documentElement && e.attrName == "disablechrome") {
-      if (e.newValue) {
-        _visibleBeforeAutoHide = this.visible;
-        this.visible = false;
-      }
-      else
-        this.visible = _visibleBeforeAutoHide;
-    }
-  }.bind(this));
-
-
 }
 SocialSidebar.prototype = {
   __proto__: baseWidget.prototype,
@@ -69,9 +53,7 @@ SocialSidebar.prototype = {
     popupSet.appendChild(menu);
   },
   setProvider: function(aService) {
-    let self = this;
-
-    if (!aService.enabled || !window.social.enabled) {
+    if (!aService.enabled) {
       return;// sanity check
     }
   
@@ -80,8 +62,12 @@ SocialSidebar.prototype = {
     var make_visible = !sbrowser.service || sbrowser.service !== aService;
     sbrowser.service = aService;
     // XXX when switching providers, always open
-    if (make_visible)
-      this.visible = true;
+    if (make_visible) {
+      // XXX - this is misplaced and should probably be in main.js
+      let broadcaster = document.getElementById("socialSidebarVisible");
+      broadcaster.setAttribute("hidden", "false");
+      broadcaster.setAttribute("checked", "true");
+    }
 
     // avoid resetting the sidebar if we're already loaded.  this fixes
     // browserid use in demoservice, removes a double reload that is
@@ -128,15 +114,10 @@ SocialSidebar.prototype = {
     }, true);
   },
   enable: function() {
-    let sbrowser = this.browser;
+    // XXX - this is wrong and needs refactoring.
     let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                            .getService(Ci.mozISocialRegistry);
+                        .getService(Ci.mozISocialRegistry);
     this.setProvider(registry.currentProvider);
-    try {
-      this.visible = this._prefBranch.getBoolPref("visible"); 
-    } catch(e) {
-      this.visible = true;
-    }
   },
   disable: function() {
     // turn everything off.
@@ -149,30 +130,7 @@ SocialSidebar.prototype = {
       Cu.reportError(e);
     }
     sbrowser.watcher = null;
-    this.visible = false;
     sbrowser.contentWindow.location = "about:blank";
-  },
-  get visible() {
-    let broadcaster = document.getElementById("socialSidebarVisible");
-    return broadcaster.getAttribute("hidden") != "true";
-  },
-  set visible(val) {
-    // if social is disabled we don't set the pref as the visibility state
-    // is being changed due to that.
-    if (window.social.enabled) {
-      this._prefBranch.setBoolPref("visible", val);
-    }
-    // let the UI know - the "observes" magic means this is all that is
-    // necessary to show or hide it.
-    let broadcaster = document.getElementById("socialSidebarVisible");
-    broadcaster.setAttribute("checked", val ? "true" : "false");
-    broadcaster.setAttribute("hidden", val ? "false" : "true");
-  },
-  show: function() {
-    this.visible = true;
-  },
-  hide: function() {
-    this.visible = false;
   },
   remove: function() {
     // no concept of "remove" in our overlay based world!

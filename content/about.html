@@ -45,75 +45,106 @@ window.addEventListener("message", function(event) {
   if (!event.source) {
     // when xul sends the event, source is null
     var msg = JSON.parse(event.data);
-    if (msg.topic == 'service-manifest') {
-        var manifest = msg.data;
-
-        var svc = msg.data;
-        if (document.getElementById(svc.origin)) {
-            return;
-        }
-        var serviceblock = document.createElement('div');
-        serviceblock.setAttribute("class", "service");
-        
-        var header = document.createElement('h1');
-        var img = document.createElement('img');
-        img.setAttribute('src', svc.iconURL);
-        header.appendChild(img);
-        header.appendChild(document.createTextNode(svc.name));
-        
-        var btn = document.createElement('button');
-        var lbl = document.createElement('label');
-
-        img.setAttribute('for', svc.name);
-        lbl.setAttribute('for', svc.name);
-        var buttonText = document.createTextNode("Service is Active");
-        lbl.appendChild(buttonText);
-        
-        btn.setAttribute('id', svc.origin);
-        btn.setAttribute('type', "checkbox");
-        btn.setAttribute('checked', svc.enabled ? "checked":"");
-        btn.appendChild(lbl);
-
-        var startupRow = document.createElement('div');
-        var startupCheck = document.createElement('input');
-        startupCheck.setAttribute("type", "checkbox");
-        startupCheck.setAttribute("checked", "true");
-        startupRow.appendChild(startupCheck);
-        startupRow.appendChild(document.createTextNode("Connect at Firefox startup"));
-
-        var notificationRow = document.createElement('div');
-        var notificationCheck = document.createElement('input');
-        notificationCheck.setAttribute("type", "checkbox");
-        notificationCheck.setAttribute("checked", "true");
-        notificationRow.appendChild(notificationCheck);
-        notificationRow.appendChild(document.createTextNode("Enable popup notifications"));
-
-        serviceblock.appendChild(header);
-        serviceblock.appendChild(btn);
-        serviceblock.appendChild(startupRow);
-        serviceblock.appendChild(notificationRow);
-
-        btn.addEventListener('click', function(e) {
-            var btn = e.target;
-            var enabled = !(btn.getAttribute('checked')=="checked");
-            btn.setAttribute('checked', enabled ? "checked":"");
-            buttonText.nodeValue = "Service is " + (enabled ? "Active" : "Inactive");            
-            var response = JSON.stringify({
-              topic: "preference-change",
-              data: {
-                origin: btn.getAttribute('id'),
-                enabled: enabled
-              }
-            });
-            window.postMessage(response, "*");
-        });
-
-        document.getElementById('available-activities').appendChild(serviceblock);
-
-        
+    //dump("about.html has message data " + JSON.stringify(msg, undefined, 2) + "\n");
+    if (msg.topic == 'social-browsing-enabled') {
+      document.getElementById("social-enabled").checked = true;
+      return;
+    }
+    if (msg.topic == 'social-browsing-disabled') {
+      document.getElementById("social-enabled").checked = false;
+      return;
+    }
+    if (msg.topic == 'social-service-manifest-changed') {
+      var svc = msg.data;
+      if (!svc) {
+        dump("about:social - removing a service isn't implemented yet!");
+        return;
+      }
+      // it might be a new service.
+      if (!document.getElementById(svc.origin)) {
+        addNewService(svc)
+        // and fall through so the state of the service is maintained.
+      }
+      // it is a change to a service we already know about.
+      // for now we are assuming only the "enabled" state changed...
+      var enabled = svc.enabled;
+      var btn = document.getElementById(svc.origin);
+      btn.setAttribute('checked', enabled ? "checked":"");
+      btn.firstChild.textContent = "Service is " + (enabled ? "Enabled" : "Disabled");
+      btn.setAttribute("checked", enabled ? "checked" : "");
+      return;
     }
   }
 }, false);
+
+function addNewService(svc) {
+  var serviceblock = document.createElement('div');
+  serviceblock.setAttribute("class", "service");
+
+  var header = document.createElement('h1');
+  var img = document.createElement('img');
+  img.setAttribute('src', svc.iconURL);
+  header.appendChild(img);
+  header.appendChild(document.createTextNode(svc.name));
+
+  var btn = document.createElement('button');
+  var lbl = document.createElement('label');
+
+  img.setAttribute('for', svc.name);
+  lbl.setAttribute('for', svc.name);
+  var buttonText = document.createTextNode("");
+  lbl.appendChild(buttonText);
+
+  btn.setAttribute('id', svc.origin);
+  btn.setAttribute('type', "checkbox");
+  btn.appendChild(lbl);
+
+  var startupRow = document.createElement('div');
+  var startupCheck = document.createElement('input');
+  startupCheck.setAttribute("type", "checkbox");
+  startupCheck.setAttribute("checked", "true");
+  startupRow.appendChild(startupCheck);
+  startupRow.appendChild(document.createTextNode("Connect at Firefox startup [note: not yet implemented!]"));
+
+  var notificationRow = document.createElement('div');
+  var notificationCheck = document.createElement('input');
+  notificationCheck.setAttribute("type", "checkbox");
+  notificationCheck.setAttribute("checked", "true");
+  notificationRow.appendChild(notificationCheck);
+  notificationRow.appendChild(document.createTextNode("Enable popup notifications [note: not yet implemented!]"));
+
+  serviceblock.appendChild(header);
+  serviceblock.appendChild(btn);
+  serviceblock.appendChild(startupRow);
+  serviceblock.appendChild(notificationRow);
+
+  btn.addEventListener('click', function(e) {
+    var btn = e.target;
+    var enabled = !(btn.getAttribute('checked')=="checked");
+    var response = JSON.stringify({
+      topic: "preference-service-change",
+      data: {
+        origin: btn.getAttribute('id'),
+        enabled: enabled
+      }
+    });
+    window.postMessage(response, "*");
+  });
+  document.getElementById('available-activities').appendChild(serviceblock);
+}
+
+function toggleSocialState() {
+    // we get the "clicked" notification *after* the browser has toggled it -
+    // so the "current" state of the checkbox is the new state to set.
+    var button = document.getElementById("social-enabled");
+    var newState = button.checked;
+    // reset the state back to how it is *now*, just incase our attempt to
+    // enable it failed (if it worked we will get told!)
+    button.checked = !button.checked;
+    var topic = "social-browsing-" + (newState ? "enabled" : "disabled");
+    var data = {topic: 'preference-social-change', data: {enabled: newState}}
+    window.postMessage(JSON.stringify(data), "*");
+}
 
 </script>
 </head>
@@ -121,6 +152,13 @@ window.addEventListener("message", function(event) {
 <body>
 <h3>Preferences: Ugly on purpose&trade;</h3>
 <div>
+    <input id="social-enabled"
+           type="checkbox"
+           onclick="toggleSocialState();"
+    />
+    Social browsing enabled
+</div>
+
 <div id="available-activities"/>
 </div>
 

@@ -230,10 +230,6 @@ function ProviderRegistry() {
   this.manifestRegistry = new ManifestRegistry();
   this._prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
 
-  Services.obs.addObserver(this, 'social-service-enabled', true);
-  Services.obs.addObserver(this, 'social-service-disabled', true);
-  Services.obs.addObserver(this, 'social-browsing-enabled', true);
-  Services.obs.addObserver(this, 'social-browsing-disabled', true);
   Services.obs.addObserver(this, 'quit-application', true);
 
   let self = this;
@@ -287,59 +283,10 @@ ProviderRegistry.prototype = {
 
   _providers: {},
   _currentProvider: null,
+  _enabled: null,
 
   observe: function(aSubject, aTopic, aData) {
-    let provider = this._providers[aData]
-    if (aTopic == 'social-service-disabled') {
-      provider.enabled = false;
-      let nextProvider = null;
-      if (provider == this.currentProvider) {
-        // just select the first one we have, if none, then disable browsing
-        for each(let provider in this._providers) {
-          if (provider.enabled) {
-            nextProvider = provider;
-            break;
-          }
-        }
-        if (nextProvider) {
-          this.currentProvider = nextProvider;
-        }
-        else {
-          Services.obs.notifyObservers(null, "social-browsing-disabled", null);
-          this.currentProvider = null;
-        }
-      }
-      provider.deactivate();
-      ManifestDB.get(aData, function(manifest) {
-        manifest.enabled = false;
-        ManifestDB.put(aData, manifest);
-      });
-    }
-    else if (aTopic == 'social-service-enabled') {
-      ManifestDB.get(aData, function(manifest) {
-        manifest.enabled = true;
-        ManifestDB.put(aData, manifest);
-      });
-      provider.enabled = true;
-      provider.activate();
-      if (!this._currentProvider) {
-        Services.obs.notifyObservers(null, "social-browsing-enabled", null);
-        this.currentProvider = provider;
-      }
-    }
-    else if (aTopic == 'social-browsing-enabled') {
-      for each(let provider in this._providers) {
-        provider.activate();
-      }
-      this._prefBranch.setBoolPref("enabled", true);
-    }
-    else if (aTopic == 'social-browsing-disabled') {
-      for each(let provider in this._providers) {
-        provider.deactivate();
-      }
-      this._prefBranch.setBoolPref("enabled", false);
-    }
-    else if (aTopic == 'quit-application') {
+    if (aTopic == 'quit-application') {
       this.each(function(provider) {
         provider.shutdown();
       })
@@ -351,23 +298,39 @@ ProviderRegistry.prototype = {
     try {
       let provider = new SocialProvider(manifest);
       this._providers[manifest.origin] = provider
-      // registration on startup needs to set currentProvider
-      try {
-        currentProviderOrigin = this._prefBranch.getCharPref("current");
-        if (!currentProviderOrigin || manifest.origin == currentProviderOrigin) {
-          this.currentProvider = provider;
-        }
-      }
-      catch(e) {
-        Cu.reportError(e);
-      }
+      // registration on startup could happen in any order, so we avoid
+      // setting this as "current".
     }
     catch(e) {
       Cu.reportError(e);
     }
   },
   get currentProvider() {
-    return this._currentProvider;
+    // no concept of a "current" provider when we are disabled.
+    if (!this.enabled) {
+      return null;
+    }
+    if (this._currentProvider) {
+      return this._currentProvider;
+    }
+    // we don't know who the current provider is - let's try and locate it.
+    let origin = this._prefBranch.getCharPref("current");
+    if (origin && this._providers[origin] && this._providers[origin].enabled) {
+      let provider = this._providers[origin];
+      this.currentProvider = provider;
+      return provider;
+    }
+    // so - can't find it based on our prefs - let's just select any
+    // enabled one.
+    for each(let provider in this._providers) {
+      if (provider.enabled) {
+        // this one will do.
+        this.currentProvider = provider; // will broadcast and remember the change.
+        return provider;
+      }
+    }
+    // so no providers available.
+    return null;
   },
   set currentProvider(provider) {
     if (provider && !provider.enabled) {
@@ -382,7 +345,7 @@ ProviderRegistry.prototype = {
       // just during dev, otherwise we shouldn't log here
       Cu.reportError(e);
     }
-    Services.obs.notifyObservers(null, "social-service-changed", origin);
+    Services.obs.notifyObservers(null, "social-browsing-current-service-changed", origin);
   },
   get: function pr_get(origin) {
     return this._providers[origin];
@@ -391,7 +354,96 @@ ProviderRegistry.prototype = {
     for each(let provider in this._providers) {
       cb.handle(provider);
     }
-  }
+  },
+  enableProvider: function(origin) {
+    let provider = this._providers[origin];
+    if (!provider) {
+      return false;
+    }
+
+    ManifestDB.get(origin, function(manifest) {
+      manifest.enabled = true;
+      ManifestDB.put(origin, manifest);
+      Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
+    });
+    provider.enabled = true;
+    // if browsing is disabled we can't activate it!
+    if (this.enabled) {
+      provider.activate();
+    }
+    // nothing else to do - it is now available to be the current provider
+    // but doesn't get that status simply because it was enabled.
+    return true;
+  },
+  disableProvider: function(origin) {
+    let provider = this._providers[origin];
+    if (!provider) {
+      return false;
+    }
+
+    provider.shutdown();
+    provider.enabled = false;
+    // and update the manifest.
+    // XXX - this is wrong!  We should track that state elsewhere, otherwise
+    // a manifest being updated by a provider loses this state!
+    ManifestDB.get(origin, function(manifest) {
+      manifest.enabled = false;
+      ManifestDB.put(origin, manifest);
+      Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
+    });
+
+    if (this._currentProvider && this._currentProvider == provider) {
+      // it was current - make it non-current.  A new "current" will be
+      // put in place when someone asks for it.
+      this._currentProvider = null;
+      // however, if this was the last enabled service, then we must disable
+      // social browsing completely.
+      let numEnabled = 0;
+      for each(let look in this._providers) {
+        if (provider.enabled) {
+          numEnabled += 1;
+        }
+      }
+      if (numEnabled == 0) {
+        this.enabled = false;
+      }
+    }
+    return true;
+  },
+
+  // the rest of these methods are misplaced and should be in a generic
+  // "social service" rather than the registry - but this will do for now
+  // The global state of whether social browsing is enabled or not.
+  get enabled() {
+    if (this._enabled === null) {
+      this.enabled = this._prefBranch.getBoolPref("enabled");
+    }
+    return this._enabled;
+  },
+  set enabled(new_state) {
+    dump("registry set enabled " + new_state + " (current state is " + this._enabled + ")\n");
+    if (new_state == this._enabled) {
+      return;
+    }
+    this._enabled = new_state; // set early so later .enabled requests don't recurse.
+    if (new_state) {
+      for each(let provider in this._providers) {
+        provider.activate();
+      }
+      if (this.currentProvider == null) {
+        dump("attempted to enable browsing but no providers available\n");
+        this._enabled = false;
+        return;
+      }
+    } else {
+      for each(let provider in this._providers) {
+        provider.deactivate();
+      }
+    }
+    let topic = new_state ? "social-browsing-enabled" : "social-browsing-disabled";
+    Services.obs.notifyObservers(null, topic, null);
+    this._prefBranch.setBoolPref("enabled", new_state);
+  },
 }
 
 const components = [ProviderRegistry];

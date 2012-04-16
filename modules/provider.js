@@ -32,13 +32,6 @@ const EXPORTED_SYMBOLS = ["SocialProvider"];
  * @constructor
  * @param {jsobj} portion of the manifest file describing this provider
  *
- * Several notifications are sent by this class:
- *
- * social-service-init-ready   sent after class initialization
- * social-service-shutdown     sent upon shutdown of a service
- * social-service-activated    sent when this provider is made active
- * social-service-deactivated  sent when a different provider is made active
- *
  * The 'active' provider is the currently selected provider in the UI.
  */
 function SocialProvider(input) {
@@ -70,8 +63,6 @@ SocialProvider.prototype = {
     if (!this.enabled) return;
     this._log("init");
     this.windowCreatorFn = windowCreatorFn;
-
-    Services.obs.notifyObservers(null, "social-service-init-ready", this.origin);
   },
   
   /**
@@ -95,7 +86,6 @@ SocialProvider.prototype = {
       this._log(e);
     }
     this._active = false;
-    Services.obs.notifyObservers(null, "social-service-shutdown", this.origin);
   },
   
   /**
@@ -107,7 +97,6 @@ SocialProvider.prototype = {
       this.init();
       this._workerapi = new workerAPI(this.makeWorker(), this);
       this._active = true;
-      Services.obs.notifyObservers(null, "social-service-activated", this.origin);
     }
   },
   
@@ -118,7 +107,6 @@ SocialProvider.prototype = {
     if (!this._active) return;
     closeWindowsForService(this);
     this._active = false;
-    Services.obs.notifyObservers(null, "social-service-deactivated", this.origin);
     // XXX is deactivate the same as shutdown?
     this.shutdown();
   },

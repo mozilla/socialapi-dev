@@ -10,8 +10,7 @@ const EXPORTED_SYMBOLS = ["baseWidget"];
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 const topics = [
-  'social-service-init-ready',
-  'social-service-changed',
+  'social-browsing-current-service-changed',
   'social-browsing-enabled',
   'social-browsing-disabled'
 ];
@@ -28,15 +27,8 @@ baseWidget.prototype = {
   observe: function(aSubject, aTopic, aData) {
     let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
                             .getService(Ci.mozISocialRegistry);
-    if (aTopic == 'social-service-changed') {
+    if (aTopic == 'social-browsing-current-service-changed') {
       this.setProvider(registry.currentProvider);
-    }
-    else if (aTopic == 'social-service-init-ready') {
-      let service = registry.get(aData);
-      if (service == registry.currentProvider) {
-        this.enable();
-        this.setProvider(service);
-      }
     }
     else if (aTopic == 'social-browsing-enabled') {
       this.enable();
@@ -51,8 +43,6 @@ baseWidget.prototype = {
   setProvider: function(aProvider) {},
   enable: function() {},
   disable: function() {},
-  show: function() {},
-  hide: function() {},
   ambientNotificationChanged: function() {},
   remove: function() {
     for each (let topic in topics) {
