@@ -53,7 +53,7 @@ let stateObserver = {
     if (aTopic == 'social-service-manifest-changed') {
       // this is just to help the isAvailable() check - if a service was
       // enabled/disabled it may be that the toolbar needs to be shown/hidden
-      set_window_social_enabled(false);
+      set_window_social_enabled_from_doc_state();
       return;
     }
   }
@@ -86,6 +86,10 @@ function set_window_social_enabled(val) {
   // toolbar widget, so check that.
   if (installed && !window.social.toolbarStatusArea) {
     window.social.toolbarStatusArea = new SocialToolbarStatusArea(window);
+    window.social.toolbarStatusArea.enable();
+    let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
+                     .getService(Ci.mozISocialRegistry);
+    window.social.toolbarStatusArea.setProvider(registry.currentProvider);
   }
   broadcaster = document.getElementById("socialInstalled");
   broadcaster.setAttribute("checked", installed ? "true" : "false");

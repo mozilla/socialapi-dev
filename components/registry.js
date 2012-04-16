@@ -305,38 +305,37 @@ ProviderRegistry.prototype = {
       Cu.reportError(e);
     }
   },
+  _findCurrentProvider: function() {
+    // workout what provider should be current.
+    if (!this.enabled) {
+      throw new Error("_findCurrentProvider should not be called when disabled.");
+    }
+    let origin = this._prefBranch.getCharPref("current");
+    if (origin && this._providers[origin] && this._providers[origin].enabled) {
+      return this._providers[origin];
+    }
+    // can't find it based on our prefs - just select any enabled one.
+    for each(let provider in this._providers) {
+      if (provider.enabled) {
+        // this one will do.
+        return provider;
+      }
+    }
+    // should be impossible to get here; our enabled state should be false
+    // if there are none we can select.
+    return null;
+  },
   get currentProvider() {
     // no concept of a "current" provider when we are disabled.
     if (!this.enabled) {
       return null;
     }
-    if (this._currentProvider) {
-      return this._currentProvider;
-    }
-    // we don't know who the current provider is - let's try and locate it.
-    let origin = this._prefBranch.getCharPref("current");
-    if (origin && this._providers[origin] && this._providers[origin].enabled) {
-      let provider = this._providers[origin];
-      this.currentProvider = provider;
-      return provider;
-    }
-    // so - can't find it based on our prefs - let's just select any
-    // enabled one.
-    for each(let provider in this._providers) {
-      if (provider.enabled) {
-        // this one will do.
-        this.currentProvider = provider; // will broadcast and remember the change.
-        return provider;
-      }
-    }
-    // so no providers available.
-    return null;
+    return this._currentProvider;
   },
   set currentProvider(provider) {
     if (provider && !provider.enabled) {
       throw new Error("cannot set disabled provider as the current provider");
     }
-    let origin = provider ? provider.origin : "";
     this._currentProvider = provider;
     try {
       this._prefBranch.setCharPref("current", origin);
@@ -345,7 +344,9 @@ ProviderRegistry.prototype = {
       // just during dev, otherwise we shouldn't log here
       Cu.reportError(e);
     }
-    Services.obs.notifyObservers(null, "social-browsing-current-service-changed", origin);
+    Services.obs.notifyObservers(null,
+                                 "social-browsing-current-service-changed",
+                                 this._currentProvider.origin);
   },
   get: function pr_get(origin) {
     return this._providers[origin];
@@ -393,19 +394,25 @@ ProviderRegistry.prototype = {
     });
 
     if (this._currentProvider && this._currentProvider == provider) {
-      // it was current - make it non-current.  A new "current" will be
-      // put in place when someone asks for it.
+      // it was current select a new current one.
       this._currentProvider = null;
       // however, if this was the last enabled service, then we must disable
       // social browsing completely.
       let numEnabled = 0;
       for each(let look in this._providers) {
-        if (provider.enabled) {
+        if (look.enabled) {
           numEnabled += 1;
         }
       }
       if (numEnabled == 0) {
+        dump("provider disabled and no others are enabled - disabling social\n")
         this.enabled = false;
+      } else {
+        // don't call this.currentProvider as we don't want to set the pref!
+        this._currentProvider = this._findCurrentProvider();
+        Services.obs.notifyObservers(null,
+                                     "social-browsing-current-service-changed",
+                                     this._currentProvider.origin);
       }
     }
     return true;
@@ -430,18 +437,25 @@ ProviderRegistry.prototype = {
       for each(let provider in this._providers) {
         provider.activate();
       }
-      if (this.currentProvider == null) {
+      let current = this._findCurrentProvider();
+      if (current == null) {
         dump("attempted to enable browsing but no providers available\n");
         this._enabled = false;
         return;
       }
+      // Set the current provider so anyone who asks as a result of the
+      // social-browsing-enabled gets the right answer, but don't broadcast
+      // about the new default until after,
+      this._currentProvider = current;
+      Services.obs.notifyObservers(null, "social-browsing-enabled", null);
+      Services.obs.notifyObservers(null, "social-browsing-current-service-changed", null);
     } else {
       for each(let provider in this._providers) {
         provider.deactivate();
       }
+      this._currentProvider = null;
+      Services.obs.notifyObservers(null, "social-browsing-disabled", null);
     }
-    let topic = new_state ? "social-browsing-enabled" : "social-browsing-disabled";
-    Services.obs.notifyObservers(null, topic, null);
     this._prefBranch.setBoolPref("enabled", new_state);
   },
 }
