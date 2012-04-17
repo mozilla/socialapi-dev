@@ -44,8 +44,11 @@
       <observes element="socialSidebarVisible" attribute="checked"/>
       <observes element="socialEnabled" attribute="hidden"/>
     </command>
+    <command id="cmd_socialSidebarRefresh"
+             oncommand="var cw=window.social.sidebar.browser.contentWindow; cw.location = cw.location.href;"
+             label="&socialsidebarrefresh.label;"/>
   </commandset>
-  
+
   <keyset id="mainKeyset">
     <key id="key_socialRecommend" keycode="VK_F2" command="cmd_socialRecommend"/>
     <!--<key id="key_socialBrowsingToggle" keycode="VK_F2" command="cmd_socialBrowsingToggle"/>-->
@@ -57,6 +60,13 @@
               command='cmd_socialBrowsingToggle'
               type="checkbox"/>
   </menupopup>
+
+  <popupset id="mainPopupSet">
+    <menupopup id="menu_SocialSidebarPopup">
+      <menuitem id="social-sidebar-refresh"
+                command='cmd_socialSidebarRefresh'/>
+    </menupopup>
+  </popupset>
 
 <toolbarpalette id="BrowserToolbarPalette">
   <toolbaritem
@@ -142,7 +152,7 @@
         width="240"
         hidden="true"
         style="overflow: hidden"
-        context="social-context-menu"
+        context="menu_SocialSidebarPopup"
         observes="socialSidebarVisible">
     <browser id="social-status-sidebar-browser"
              type="content"

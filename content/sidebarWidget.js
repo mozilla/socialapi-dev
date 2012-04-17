@@ -15,42 +15,6 @@ SocialSidebar.prototype = {
     return document.getElementById("social-status-sidebar-browser");
   },
   create: function(aWindow) {
-    // XXX - todo - move the context menu to the overlay!
-    this.attachContextMenu();
-
-  },
-  attachContextMenu: function() {
-    let {document, gBrowser} = this.browser.ownerDocument.defaultView;
-    // create a popup menu for the browser.
-    // XXX - can we consolidate the context menu with toolbar items etc
-    // in a commandset?
-    let popupSet = document.getElementById("mainPopupSet");
-    let menu = document.createElement("menupopup");
-    menu.id = "social-context-menu";
-    menu.addEventListener("popupshowing", function(event) {
-      let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                              .getService(Ci.mozISocialRegistry);
-      let service = registry.currentProvider;
-      if (!service || !service.enabled) {
-        event.preventDefault();
-        return ;
-      }
-      // and a "refresh" menu item.
-      let menuitem = document.createElement( "menuitem" );
-      menuitem.setAttribute("label", "Refresh");
-      menuitem.addEventListener("command", function() {
-        let sbrowser = document.getElementById("social-status-sidebar-browser");
-        sbrowser.contentWindow.location = service.sidebarURL;
-      });
-      menu.appendChild(menuitem);
-    }, false);
-    menu.addEventListener("popuphidden", function() {
-      let elts = menu.getElementsByTagName("menuitem");
-      while (elts.length) {
-        menu.removeChild(elts[0]);
-      }
-    }, false);
-    popupSet.appendChild(menu);
   },
   setProvider: function(aService) {
     if (!aService.enabled) {

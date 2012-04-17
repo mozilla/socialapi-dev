@@ -4,3 +4,4 @@
 <!ENTITY socialdev.prefslabel      "Manage Social Services...">
 <!ENTITY socialsidebar.label       "Show Social sidebar">
 <!ENTITY socialenable.label       "Enable Social Browsing">
+<!ENTITY socialsidebarrefresh.label "Refresh">
