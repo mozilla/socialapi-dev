@@ -36,7 +36,6 @@ baseWidget.prototype = {
     else if (aTopic == 'social-browsing-disabled') {
       this.disable();
     } else if (aTopic == 'social-browsing-ambient-notification-changed') {
-      dump("baseWidget got ambientNotificationChanged\n");
       this.ambientNotificationChanged();
     }
   },

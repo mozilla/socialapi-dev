@@ -77,7 +77,6 @@ SocialToolbarStatusArea.prototype = {
 
 
     try {
-      dump("Rendering Ambient Notification region\n");
     // create some elements...
     var XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
@@ -137,7 +136,7 @@ SocialToolbarStatusArea.prototype = {
     }
 
     } catch (e) {
-      dump("\n\n\n" + e + "\n\n\n");
+      Cu.reportError(e);
     } 
   },
 
