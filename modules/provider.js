@@ -78,9 +78,7 @@ SocialProvider.prototype = {
     }
     try {
       this._log("shutdown");
-      var worker = this.makeWorker(null);
-      worker.port.close(); // shouldn't be necessary...
-      worker.terminate();
+      this.makeWorker(null).terminate();
     }
     catch (e) {
       this._log(e);

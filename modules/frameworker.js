@@ -45,7 +45,7 @@ function MessagePort(name) {
   this._entangled = null; // null, or another MessagePort object
   this._onmessage = undefined; // set when the owner sets worker.onmessage.
   this._pendingMessages = []; // pending messages before the other side has attached.
-  this._worker = null; // null, or for the port in the worker, the worker global.
+  this._workerInfo = null; // null, or the worker info for the port in the client.
   _numPortsAlive++;
 };
 
@@ -81,11 +81,11 @@ MessagePort.prototype = {
   postMessage: function(data) {
     //log(this._name+ " postMessage "+data.topic);
     // dump("postMessage " + data + "\n");
-    let eventToPost = {data: data};
     let entangled = this._entangled;
     if (!entangled) {
-      throw new Error("port closed or not started");
+      return // port closed.
     }
+    let eventToPost = {data: data};
     if (entangled._onmessage) {
         entangled._onmessage(eventToPost);
     }
@@ -100,23 +100,29 @@ MessagePort.prototype = {
    * closes both ends of an entangled port
    */
   close: function() {
-    if (!this._entangled) {
+    let other = this._entangled;
+    if (!other) {
       return; // already closed.
     }
-    // not sure it is 100% correct, but we also close the other side.
-    let other = this._entangled;
-    this._entangled = null; // must reset early to avoid recursion death.
-
-    // XXX - note that the W3C spec for workers doesn't define an ondisconnect
-    // method, but we need one so the worker removes the broadcast ports.
-    if (this._worker) {
-      this._worker.ondisconnect({ports: [this]});
-      this._worker = null;
+    this._entangled = null; // must reset early to avoid recursion death...
+    this._onmessage = null; // and no more messages received...
+    this._pendingMessages = null;
+    // if this is a worker port, remove it from the list of all ports.
+    if (this._workerInfo) {
+      var index = this._workerInfo.ports.indexOf(this);
+      if (index != -1) {
+        this._workerInfo.ports.splice(index, 1);
+      }
+      this._workerInfo = null;
     }
 
+    // a leaky abstraction due to the worker spec not specifying how the
+    // other end of a port knows it is closing.
+    if (other._onmessage) {
+      other._onmessage({data: {topic: "social.port-closing"}});
+    }
+    // not sure it is 100% correct, but we also close the other side.
     other.close();
-    this._onmessage = null;
-    this._pendingMessages = null;
     _numPortsAlive--;
     log("closed port " + this._name + " - now " + _numPortsAlive + " ports alive");
   },
@@ -177,9 +183,11 @@ function FrameWorker(url) {
     frame.setAttribute("src", url);
 
     // setup the workerInfo and add this connection to the pending queue
+    clientPort._workerInfo = workerInfo;
     workerInfo = workerInfos[url] = {
       frame: frame,
-      pendingWorkers: [workerPort],
+      pendingWorkers: [workerPort], // ports yet to be connected.
+      ports: [clientPort], // ports on the client-side yet to be closed.
       loaded: false
     };
 
@@ -227,34 +235,32 @@ function FrameWorker(url) {
         }, false);
 
         workerWindow.addEventListener("load", function() {
-          log("got worker onload event");
+          log("got worker onload event for " + url);
           // after the iframe has loaded the js file as text, get the text and
           // eval it into the sandbox
-
           try {
-            try {
-              let scriptText = workerWindow.document.body.textContent;
-              Cu.evalInSandbox(scriptText, sandbox, "1.8", workerWindow.location.href, 1);  
-            } catch (e) {
-              Cu.reportError("Error evaluating worker script for " + url + ": " + e + "\n" + e.stack);
-              return;
-            }
-
-            // so finally we are ready to roll - dequeue all the pending connects
-            workerInfo.loaded = true;
-            let pending = workerInfo.pendingWorkers;
-            log("worker window " + url + " loaded - connecting " + pending.length + " workers");
-            while (pending.length) {
-              let port = pending.shift();
-              port._worker = sandbox;
-              sandbox.onconnect({ports: [port]});
-            }
+            let scriptText = workerWindow.document.body.textContent;
+            Cu.evalInSandbox(scriptText, sandbox, "1.8", workerWindow.location.href, 1);
+          } catch (e) {
+            Cu.reportError("Error evaluating worker script for " + url + ": " + e + "\n" + e.stack);
+            return;
           }
-          catch(e) {
-            Cu.reportError("Failed to dequeue pending worker events: " + e + "\n" + e.stack);
-          }
-          // save the sandbox somewhere convenient
+          // so finally we are ready to roll - dequeue all the pending connects
+          workerInfo.loaded = true;
+          // save the sandbox somewhere convenient before we connect.
           frame.sandbox = sandbox;
+          let pending = workerInfo.pendingWorkers;
+          log("worker window " + url + " loaded - connecting " + pending.length + " workers");
+          while (pending.length) {
+            let port = pending.shift();
+            if (port._entangled) { // may have already been closed!
+              try {
+                sandbox.onconnect({ports: [port]});
+              } catch(e) {
+                Cu.reportError("Failed to dequeue pending worker events: " + e + "\n" + e.stack);
+              }
+            }
+          }
         }, true);
       }
       catch(e) {
@@ -270,12 +276,17 @@ function FrameWorker(url) {
   else {
     // already have a worker - either queue or make the connection.
     if (workerInfo.loaded) {
-      workerPort._worker = workerInfo.frame.sandbox;
-      workerInfo.frame.sandbox.onconnect({ports: [workerPort]});
+      try {
+        workerInfo.frame.sandbox.onconnect({ports: [workerPort]});
+      } catch (ex) {
+        Cu.reportError("Failed to connect a port: " + e + "\n" + e.stack);
+      }
     }
     else {
       workerInfo.pendingWorkers.push(workerPort);
     }
+    clientPort._workerInfo = workerInfo;
+    workerInfo.ports.push(clientPort);
   }
 
   // return the pseudo worker object.
@@ -285,7 +296,15 @@ function FrameWorker(url) {
   // TODO: work out a sane impl for 'terminate'.
   function terminate() {
     log("worker at " + url + " terminating");
-    workerInfo.frame.sandbox.onterminate();
+    while (workerInfo.ports.length) {
+      let port = workerInfo.ports.shift()
+      try {
+        port.close();
+      } catch (ex) {
+        Cu.reportError(ex);
+      }
+    }
+    //workerInfo.frame.sandbox.onterminate();
     // now nuke the iframe itself and forget everything about this worker.
     let appShell = Cc["@mozilla.org/appshell/appShellService;1"]
                     .getService(Ci.nsIAppShellService);
