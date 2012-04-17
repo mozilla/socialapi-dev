@@ -14,6 +14,7 @@ SocialRecommendButton.prototype = {
   disable: function() {
     if (this.worker) {
       this.worker.port.close();
+      this.worker = null;
     }
   },
   setProvider: function(aProvider) {
