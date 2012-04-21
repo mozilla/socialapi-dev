@@ -19,6 +19,8 @@ workerAPI.prototype = {
   initialize: function(worker, service) {
     this.service = service;
     this.worker = worker;
+    if (!worker)
+      return;
     worker.port.onmessage = function(event) {
       let {topic, data} = event.data;
       if (!topic) {
@@ -42,7 +44,8 @@ workerAPI.prototype = {
   },
 
   shutdown: function() {
-    this.worker.port.close();
+    if (this.worker)
+      this.worker.port.close();
     this.worker = this.service = null;
   },
 
