@@ -59,7 +59,7 @@ MessagePort.prototype = {
         handler(newEv);
       }
       catch(e) {
-        Cu.reportError("Port handler failed: " + e);
+        Cu.reportError("Port handler failed: " + e + "\n" + e.stack);
       }
     }
     if (!this._entangled) {
@@ -233,6 +233,12 @@ function FrameWorker(url) {
         frame.addEventListener('online', function(event) {
           Cu.evalInSandbox("ononline();", sandbox);
         }, false);
+
+        // And a very hacky work-around for bug 734215
+        workerWindow.bufferToArrayHack = function(a) {
+            return new workerWindow.Uint8Array(a);
+        };
+        sandbox.importFunction(workerWindow.bufferToArrayHack, "bufferToArrayHack");
 
         workerWindow.addEventListener("load", function() {
           log("got worker onload event for " + url);
