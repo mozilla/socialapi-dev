@@ -252,6 +252,9 @@ function ProviderRegistry() {
                      .getInterface(Ci.nsIDOMWindow);
       // our service windows simply have browser attached to them
       var sbrowser = xulWindow.document.getElementById("social-status-sidebar-browser") || xulWindow.browser;
+      var panelbrowser = xulWindow.document.getElementById("social-notification-browser");
+      if (panelbrowser && panelbrowser.contentDocument == doc) sbrowser = panelbrowser;
+
       if (sbrowser && sbrowser.contentDocument == doc) {
         let service = sbrowser.service? sbrowser.service : xulWindow.service;
         if (service.workerURL)

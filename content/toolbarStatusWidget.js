@@ -59,7 +59,10 @@ SocialToolbarStatusArea.prototype = {
         iconContainer.addEventListener("click", function(e) {
           var panel = window.document.getElementById("social-notification-panel");
           var notifBrowser = window.document.getElementById("social-notification-browser");
-          
+          let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
+                        .getService(Ci.mozISocialRegistry);
+          notifBrowser.service = registry.currentProvider;
+
           var resizer = function() {
             var body = notifBrowser.contentDocument.getElementById("notif");
             notifBrowser.width = body.clientWidth;
