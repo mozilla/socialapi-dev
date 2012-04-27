@@ -160,7 +160,7 @@ SocialProvider.prototype = {
     // navigator is part of the sandbox proto. We're not using
     // nsIDOMGlobalPropertyInitializer here since we're selectivly injecting
     // this only into social panels.
-    Object.defineProperty(sandbox.navigator, "mozSocial", {
+    Object.defineProperty(sandbox.window.navigator, "mozSocial", {
       value: {
         // XXX - why a function?  May mis-lead people into
         // thinking it is creating a *new* worker which
