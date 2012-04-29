@@ -8,11 +8,27 @@ Cu.import("resource://socialdev/modules/baseWidget.js");
 
 function SocialSidebar() {
   baseWidget.call(this, window);
+  Services.obs.addObserver(this, "social-sidebar-visible", false);
+  Services.obs.addObserver(this, "social-sidebar-hidden", false);
+
 }
 SocialSidebar.prototype = {
   __proto__: baseWidget.prototype,
   get browser() {
     return document.getElementById("social-status-sidebar-browser");
+  },
+  observe: function(aSubject, aTopic, aData) {
+    if (aTopic == "social-sidebar-visible") {
+      if (aSubject === window) {
+        this.enable();
+      }
+    } else if (aTopic == "social-sidebar-hidden") {
+      if (aSubject === window) {
+        this.disable();
+      }
+    } else {
+      baseWidget.prototype.observe.call(this, aSubject, aTopic, aData);
+    }
   },
   create: function(aWindow) {
   },

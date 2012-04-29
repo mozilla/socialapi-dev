@@ -106,6 +106,8 @@ function set_window_social_enabled(val) {
   let broadcaster = document.getElementById("socialSidebarVisible");
   broadcaster.setAttribute("checked", sideBarVisible ? "true" : "false");
   broadcaster.setAttribute("hidden", sideBarVisible ? "false" : "true");
+  let topic = sideBarVisible ? "social-sidebar-visible" : "social-sidebar-hidden";
+  Services.obs.notifyObservers(window, topic, null);
 }
 
 // used by chrome to toggle the enabled state.
@@ -128,6 +130,8 @@ function social_sidebar_toggle() {
     // and set the pref.
     let prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
     prefBranch.setBoolPref("visible", newState);
+    let topic = newState ? "social-sidebar-visible" : "social-sidebar-hidden";
+    Services.obs.notifyObservers(window, topic, null);
   } else {
     cu.reportError("can't toggle the social sidebar if social is disabled!");
   }
