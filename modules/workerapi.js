@@ -10,6 +10,7 @@ const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 var notification = {};
 Cu.import("resource://socialdev/modules/notification.js", notification);
+Cu.import("resource://gre/modules/Services.jsm");
 
 function workerAPI(worker, service) {
   this.initialize(worker, service)
@@ -19,8 +20,18 @@ workerAPI.prototype = {
   initialize: function(worker, service) {
     this.service = service;
     this.worker = worker;
+    this.cookieTimer = null;
     if (!worker)
       return;
+    // get the host of the service for simple cookie matching.
+    // Note we use "URLPrefix" for dev, but should probably use the worker
+    // URL once that is actually hosted on real sites...
+    this.serviceHost = Components.classes["@mozilla.org/network/io-service;1"]
+                       .getService(Components.interfaces.nsIIOService)
+                       .newURI(service.URLPrefix, null, null)
+                       .host;
+
+    Services.obs.addObserver(this, 'cookie-changed', false);
     worker.port.onmessage = function(event) {
       let {topic, data} = event.data;
       if (!topic) {
@@ -44,9 +55,87 @@ workerAPI.prototype = {
   },
 
   shutdown: function() {
+    try {
+      Services.obs.removeObserver(this, 'cookie-changed');
+    } catch (ex) {
+      Cu.reportError(ex);
+    }
+    try {
+      if (this.cookieTimer) {
+        this.cookieTimer.cancel();
+      }
+    } catch (ex) {
+      Cu.reportError(ex);
+    }
+    this.cookieTimer = null;
     if (this.worker)
       this.worker.port.close();
     this.worker = this.service = null;
+  },
+
+  cookieMatchesService: function(cookie) {
+    if (!cookie) {
+      return false;
+    }
+    cookie = cookie.QueryInterface(Ci.nsICookie2);
+    if (cookie.host[0] == ".") {
+      // it is a domain cookie, so just check the end of the service domain
+      return this.serviceHost.substr(-cookie.host.length) == cookie.host;
+    }
+    // a cookie for a specific host, so must match exactly.
+    return cookie.rawHost === this.serviceHost;
+  },
+
+  // We use a 1 second timer for the cookie notification to prevent a "flood"
+  // of notifications.
+  notifyWorkerOfCookieChange: function() {
+    let worker = this.worker;
+    let event = {
+      notify: function(timer) {
+        this.worker.port.postMessage({topic: "social.cookie-changed"});
+        this.cookieTimer = null;
+      }.bind(this)
+    }
+    this.cookieTimer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
+    this.cookieTimer.initWithCallback(event, 1000, Ci.nsITimer.TYPE_ONE_SHOT);
+  },
+
+  observe: function(aSubject, aTopic, aData) {
+    // very simple - we don't say what the cookie value is, just that it
+    // might have changed.  In some cases we will deliver a false-positive
+    // (ie, the cookie didn't really change) but try hard to avoid missing
+    // when one might have changed.
+    if (aTopic != 'cookie-changed') {
+      return;
+    }
+    // if we already have a timer scheduled then no need to bother checking.
+    if (this.cookieTimer) {
+      return;
+    }
+    switch (aData) {
+      // All the 'single cookie' notifications.
+      case 'deleted':
+      case 'added':
+      case 'changed':
+        if (this.cookieMatchesService(aSubject)) {
+          this.notifyWorkerOfCookieChange();
+        }
+        break;
+      // The 'array of cookies' notification.
+      case 'batch-deleted':
+        let enumerate = aSubject.QueryInterface(Ci.nsIArray).enumerate();
+        while (enumerate.hasMoreElements()) {
+          if (this.cookieMatchesService(enumerate.getNext()))
+            this.notifyWorkerOfCookieChange();
+            return;
+        }
+        break;
+      // The 'all cookies might have changed' notifications.
+      case 'cleared':
+      case 'reload':
+        this.notifyWorkerOfCookieChange();
+        break;
+    }
   },
 
   // This is the API exposed to the worker itself by way of messages.

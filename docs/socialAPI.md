@@ -191,6 +191,16 @@ Indicates that the user has clicked the "user recommendation" interface element.
 
 No response is necessary; however, the service may respond on the same port with a user-recommend-prompt-response if the click target should change its appearance.
 
+### `social.cookie-changed`
+
+Sent when Firefox detects that a cookie has changed on the domain of the worker.  A cookie may have been removed or changed and no indication is given of either the cookie name or the action that was taken.
+
+Firefox will send this message up to 1 second after it has detected a cookie has changed and any changes that happen in this period will only be reported once.  For example, if 3 cookies are changed within a 1 second period, only one `social.cookie-changed` notification will be sent.
+
+*Arguments:*
+
+No arguments.
+
 ### `user-isidle`
 
 Sent by the browser when the idle timer requested in an earlier observe-isidle is reached.  No arguments.
