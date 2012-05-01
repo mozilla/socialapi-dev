@@ -83,9 +83,7 @@ function __initWorkerMessageHandler() {
           dump("port-message but port is closed\n");
           return;
         }
-        // See comments in port.postMessage below - we work around a cloning
-        // issue by using JSON for these messages.
-        port._onmessage(JSON.parse(data.data));
+        port._onmessage(data.data);
         break;
 
       default:
@@ -141,9 +139,7 @@ function initClientMessageHandler(workerInfo, workerWindow) {
           dump("port-message but port is closed\n");
           return;
         }
-        // See comments in port.postMessage below - we work around a cloning
-        // issue by using JSON for these messages.
-        port._onmessage(JSON.parse(data.data));
+        port._onmessage(data.data);
         break;
 
       default:
@@ -185,6 +181,7 @@ AbstractPort.prototype = {
   toString: function() {
     return "MessagePort(portType='" + this._portType + "', portId=" + this._portid + ")";
   },
+  _JSONParse: function(data) JSON.parse(data),
 
  _postControlMessage: function(topic, data) {
     let postData = {portTopic: topic,
@@ -195,6 +192,12 @@ AbstractPort.prototype = {
   },
 
   _onmessage: function(data) {
+    // See comments in postMessage below - we work around a cloning
+    // issue by using JSON for these messages.
+    // Further, we allow the workers to override exactly how the JSON parsing
+    // is done - we try and do such parsing in the client window so things
+    // like prototype overrides on Array work as expected.
+    data = this._JSONParse(data);
     if (!this._handler) {
       this._pendingMessagesIncoming.push(data);
     } else {
@@ -268,7 +271,8 @@ WorkerPort.prototype = {
 }
 
 // This port lives entirely in chrome.
-function ClientPort(portid) {
+function ClientPort(portid, clientWindow) {
+  this._clientWindow = clientWindow
   this._window = null;
   // messages posted to the worker before the worker has loaded.
   this._pendingMessagesOutgoing = [];
@@ -278,6 +282,13 @@ function ClientPort(portid) {
 ClientPort.prototype = {
   __proto__: AbstractPort.prototype,
   _portType: "client",
+
+  _JSONParse: function(data) {
+    if (this._clientWindow) {
+      return this._clientWindow.JSON.parse(data);
+    }
+    return JSON.parse(data);
+  },
 
   _createWorkerAndEntangle: function(workerInfo) {
     this._window = workerInfo.frame.contentWindow;
@@ -328,12 +339,12 @@ ClientPort.prototype = {
  * @param {String} url
  * @returns {Object} object containing a port and terminate function
  */
-function FrameWorker(url) {
+function FrameWorker(url, clientWindow) {
   log("creating worker for " + url);
   // first create the client port we are going to use.  Laster we will
   // message the worker to create the worker port.
   let portid = _nextPortId++;
-  let clientPort = new ClientPort(portid);
+  let clientPort = new ClientPort(portid, clientWindow);
 
   let workerInfo = workerInfos[url];
   if (!workerInfo) {

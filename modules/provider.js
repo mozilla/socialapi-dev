@@ -129,7 +129,7 @@ SocialProvider.prototype = {
       this._log("makeWorker cannot create worker: no workerURL specified");
       throw new Error("makeWorker cannot create worker: no workerURL specified for "+this.origin);
     }
-    return frameworker.FrameWorker(this.workerURL);
+    return frameworker.FrameWorker(this.workerURL, window);
   },
   
   /**
@@ -184,14 +184,14 @@ SocialProvider.prototype = {
       try {
         // this only happens if contentPatch is local, we'll keep it simple
         // and just use the scriptLoader
-        Services.scriptloader.loadSubScript(this.contentPatchPath, sandbox);
+        Services.scriptloader.loadSubScript(this.contentPatchPath, targetWindow);
         this._log("Successfully applied content patch");
       }
       catch (e) {
         this._log("Error while applying content patch: " + e);
       }
     }
-  
+
     targetWindow.addEventListener("unload", function() {
       try {
         worker.port.close();
