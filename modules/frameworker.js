@@ -393,8 +393,13 @@ function FrameWorker(url, clientWindow) {
                          'MozBlobBuilder', 'FileReader', 'Blob',
                          'navigator'];
         for each(let fn in workerAPI) {
-          if (workerWindow[fn]) {
-            sandbox.importFunction(workerWindow[fn], fn);
+          try {
+            if (workerWindow[fn]) {
+              sandbox.importFunction(workerWindow[fn], fn);
+            }
+          }
+          catch(e) {
+            Cu.reportError("failed to import API "+fn+"\n"+e+"\n");
           }
         }
 
