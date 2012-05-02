@@ -47,7 +47,8 @@ SocialToolbarStatusArea.prototype = {
         
         if (icon.counter) {
           iconCounter.appendChild(window.document.createTextNode(icon.counter));
-        } else {
+        }
+        else {
           iconCounter.style.display = "none";
         }
 
@@ -100,11 +101,14 @@ SocialToolbarStatusArea.prototype = {
       image.setAttribute("src", registry.currentProvider.iconURL);
     }
 
-   /* if (registry.currentProvider.ambientNotificationBackground) {
+    /*  XXX why is the commented out?
+    if (registry.currentProvider.ambientNotificationBackground) {
       container.style.background = registry.currentProvider.ambientNotificationBackground;
-    } else {*/
-      //container.style.backgroundColor = "rgb(152,152,152)";
-    //}
+    }
+    else {
+      container.style.backgroundColor = "rgb(152,152,152)";
+    }
+    */
     var iconStack = window.document.createElementNS(XUL_NS, "stack");
 
     var iconBox = window.document.createElementNS(XUL_NS, "hbox");
@@ -138,7 +142,8 @@ SocialToolbarStatusArea.prototype = {
       // container.appendChild(portrait);
     }
 
-    } catch (e) {
+    }
+    catch (e) {
       Cu.reportError(e);
     } 
   },
@@ -245,7 +250,8 @@ function buildSocialPopupContents(window, socialpanel)
     // if we are disabled we don't want the list of providers nor the separators
     if (disabled) {
       providerSep.setAttribute("hidden", "true");
-    } else {
+    }
+    else {
       providerSep.removeAttribute("hidden");
       // Create top-level items
       registry.each(function(service) {

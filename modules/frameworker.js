@@ -91,7 +91,8 @@ function __initWorkerMessageHandler() {
   function messageHandler(event) {
     try {
       _messageHandler(event);
-    } catch (ex) {
+    }
+    catch (ex) {
       dump("ERROR handling worker port control message: " + ex + "\n" + ex.stack);
     }
   }
@@ -147,7 +148,8 @@ function initClientMessageHandler(workerInfo, workerWindow) {
   function messageHandler(event) {
     try {
       _messageHandler(event);
-    } catch (ex) {
+    }
+    catch (ex) {
       Cu.reportError("Error handling client port control message: " + ex + "\n" + ex.stack);
     }
   }
@@ -300,7 +302,8 @@ ClientPort.prototype = {
   _dopost: function(data) {
     if (!this._window) {
       this._pendingMessagesOutgoing.push(data);
-    } else {
+    }
+    else {
       this._window.postMessage(data, "*");
     }
   },
