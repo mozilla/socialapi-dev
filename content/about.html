@@ -1,43 +1,99 @@
 <!DOCTYPE html>
-
 <html>
 <head>
     <title>Social Preferences</title>
 <style>
+html {
+  height:100%;
+}
 body {
-    background-color: transparent !important;
-    font-family: "Lucida Grande","Tahoma",sans-serif; /* TODO what's the right Ffx rule? */
+  -moz-appearance: none;
+  padding-left: 18px;
+  padding-top:4px;
+  background-image: -moz-linear-gradient(top, #ADB5C2, #BFC6D1);  
 }
-button > img {
-    width:  16px;
-    height: 16px;
-}
-button > label {
-    padding: 4px;
-}
-button {
-    border-style: outset;
-}
-button[checked="checked"] {
-    border-style: inset;
-}
-.service {
-    padding:16px;
-    width:80%;
-    background-color:#f8f8f8;
-    border:1px solid #f0f0f0;
-    box-shadow:#e0e0e0 1px 1px;
-}
-H1 {
-    font-family: "Lucida Grande","Tahoma",sans-serif; /* TODO what's the right Ffx rule? */
-    font-size:16pt;
-}
-H1 > img {
-    margin-right:16px;
-}
-.service input 
-{}
 
+html {
+  font: message-box;
+}
+
+.main-content {
+  /* Needed to allow the radius to clip the inner content, see bug 595656 */
+  /* Disabled because of bug 623615
+  overflow: hidden;
+  */
+  background-image: -moz-linear-gradient(top, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.25) 50%, rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(50, 65, 92, 0.4);
+  border-radius: 5px;
+  padding-bottom:32px;
+}
+
+#global-prefs {
+  margin-top:16px;
+  margin-left:8px;
+
+}
+.service {  
+  background-image: -moz-linear-gradient(top, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.25) 50%, rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(50, 65, 92, 0.4);
+  border-radius: 5px;
+  margin-left:16px;
+  margin-top:16px;
+  padding:0px 16px 8px 16px;
+  width:400px;
+}
+
+.service .providerheader {
+  display:inline-block;
+  width:250px;
+}
+.service .providericon {
+  margin-right:12px;
+}
+.service .providerbutton {
+  display:inline-block;
+  width:150px;
+}
+
+/* Buttons */
+button,
+menulist,
+colorpicker[type="button"] {
+  -moz-appearance: none;
+  padding: 1px 4px;
+  min-width: 60px;
+  border-radius: 3px;
+  border: 1px solid rgba(60,73,97,0.5);
+  box-shadow: inset 0 1px rgba(255,255,255,0.25), 0 1px rgba(255,255,255,0.25);
+  background-color: transparent;
+  background-image: -moz-linear-gradient(rgba(255,255,255,0.45), rgba(255,255,255,0.2));
+  background-clip: padding-box;
+  color: #252F3B;
+  text-shadow: 0 1px rgba(255, 255, 255, .4);
+}
+
+button:-moz-focusring > .button-box,
+menulist:-moz-focusring:not([open="true"]) > .menulist-label-box,
+colorpicker[type="button"]:-moz-focusring:not([open="true"]) > .colorpicker-button-colorbox {
+  outline: 1px dotted #252F3B;
+}
+
+html|button[disabled],
+button[disabled="true"],
+menulist[disabled="true"],
+colorpicker[type="button"][disabled="true"] {
+  opacity: 0.8;
+  color: #505050;
+}
+
+html|button:not([disabled]):active:hover,
+button:not([disabled="true"]):active:hover,
+menulist[open="true"]:not([disabled="true"]),
+colorpicker[type="button"][open="true"]:not([disabled="true"]) {
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.2), 0 1px rgba(255,255,255,0.25);
+  background-image: -moz-linear-gradient(rgba(45,54,71,0.3), rgba(45,54,71,0.1));
+  border-color: rgba(60,73,97,0.7);
+}
 </style>
 <script>
 
@@ -84,10 +140,13 @@ function addNewService(svc) {
   var header = document.createElement('h1');
   var img = document.createElement('img');
   img.setAttribute('src', svc.iconURL);
+  img.setAttribute("class", "providericon")
   header.appendChild(img);
   header.appendChild(document.createTextNode(svc.name));
+  header.setAttribute("class", "providerheader");
 
   var btn = document.createElement('button');
+  btn.setAttribute("class", "providerbutton");
   var lbl = document.createElement('label');
 
   img.setAttribute('for', svc.name);
@@ -104,14 +163,14 @@ function addNewService(svc) {
   startupCheck.setAttribute("type", "checkbox");
   startupCheck.setAttribute("checked", "true");
   startupRow.appendChild(startupCheck);
-  startupRow.appendChild(document.createTextNode("Connect at Firefox startup [note: not yet implemented!]"));
+  startupRow.appendChild(document.createTextNode("Connect at Firefox startup [not yet implemented!]"));
 
   var notificationRow = document.createElement('div');
   var notificationCheck = document.createElement('input');
   notificationCheck.setAttribute("type", "checkbox");
   notificationCheck.setAttribute("checked", "true");
   notificationRow.appendChild(notificationCheck);
-  notificationRow.appendChild(document.createTextNode("Enable popup notifications [note: not yet implemented!]"));
+  notificationRow.appendChild(document.createTextNode("Enable popup notifications [not yet implemented!]"));
 
   serviceblock.appendChild(header);
   serviceblock.appendChild(btn);
@@ -148,19 +207,18 @@ function toggleSocialState() {
 
 </script>
 </head>
-
-<body>
-<h3>Preferences: Ugly on purpose&trade;</h3>
-<div>
+<h3>Social Browsing Preferences</h3>
+<div class="main-content">
+  <div id="global-prefs">
     <input id="social-enabled"
            type="checkbox"
            onclick="toggleSocialState();"
     />
     Social browsing enabled
-</div>
+  </div>
 
-<div id="available-activities"/>
-</div>
+<div id="available-activities"></div>
 
+</div>
 </body>
 </html>
