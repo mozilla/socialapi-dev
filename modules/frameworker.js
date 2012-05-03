@@ -33,6 +33,7 @@ function reportError(e) {
 
 function log(msg) {
   Services.console.logStringMessage(new Date().toISOString() + " [frameworker]: " + msg);
+  dump(new Date().toISOString() + " [frameworker]: " + msg + "\n");
 };
 
 var _nextPortId = 1;
@@ -397,7 +398,6 @@ function FrameWorker(url, clientWindow) {
             sandbox.importFunction(workerWindow[fn], fn);
           }
         }
-
         sandbox.importFunction(function importScripts(uris) {
           if (uris instanceof Array) {
             for each(let uri in uris) {
@@ -458,7 +458,8 @@ function FrameWorker(url, clientWindow) {
             let scriptText = workerWindow.document.body.textContent;
             Cu.evalInSandbox(scriptText, sandbox, "1.8", workerWindow.location.href, 1);
           } catch (e) {
-            reportError("Error evaluating worker script for " + url + ": " + e + "\n" + e.stack);
+            reportError("Error evaluating worker script for " + url + ": " + e + "; " + 
+                (e.lineNumber ? ("Line #" + e.lineNumber) : ""));
             return;
           }
           // so finally we are ready to roll - dequeue all the pending connects
@@ -488,7 +489,6 @@ function FrameWorker(url, clientWindow) {
     let doc = hiddenDOMWindow.document;
     let container = doc.body ? doc.body : doc.documentElement;
     container.appendChild(frame);
-
   }
   else {
     // already have a worker - either queue or make the connection.
