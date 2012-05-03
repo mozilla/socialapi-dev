@@ -27,11 +27,14 @@ SocialToolbarStatusArea.prototype = {
   },
 
   setProvider: function(service) {
+    this.debugLog("Setting active service provider to " + service.name);
     this.renderAmbientNotification();
   },
 
   renderAmbientNotification: function() {
+    var self = this;
     function createNotificationIcon(icon) {
+        self.debugLog("Creating notification icon " + icon.name + ": " + icon.background + "; counter " + icon.counter);
         var iconContainer = window.document.createElementNS("http://www.w3.org/1999/xhtml", "div");
         iconContainer.setAttribute("class", "social-notification-icon-container");
 
@@ -91,8 +94,10 @@ SocialToolbarStatusArea.prototype = {
     let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
                             .getService(Ci.mozISocialRegistry);
     if (!registry.currentProvider || !registry.currentProvider.enabled) {
-      Services.console.logStringMessage("no service is enabled, so not rendering status area");
+      this.debugLog("no service is enabled, so not rendering status area");
       return;
+    } else {
+      this.debugLog("Rending toolbar status are; current provider is " + registry.currentProvider);
     }
 
     if (window.social.enabled) {
@@ -126,7 +131,7 @@ SocialToolbarStatusArea.prototype = {
     container.insertBefore(portraitBox, container.firstChild);
 
     if (registry.currentProvider.ambientNotificationPortrait) {
-
+      this.debugLog("Setting portrait to " + registry.currentProvider.ambientNotificationPortrait);
 //      var portrait = window.document.createElementNS("http://www.w3.org/1999/xhtml", "div");
       var portrait = window.document.createElementNS(XUL_NS, "image");
       portrait.setAttribute("class", "social-portrait-image");
