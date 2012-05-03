@@ -84,69 +84,70 @@ SocialToolbarStatusArea.prototype = {
 
 
     try {
-    // create some elements...
-    var XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+      // create some elements...
+      var XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
-    // XXX is window safe to use here?
-    var container = window.document.getElementById("social-status-content-container");
-      //social-status-area-container");
-    while (container.firstChild) container.removeChild(container.firstChild);
+      // XXX is window safe to use here?
+      var container = window.document.getElementById("social-status-content-container");
+        //social-status-area-container");
+      while (container.firstChild) container.removeChild(container.firstChild);
 
-    let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                            .getService(Ci.mozISocialRegistry);
-    if (!registry.currentProvider || !registry.currentProvider.enabled) {
-      this.debugLog("no service is enabled, so not rendering status area");
-      return;
-    } else {
-      this.debugLog("Rending toolbar status are; current provider is " + registry.currentProvider);
-    }
-
-    if (window.social.enabled) {
-      var image = window.document.getElementById("social-statusarea-service-image");
-      image.setAttribute("src", registry.currentProvider.iconURL);
-    }
-
-    /*  XXX why is the commented out?
-    if (registry.currentProvider.ambientNotificationBackground) {
-      container.style.background = registry.currentProvider.ambientNotificationBackground;
-    }
-    else {
-      container.style.backgroundColor = "rgb(152,152,152)";
-    }
-    */
-    var iconStack = window.document.createElementNS(XUL_NS, "stack");
-
-    var iconBox = window.document.createElementNS(XUL_NS, "hbox");
-    iconBox.setAttribute("flex", 1);
-    if (registry.currentProvider.ambientNotificationIcons) {
-      for each (var icon in registry.currentProvider.ambientNotificationIcons)
-      {
-        createNotificationIcon(icon);   
+      let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
+                              .getService(Ci.mozISocialRegistry);
+      if (!registry.currentProvider || !registry.currentProvider.enabled) {
+        this.debugLog("no service is enabled, so not rendering status area");
+        return;
+      } else {
+        this.debugLog("Rending toolbar status are; current provider is " + registry.currentProvider);
       }
-      iconBox.style.minWidth = (26 * registry.currentProvider.ambientNotificationIcons.length) + "px";
-    }
 
-    iconStack.appendChild(iconBox);
-    container.appendChild(iconStack);
+      if (window.social.enabled) {
+        var image = window.document.getElementById("social-statusarea-service-image");
+        image.setAttribute("src", registry.currentProvider.iconURL);
+      }
 
-    var portraitBox = window.document.createElementNS(XUL_NS, "div");
-    portraitBox.setAttribute("class", "social-portrait-box");
-    portraitBox.align = "start";
-    container.insertBefore(portraitBox, container.firstChild);
+      /* experimenting with provider-specified background vs. chrome-specified (e.g. skin/<theme>/socialstatus.css) background:
+      if (registry.currentProvider.ambientNotificationBackground) {
+        container.style.background = registry.currentProvider.ambientNotificationBackground;
+      } else {
+        container.style.backgroundColor = "rgb(152,152,152)";
+      } */
+      var iconStack = window.document.createElementNS(XUL_NS, "stack");
+      var iconBox = window.document.createElementNS(XUL_NS, "hbox");
+      iconBox.setAttribute("flex", 1);
 
-    if (registry.currentProvider.ambientNotificationPortrait) {
-      this.debugLog("Setting portrait to " + registry.currentProvider.ambientNotificationPortrait);
-//      var portrait = window.document.createElementNS("http://www.w3.org/1999/xhtml", "div");
-      var portrait = window.document.createElementNS(XUL_NS, "image");
-      portrait.setAttribute("class", "social-portrait-image");
-      portrait.setAttribute("src", registry.currentProvider.ambientNotificationPortrait);
-      // portrait on left:
-      portraitBox.appendChild(portrait);
+      var ambientNotificationCount = 0;
+      if (registry.currentProvider.ambientNotificationIcons) {
+        for each (var icon in registry.currentProvider.ambientNotificationIcons)
+        {
+          ambientNotificationCount += 1;
+          createNotificationIcon(icon);   
+        }
+        iconBox.style.minWidth = (26 * ambientNotificationCount) + "px";
+      }
 
-      // portrait on right:
-      // container.appendChild(portrait);
-    }
+      iconStack.appendChild(iconBox);
+      container.appendChild(iconStack);
 
+      var portraitBox = window.document.createElementNS(XUL_NS, "div");
+      portraitBox.setAttribute("class", "social-portrait-box");
+      portraitBox.align = "start";
+      container.insertBefore(portraitBox, container.firstChild);
+
+      if (registry.currentProvider.ambientNotificationPortrait) {
+        this.debugLog("Setting portrait to " + registry.currentProvider.ambientNotificationPortrait);
+        var portrait = window.document.createElementNS(XUL_NS, "image");
+        portrait.setAttribute("class", "social-portrait-image");
+        portrait.setAttribute("src", registry.currentProvider.ambientNotificationPortrait);
+        // portrait on left:
+        portraitBox.appendChild(portrait);
+        // portrait on right: container.appendChild(portrait);
+      }
+
+      // And finally crop the toolbar item to the right width
+
+      window.document.getElementById("social-status-area-container").width = 
+        (60 + ambientNotificationCount * 26) + "px";
     }
     catch (e) {
       Cu.reportError(e);
