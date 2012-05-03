@@ -26,10 +26,6 @@ const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 var workerInfos = {}; // keyed by URL.
 
-function reportError(e) {
-  Cu.reportError(e);
-  //dump("***** ERROR:\n" + e + "****** \n");
-}
 
 function log(msg) {
   Services.console.logStringMessage(new Date().toISOString() + " [frameworker]: " + msg);
@@ -96,7 +92,8 @@ function __initWorkerMessageHandler() {
   function messageHandler(event) {
     try {
       _messageHandler(event);
-    } catch (ex) {
+    }
+    catch (ex) {
       dump("ERROR handling worker port control message: " + ex + "\n" + ex.stack);
     }
   }
@@ -152,8 +149,9 @@ function initClientMessageHandler(workerInfo, workerWindow) {
   function messageHandler(event) {
     try {
       _messageHandler(event);
-    } catch (ex) {
-      reportError("Error handling client port control message: " + ex + "\n" + ex.stack);
+    }
+    catch (ex) {
+      Cu.reportError("Error handling client port control message: " + ex + "\n" + ex.stack);
     }
   }
   workerWindow.addEventListener('message', messageHandler);
@@ -201,10 +199,12 @@ AbstractPort.prototype = {
     data = this._JSONParse(data);
     if (!this._handler) {
       this._pendingMessagesIncoming.push(data);
-    } else {
+    }
+    else {
       try {
         this._handler({data: data});
-      } catch (ex) {
+      }
+      catch (ex) {
         this._onerror(ex);
       }
     }
@@ -303,13 +303,14 @@ ClientPort.prototype = {
   _dopost: function(data) {
     if (!this._window) {
       this._pendingMessagesOutgoing.push(data);
-    } else {
+    }
+    else {
       this._window.postMessage(data, "*");
     }
   },
 
   _onerror: function(err) {
-    reportError("Port " + this + " handler failed: " + err + "\n" + err.stack);
+    Cu.reportError("Port " + this + " handler failed: " + err + "\n" + err.stack);
   },
 
   close: function() {
@@ -394,8 +395,13 @@ function FrameWorker(url, clientWindow) {
                          'MozBlobBuilder', 'FileReader', 'Blob',
                          'navigator'];
         for each(let fn in workerAPI) {
-          if (workerWindow[fn]) {
-            sandbox.importFunction(workerWindow[fn], fn);
+          try {
+            if (workerWindow[fn]) {
+              sandbox.importFunction(workerWindow[fn], fn);
+            }
+          }
+          catch(e) {
+            Cu.reportError("failed to import API "+fn+"\n"+e+"\n");
           }
         }
         sandbox.importFunction(function importScripts(uris) {
@@ -444,22 +450,25 @@ function FrameWorker(url, clientWindow) {
                               "__initWorkerMessageHandler();" // and bootstrap it.
                              ].join("\n")
             Cu.evalInSandbox(scriptText, sandbox, "1.8", "<injected port handling code>", 1);
-          } catch (e) {
-            reportError("Error injecting port code into content side of the worker: " + e + "\n" + e.stack);
+          }
+          catch (e) {
+            Cu.reportError("Error injecting port code into content side of the worker: " + e + "\n" + e.stack);
           }
           // and wire up the client message handling.
           try {
             initClientMessageHandler(workerInfo, workerWindow);
-          } catch (e) {
-            reportError("Error setting up event listener for chrome side of the worker: " + e + "\n" + e.stack);
+          }
+          catch (e) {
+            Cu.reportError("Error setting up event listener for chrome side of the worker: " + e + "\n" + e.stack);
           }
           // Now get the worker js code and eval it into the sandbox
           try {
             let scriptText = workerWindow.document.body.textContent;
             Cu.evalInSandbox(scriptText, sandbox, "1.8", workerWindow.location.href, 1);
           } catch (e) {
-            reportError("Error evaluating worker script for " + url + ": " + e + "; " + 
-                (e.lineNumber ? ("Line #" + e.lineNumber) : ""));
+            Cu.reportError("Error evaluating worker script for " + url + ": " + e + "; " + 
+                (e.lineNumber ? ("Line #" + e.lineNumber) : "") + 
+                (e.stack ? ("\n" + e.stack) : ""));
             return;
           }
           // so finally we are ready to roll - dequeue all the pending connects
@@ -473,8 +482,9 @@ function FrameWorker(url, clientWindow) {
             if (port._portid) { // may have already been closed!
               try {
                 port._createWorkerAndEntangle(workerInfo);
-              } catch(e) {
-                reportError("Failed to create worker port: " + e + "\n" + e.stack);
+              }
+              catch(e) {
+                Cu.reportError("Failed to create worker port: " + e + "\n" + e.stack);
               }
             }
           }
@@ -482,7 +492,7 @@ function FrameWorker(url, clientWindow) {
         }, true);
       }
       catch(e) {
-        reportError("frameworker unable to inject for "+doc.location + " ("+ e + ")");
+        Cu.reportError("frameworker unable to inject for "+doc.location + " ("+ e + ")");
       }
     };
     Services.obs.addObserver(injectController, 'document-element-inserted', false);
@@ -495,8 +505,9 @@ function FrameWorker(url, clientWindow) {
     if (workerInfo.loaded) {
       try {
         clientPort._createWorkerAndEntangle(workerInfo);
-      } catch (ex) {
-        reportError("Failed to connect a port: " + e + "\n" + e.stack);
+      }
+      catch (ex) {
+        Cu.reportError("Failed to connect a port: " + e + "\n" + e.stack);
       }
     }
     else {
@@ -516,8 +527,9 @@ function FrameWorker(url, clientWindow) {
     for each (let portid in Object.keys(workerInfo.ports)) {
       try {
         workerInfo.ports[portid].close();
-      } catch (ex) {
-        reportError(ex);
+      }
+      catch (ex) {
+        Cu.reportError(ex);
       }
     }
     // and do the actual killing on a timeout so the pending events get

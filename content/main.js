@@ -37,7 +37,8 @@ let stateObserver = {
             let w = window.social[name] = new widgetMap[name](window);
             w.enable();
             w.setProvider(provider);
-          } catch (ex) {
+          }
+          catch (ex) {
             Cu.reportError(ex);
           }
         }
@@ -64,7 +65,8 @@ function set_window_social_enabled_from_doc_state() {
       document.documentElement.getAttribute('chromehidden').indexOf("extrachrome") >= 0) {
     // doesn't matter what the registry says - it's disabled in this window.
     set_window_social_enabled(false);
-  } else {
+  }
+  else {
     // It is allowed to be enabled here so use the global state.
     let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
                      .getService(Ci.mozISocialRegistry);
@@ -100,7 +102,8 @@ function set_window_social_enabled(val) {
     // social is enabled so the sidebar visibility comes from the pref.
     let prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
     sideBarVisible = prefBranch.getBoolPref("visible");
-  } else {
+  }
+  else {
     sideBarVisible = false;
   }
   let broadcaster = document.getElementById("socialSidebarVisible");
@@ -132,7 +135,8 @@ function social_sidebar_toggle() {
     prefBranch.setBoolPref("visible", newState);
     let topic = newState ? "social-sidebar-visible" : "social-sidebar-hidden";
     Services.obs.notifyObservers(window, topic, null);
-  } else {
+  }
+  else {
     cu.reportError("can't toggle the social sidebar if social is disabled!");
   }
 }

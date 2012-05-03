@@ -261,7 +261,8 @@ function ProviderRegistry() {
           service.attachToWindow(doc.defaultView);
       // XXX dev code, allows us to load social panels into tabs and still
       // call attachToWindow on them
-      //} else {
+      //}
+      //else {
       //  for each(let svc in this._providers) {
       //    if ((doc.location+"").indexOf(svc.URLPrefix) == 0) {
       //      svc.attachToWindow(doc.defaultView);
@@ -410,7 +411,8 @@ ProviderRegistry.prototype = {
       if (numEnabled == 0) {
         dump("provider disabled and no others are enabled - disabling social\n")
         this.enabled = false;
-      } else {
+      }
+      else {
         // don't call this.currentProvider as we don't want to set the pref!
         this._currentProvider = this._findCurrentProvider();
         Services.obs.notifyObservers(null,
@@ -452,7 +454,8 @@ ProviderRegistry.prototype = {
       this._currentProvider = current;
       Services.obs.notifyObservers(null, "social-browsing-enabled", null);
       Services.obs.notifyObservers(null, "social-browsing-current-service-changed", null);
-    } else {
+    }
+    else {
       for each(let provider in this._providers) {
         provider.deactivate();
       }
