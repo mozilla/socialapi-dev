@@ -50,5 +50,15 @@ baseWidget.prototype = {
     if (this._widget) {
       this._widget.parentNode.removeChild(this._widget);
     }
+  },
+  debugLog: function(msg) {
+    try {
+      let prefBranch = Services.prefs.getBranch("social.debug").QueryInterface(Ci.nsIPrefBranch2);
+      debugEnabled = prefBranch.getBoolPref("enabled");
+      if (!debugEnabled) return;
+    } catch(e) {
+      return;
+    }
+    Services.console.logStringMessage(new Date().toISOString() + " [socialdebug] " + msg);
   }
 }
