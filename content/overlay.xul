@@ -28,7 +28,7 @@
              oncommand="openUILink('about:social')"/>
     <command id="cmd_socialBrowsingToggle"
              label="&socialenable.label;"
-             oncommand="social_toggle();">
+             oncommand="social.toggle();">
       <observes element="socialEnabled" attribute="checked"/>
     </command>
 
@@ -36,7 +36,7 @@
              checked="false"
              hidden="true"
              label="&socialsidebar.label;"
-             oncommand="social_sidebar_toggle();">
+             oncommand="social.sidebar_toggle();">
       <!-- *sob* - the "hidden" thing doesn't seem to work, so the observers
            are duplicated below on the menuitem.
            But the "checked" observer on cmd_socialBrowsingToggle *does*?
@@ -68,7 +68,8 @@
     </menupopup>
   </popupset>
 
-<toolbarpalette id="BrowserToolbarPalette">
+<!--<toolbarpalette id="BrowserToolbarPalette">-->
+<toolbar id="nav-bar">
   <toolbaritem
     id="social-status-area-container"
     class="chromeclass-toolbar-additional social-status-area-container"
@@ -123,7 +124,8 @@
       </hbox>
     </div>
   </toolbaritem>
-</toolbarpalette>
+</toolbar>
+<!--</toolbarpalette>-->
 
 <hbox id="urlbar-icons">
   <image id="social-recommend-button"

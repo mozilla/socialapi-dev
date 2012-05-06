@@ -1,5 +1,7 @@
 "use strict";
 
+Cu.import("resource://socialdev/components/registry.js");
+
 function isAvailable() {
   // This will probably go away based on UX - it exists so the social toolbar
   // is removed entirely when things are not available.
@@ -10,9 +12,9 @@ function isAvailable() {
   // Only valid when social is globally disabled and relies on the fact the
   // registry will always return *something* as the currentProvider if
   // there are any currently enabled.
-  let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                   .getService(Ci.mozISocialRegistry);
-  return !!registry.currentProvider;
+  //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
+  //                 .getService(Ci.mozISocialRegistry);
+  return !!registry().currentProvider;
 }
 
 // These are widgets than can be created only after we become enabled.
@@ -27,9 +29,10 @@ let stateObserver = {
     if (aTopic == 'social-browsing-enabled') {
       // create all the delay-loaded widgets.
       // get the default provider so we can set them on the widgets.
-      let provider = Cc["@mozilla.org/socialProviderRegistry;1"]
-                   .getService(Ci.mozISocialRegistry)
-                   .currentProvider;
+      //let provider = Cc["@mozilla.org/socialProviderRegistry;1"]
+      //             .getService(Ci.mozISocialRegistry)
+      //             .currentProvider;
+      let provider = registry().currentProvider;
 
       for (let name in widgetMap) {
         if (typeof window.social[name] === "undefined") {
@@ -68,9 +71,9 @@ function set_window_social_enabled_from_doc_state() {
   }
   else {
     // It is allowed to be enabled here so use the global state.
-    let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                     .getService(Ci.mozISocialRegistry);
-    set_window_social_enabled(registry.enabled);
+    //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
+    //                 .getService(Ci.mozISocialRegistry);
+    set_window_social_enabled(registry().enabled);
   }
 }
 
@@ -89,9 +92,9 @@ function set_window_social_enabled(val) {
   if (installed && !window.social.toolbarStatusArea) {
     window.social.toolbarStatusArea = new SocialToolbarStatusArea(window);
     window.social.toolbarStatusArea.enable();
-    let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                     .getService(Ci.mozISocialRegistry);
-    window.social.toolbarStatusArea.setProvider(registry.currentProvider);
+    //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
+    //                 .getService(Ci.mozISocialRegistry);
+    window.social.toolbarStatusArea.setProvider(registry().currentProvider);
   }
   broadcaster = document.getElementById("socialInstalled");
   broadcaster.setAttribute("checked", installed ? "true" : "false");
@@ -115,16 +118,19 @@ function set_window_social_enabled(val) {
 
 // used by chrome to toggle the enabled state.
 function social_toggle() {
-  let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                   .getService(Ci.mozISocialRegistry);
-  registry.enabled = !registry.enabled;
+  //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
+  //                 .getService(Ci.mozISocialRegistry);
+  //registry.enabled = !registry.enabled;
+  let reg = registry();
+  reg.enabled = !reg.enabled
+  dump("toggled the social brownsing\n");
 }
 
 // used by chrome to toggle the sidebar state.
 function social_sidebar_toggle() {
-  let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                   .getService(Ci.mozISocialRegistry);
-  if (registry.enabled) {
+  //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
+  //                 .getService(Ci.mozISocialRegistry);
+  if (registry().enabled) {
     // ok, we can toggle it
     let broadcaster = document.getElementById("socialSidebarVisible");
     let newState = broadcaster.getAttribute("hidden") == "true";
@@ -141,43 +147,58 @@ function social_sidebar_toggle() {
   }
 }
 
+function social_init() {
+  dump("social_init called\n");
+  //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
+  //         .getService(Ci.mozISocialRegistry);
+
+  // watch for when browser disables chrome in tabs, and hide the social sidebar
+  document.addEventListener('DOMAttrModified', function(e) {
+    if (e.target == document.documentElement &&
+        (e.attrName == "disablechrome" || e.attrname == "chromehidden")) {
+      set_window_social_enabled_from_doc_state();
+    }
+  }.bind(this));
+
+  // and the initial startup state.
+  set_window_social_enabled_from_doc_state();
+
+  if (registry().enabled || isAvailable()) {
+    window.social.toolbarStatusArea = new SocialToolbarStatusArea(window);
+  }
+
+  Services.obs.addObserver(stateObserver, "social-browsing-enabled", false);
+  Services.obs.addObserver(stateObserver, "social-browsing-disabled", false);
+  Services.obs.addObserver(stateObserver, "social-service-manifest-changed", false);
+
+  if (registry().enabled) {
+    // we will have missed the -enabled notification...
+    stateObserver.observe(null, 'social-browsing-enabled');
+  }
+  // if we are disabled so there is nothing to do - our "stateWidget"
+  // will notice when we become enabled and bootstrap everything else.
+  dump("social startup done on a window - state is " + registry().enabled + "\n");
+}
+
 function social_main() {
-  window.social = {};
+  window.social = {
+    toggle: social_toggle,
+    sidebar_toggle: social_sidebar_toggle
+  };
   // due to what we are doing in the sidebar, we have to wait for the
   // chromeWindow to load before we do our magic
   window.addEventListener('load', function loadHandler(e) {
     window.removeEventListener('load', loadHandler);
-
-    let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-             .getService(Ci.mozISocialRegistry);
-
-    // watch for when browser disables chrome in tabs, and hide the social sidebar
-    document.addEventListener('DOMAttrModified', function(e) {
-      if (e.target == document.documentElement &&
-          (e.attrName == "disablechrome" || e.attrname == "chromehidden")) {
-        set_window_social_enabled_from_doc_state();
-      }
-    }.bind(this));
-
-    // and the initial startup state.
-    set_window_social_enabled_from_doc_state();
-
-    if (registry.enabled || isAvailable()) {
-      window.social.toolbarStatusArea = new SocialToolbarStatusArea(window);
-    }
-
-    Services.obs.addObserver(stateObserver, "social-browsing-enabled", false);
-    Services.obs.addObserver(stateObserver, "social-browsing-disabled", false);
-    Services.obs.addObserver(stateObserver, "social-service-manifest-changed", false);
-
-    if (registry.enabled) {
-      // we will have missed the -enabled notification...
-      stateObserver.observe(null, 'social-browsing-enabled');
-    }
-    // if we are disabled so there is nothing to do - our "stateWidget"
-    // will notice when we become enabled and bootstrap everything else.
-    dump("social startup done on a window - state is " + registry.enabled + "\n");
+    social_init();
+  });
+  
+  // This is a custom event sent by OverlayManager so we can finalize our init
+  window.addEventListener('dynamicOverlayLoaded', function loadHandler(e) {
+    window.removeEventListener('dynamicOverlayLoaded', loadHandler);
+    social_init();
   });
 }
 
 social_main();
+
+dump("social_main is loaded\n");

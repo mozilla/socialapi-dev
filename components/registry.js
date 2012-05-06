@@ -114,9 +114,9 @@ ManifestRegistry.prototype = {
       manifest.contentPatchPath = undefined;
       manifest.enabled = true;
       ManifestDB.put(location, manifest);
-      let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                          .getService(Ci.mozISocialRegistry);
-      registry.register(manifest);
+      //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
+      //                    .getService(Ci.mozISocialRegistry);
+      registry().register(manifest);
       // XXX notification of installation
     }
 
@@ -357,7 +357,8 @@ ProviderRegistry.prototype = {
   },
   each: function pr_iterate(cb) {
     for each(let provider in this._providers) {
-      cb.handle(provider);
+      //cb.handle(provider);
+      cb(provider);
     }
   },
   enableProvider: function(origin) {
@@ -466,5 +467,9 @@ ProviderRegistry.prototype = {
   },
 }
 
-const components = [ProviderRegistry];
-const NSGetFactory = XPCOMUtils.generateNSGetFactory(components);
+//const components = [ProviderRegistry];
+//const NSGetFactory = XPCOMUtils.generateNSGetFactory(components);
+
+providerRegistrySinglton = new ProviderRegistry();
+function registry() providerRegistrySinglton;
+const EXPORTED_SYMBOLS = ["registry"];
