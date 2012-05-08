@@ -23,13 +23,11 @@ SocialSidebar.prototype = {
       if (aSubject === window) {
         this.enable();
       }
-    }
-    else if (aTopic == "social-sidebar-hidden") {
+    } else if (aTopic == "social-sidebar-hidden") {
       if (aSubject === window) {
         this.disable();
       }
-    }
-    else {
+    } else {
       baseWidget.prototype.observe.call(this, aSubject, aTopic, aData);
     }
   },
