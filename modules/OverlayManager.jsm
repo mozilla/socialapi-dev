@@ -252,6 +252,19 @@ const OverlayManagerInternal = {
     }
 
     let targetDoc = aWindowEntry.window.document;
+    
+    // load any stylesheets the overlay is defining into the xul document
+    let elem = overlayDoc.firstChild;
+    while (elem) {
+      if (elem.nodeName == "xml-stylesheet") {
+        // href="chrome://socialdev/skin/browser.css" type="text/css"
+        let m = elem.nodeValue.match(/href=\"(.*)\"\s+type=\"(.*)\"/);
+        if (m[2] == "text/css") {
+          this.loadStyleOverlay(aWindowEntry, m[1]);
+        }
+      }
+      elem = elem.nextSibling;
+    }
 
     function walkDocumentNodes(aDocument) {
       let node = aDocument.documentElement;
@@ -295,11 +308,11 @@ const OverlayManagerInternal = {
         node.parentNode.removeChild(node);
     }
 
+    // track any scripts we find
     let scripts = [];
     for (let containerElement in elementChildren(overlayDoc.documentElement)) {
       let targetElement;
       if (!containerElement.id) {
-        dump("try to find "+containerElement.localName+" without ID\n");
         if (containerElement.localName == "script") {
           scripts.push(containerElement.getAttribute("src"));
           continue;
@@ -310,7 +323,6 @@ const OverlayManagerInternal = {
         }
       }
       else {
-        dump("try to find "+containerElement.localName+" with ID "+containerElement.id+"\n");
         targetElement = targetDoc.getElementById(containerElement.id);
       }
 
@@ -318,7 +330,6 @@ const OverlayManagerInternal = {
         Cu.reportError("Unable to find overlay element "+containerElement.localName+" into "+targetElement);
         continue;
       }
-      dump("targetElement "+targetElement.localName+"\n");
 
       // TODO apply attributes to the target element
 
@@ -461,7 +472,6 @@ const OverlayManagerInternal = {
       _sandbox: null,
 
       createInstance: function(aOuter, aIID) {
-        dump("creating an instance of "+aOuter+" "+aIID+" "+aCid+" "+aContract+"\n");
         if (!this._sandbox) {
           let principal = Cc["@mozilla.org/systemprincipal;1"].
                           createInstance(Ci.nsIPrincipal);

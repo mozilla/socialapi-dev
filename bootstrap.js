@@ -17,16 +17,6 @@ const OVERLAYS = [
     overlay: "chrome://browser/content/browser.xul",
     documents: [
       "chrome://socialdev/content/overlay.xul"
-    ],
-    scripts: [
-      //"chrome://socialdev/content/recommendButtonWidget.js",
-      //"chrome://socialdev/content/toolbarStatusWidget.js",
-      //"chrome://socialdev/content/sidebarWidget.js",
-      //"chrome://socialdev/content/main.js"
-    ],
-    styles: [
-      "chrome://socialdev/skin/browser.css",
-      "chrome://socialdev-plat/skin/socialstatus.css"
     ]
   },
   {
