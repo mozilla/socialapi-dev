@@ -25,6 +25,7 @@ const OVERLAYS = [
       //"chrome://socialdev/content/main.js"
     ],
     styles: [
+      "chrome://socialdev/skin/browser.css",
       "chrome://socialdev-plat/skin/socialstatus.css"
     ]
   },
