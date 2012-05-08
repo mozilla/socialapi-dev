@@ -69,17 +69,16 @@ SocialToolbarStatusArea.prototype = {
           notifBrowser.service = registry().currentProvider;
 
           var resizer = function() {
+            notifBrowser.removeEventListener("DOMContentLoaded", resizer);
             var body = notifBrowser.contentDocument.getElementById("notif");
             notifBrowser.width = body.clientWidth;
             notifBrowser.height = body.clientHeight;
             panel.width = body.clientWidth;
             panel.height = body.clientHeight;              
-            notifBrowser.removeEventListener("DOMContentLoaded", resizer);
           }
           notifBrowser.addEventListener("DOMContentLoaded", resizer, false);
           notifBrowser.setAttribute("src", icon.contentPanel);
           panel.openPopup(iconContainer, "after_start",0,0,false, false);
-
         }, false);
     }
 
