@@ -172,6 +172,8 @@ ManifestRegistry.prototype = {
   discoverManifest: function manifestRegistry_discoverManifest(aDocument, aData) {
     // BUG 732266 this is probably heavy weight, is there a better way to watch for
     // links in documents?
+    // https://developer.mozilla.org/En/Listening_to_events_in_Firefox_extensions
+    // DOMLinkAdded event
 
     // TODO determine whether or not we actually want to load this
     // manifest.
