@@ -12,28 +12,25 @@ const Cm = Components.manager.QueryInterface(Ci.nsIComponentRegistrar);
 Components.utils.import("resource://gre/modules/Services.jsm");
 
 
-const OVERLAYS = [
-  {
-    overlay: "chrome://browser/content/browser.xul",
+const OVERLAYS = {
+  "chrome://browser/content/browser.xul": {
     documents: [
-      "chrome://socialdev/content/overlay.xul"
+      {overlay: "chrome://socialdev/content/overlay.xul"}
     ]
   },
-  {
-    overlay: "chrome://socialdev/content/serviceWindow.xul",
-    OS: "WINNT",
+  "chrome://socialdev/content/serviceWindow.xul": {
     documents: [
-      "chrome://socialdev/content/winSocial.xul"
-    ]
-  },
-  {
-    overlay: "chrome://socialdev/content/serviceWindow.xul",
-    OS: "Darwin",
-    documents: [
-      "chrome://socialdev/content/macBrowserOverlay.xul"
+      {
+        overlay: "chrome://socialdev/content/winSocial.xul",
+        OS: "WINNT"
+      },
+      {
+        overlay: "chrome://socialdev/content/macBrowserOverlay.xul",
+        OS: "Darwin"
+      }
     ]
   }
-];
+};
 
 
 function install(aParams, aReason) {

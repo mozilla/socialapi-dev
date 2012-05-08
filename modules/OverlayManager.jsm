@@ -216,8 +216,8 @@ const OverlayManagerInternal = {
     }
 
     if ("documents" in aOverlays) {
-      aOverlays.documents.forEach(function(aDocumentURL) {
-        this.loadDocumentOverlay(aWindowEntry, aDocumentURL);
+      aOverlays.documents.forEach(function(aDocData) {
+        this.loadDocumentOverlay(aWindowEntry, aDocData);
       }, this);
     }
 
@@ -228,18 +228,21 @@ const OverlayManagerInternal = {
     }
   },
 
-  loadDocumentOverlay: function(aWindowEntry, aDocumentURL) {
-    Services.console.logStringMessage("Loading document overlay " + aDocumentURL);
+  loadDocumentOverlay: function(aWindowEntry, aDocData) {
+    let xulRuntime = Cc["@mozilla.org/xre/app-info;1"].getService(Ci.nsIXULRuntime);
+    if (aDocData.OS && aDocData.OS != xulRuntime.OS)
+      return;
+    Services.console.logStringMessage("Loading document overlay " + aDocData.overlay);
 
     // TODO make this async
     let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].
               createInstance(Ci.nsIXMLHttpRequest);
-    xhr.open("GET", aDocumentURL, false);
+    xhr.open("GET", aDocData.overlay, false);
     xhr.send();
 
     let overlayDoc = xhr.responseXML;
     if (overlayDoc.documentElement.namespaceURI == XMLURI_PARSE_ERROR) {
-      Cu.reportError("Document Parse Error " + aDocumentURL);
+      Cu.reportError("Document Parse Error " + aDocData.overlay);
       return;
     }
 
@@ -353,7 +356,7 @@ const OverlayManagerInternal = {
     // anything in the xul elements (commands, etc.) need to have some kind
     // of access into the sandbox, so the sandboxed scripts must set something
     // explicitly onto the window object.
-    let sandbox = loadSandbox(aWindowEntry.window, aDocumentURL, scripts, aWindowEntry.window);
+    let sandbox = loadSandbox(aWindowEntry.window, aDocData.overlay, scripts, aWindowEntry.window);
     aWindowEntry.overlayScripts.push(sandbox);
     
     if ("OverlayListener" in sandbox && "load" in sandbox.OverlayListener) {
@@ -396,19 +399,13 @@ const OverlayManagerInternal = {
 
   addOverlays: function(aOverlayList) {
     try {
-      let xulRuntime = Cc["@mozilla.org/xre/app-info;1"].getService(Ci.nsIXULRuntime);
-
       // First check over the new overlays, merge them into the master list
       // and if any are for already tracked windows apply them
-      for each(let overlayData in aOverlayList) {
+      for (let [windowURL, overlayData] in Iterator(aOverlayList)) {
 
-        // allow for OS specific overlays
-        if (overlayData.OS && overlayData.OS != xulRuntime.OS)
-          continue;
-
-        if (!(overlayData.overlay in this.overlays))
-          this.overlays[overlayData.overlay] = {};
-        let existingOverlays = this.overlays[overlayData.overlay];
+        if (!(windowURL in this.overlays))
+          this.overlays[windowURL] = {};
+        let existingOverlays = this.overlays[windowURL];
 
         ["documents", "styles", "scripts"].forEach(function(aType) {
           if (!(overlayData[aType]))
@@ -421,8 +418,8 @@ const OverlayManagerInternal = {
         }, this);
 
         // Apply the new overlays to any already tracked windows
-        if (overlayData.overlay in this.windowEntries) {
-          this.windowEntries[overlayData.overlay].forEach(function(aWindowEntry) {
+        if (windowURL in this.windowEntries) {
+          this.windowEntries[windowURL].forEach(function(aWindowEntry) {
             this.applyWindowEntryOverlays(aWindowEntry, overlayData);
           }, this);
         }
