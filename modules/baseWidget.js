@@ -35,8 +35,7 @@ baseWidget.prototype = {
     }
     else if (aTopic == 'social-browsing-disabled') {
       this.disable();
-    }
-    else if (aTopic == 'social-browsing-ambient-notification-changed') {
+    } else if (aTopic == 'social-browsing-ambient-notification-changed') {
       this.ambientNotificationChanged();
     }
   },

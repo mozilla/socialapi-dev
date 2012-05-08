@@ -106,8 +106,7 @@ var aboutPage = {
       let data = msg.data;
       if (data.enabled) {
         registry.enableProvider(data.origin);
-      }
-      else {
+      } else {
         registry.disableProvider(data.origin);
       }
       return;
