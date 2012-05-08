@@ -50,8 +50,7 @@ SocialToolbarStatusArea.prototype = {
         
         if (icon.counter) {
           iconCounter.appendChild(window.document.createTextNode(icon.counter));
-        }
-        else {
+        } else {
           iconCounter.style.display = "none";
         }
 
@@ -148,8 +147,7 @@ SocialToolbarStatusArea.prototype = {
 
       window.document.getElementById("social-status-area-container").width = 
         (60 + ambientNotificationCount * 26) + "px";
-    }
-    catch (e) {
+    } catch (e) {
       Cu.reportError(e);
     } 
   },
@@ -256,8 +254,7 @@ function buildSocialPopupContents(window, socialpanel)
     // if we are disabled we don't want the list of providers nor the separators
     if (disabled) {
       providerSep.setAttribute("hidden", "true");
-    }
-    else {
+    } else {
       providerSep.removeAttribute("hidden");
       // Create top-level items
       registry.each(function(service) {

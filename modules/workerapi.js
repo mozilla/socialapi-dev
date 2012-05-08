@@ -44,8 +44,7 @@ workerAPI.prototype = {
           return;
         }
         handler.call(this, worker, data);
-      }
-      catch (ex) {
+      } catch (ex) {
         Cu.reportError("failed to handle api message '" + topic + "': " + ex + "\n" + ex.stack);
       }
     }.bind(this);
@@ -58,16 +57,14 @@ workerAPI.prototype = {
   shutdown: function() {
     try {
       Services.obs.removeObserver(this, 'cookie-changed');
-    }
-    catch (ex) {
+    } catch (ex) {
       Cu.reportError(ex);
     }
     try {
       if (this.cookieTimer) {
         this.cookieTimer.cancel();
       }
-    }
-    catch (ex) {
+    } catch (ex) {
       Cu.reportError(ex);
     }
     this.cookieTimer = null;

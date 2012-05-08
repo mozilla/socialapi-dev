@@ -29,8 +29,7 @@ function addNotification(aNotification)
         if (aNotification._onclick) {
           aNotification._onclick();
         }
-      }
-      else if (topic === "alertfinished") {
+      } else if (topic === "alertfinished") {
         if (aNotification._onhide) {
           aNotification._onhide();
         }
