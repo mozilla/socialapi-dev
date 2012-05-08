@@ -56,8 +56,7 @@ SocialSidebar.prototype = {
     try {
       if (sbrowser.contentWindow.location == aService.sidebarURL) return;
     } catch(e) {
-      // nightly throws exception?
-      return;
+      // nightly throws exception?  happens on startup only
     }
   
     // set up a locationwatcher
@@ -70,8 +69,10 @@ SocialSidebar.prototype = {
     catch (e) {
       Cu.reportError(e);
     }
-    // load the new service before we block redirects, etc
-    sbrowser.contentWindow.location = aService.sidebarURL;
+    // load the new service before we block redirects, etc, we set the attribute
+    // since this may be called prior to the browser element being ready to load
+    // during initial startup
+    sbrowser.setAttribute("src", aService.sidebarURL);
     sbrowser.addEventListener("DOMContentLoaded", function sb_contentListener() {
       sbrowser.removeEventListener("DOMContentLoaded", sb_contentListener, true);
       try {

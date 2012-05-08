@@ -226,14 +226,6 @@ const OverlayManagerInternal = {
         this.loadScriptOverlay(aWindowEntry, aScriptURL);
       }, this);
     }
-
-    // we're done loading, let the window know, but we need to let chrome settle
-    // down before doing this.
-    function sendEvent(e) {
-      let event = new aWindowEntry.window.CustomEvent("dynamicOverlayLoaded", {});
-      aWindowEntry.window.dispatchEvent(event);
-    }
-    aWindowEntry.window.setTimeout(sendEvent, 1);
   },
 
   loadDocumentOverlay: function(aWindowEntry, aDocumentURL) {
@@ -356,20 +348,21 @@ const OverlayManagerInternal = {
         aWindowEntry.nodes.push(newElement);
       }
     }
-    //let sandbox = loadSandbox(aWindowEntry.window, aDocumentURL, scripts, aWindowEntry.window);
-    //aWindowEntry.overlayScripts.push(sandbox);
-    //
-    //if ("OverlayListener" in sandbox && "load" in sandbox.OverlayListener) {
-    //  try {
-    //    sandbox.OverlayListener.load();
-    //  }
-    //  catch (e) {
-    //    Cu.reportError("Exception calling overlay script load event: "+ e);
-    //  }
-    //}
-
-    for each(let aScriptURL in scripts) {
-      Services.scriptloader.loadSubScript(aScriptURL, aWindowEntry.window);
+    
+    // for a given overlay, load all the scripts into a single sandbox.
+    // anything in the xul elements (commands, etc.) need to have some kind
+    // of access into the sandbox, so the sandboxed scripts must set something
+    // explicitly onto the window object.
+    let sandbox = loadSandbox(aWindowEntry.window, aDocumentURL, scripts, aWindowEntry.window);
+    aWindowEntry.overlayScripts.push(sandbox);
+    
+    if ("OverlayListener" in sandbox && "load" in sandbox.OverlayListener) {
+      try {
+        sandbox.OverlayListener.load();
+      }
+      catch (e) {
+        Cu.reportError("Exception calling overlay script load event: "+ e);
+      }
     }
   },
 
@@ -548,17 +541,8 @@ const OverlayManagerInternal = {
         let windowURL = domWindow.location.toString();
         // Track this window if there are overlays for it
         if (windowURL in this.overlays) {
-          let tm = Cc["@mozilla.org/thread-manager;1"].
-                   getService(Ci.nsIThreadManager);
-
           let overlays = this.overlays[windowURL];
-
-          // Defer adding overlays until immediately after the load events fire
-          tm.mainThread.dispatch({
-            run: function() {
-              OverlayManagerInternal.createWindowEntry(domWindow, overlays);
-            }
-          }, Ci.nsIThread.DISPATCH_NORMAL);
+          OverlayManagerInternal.createWindowEntry(domWindow, overlays);
         }
         break;
       case "unload":

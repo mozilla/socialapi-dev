@@ -187,12 +187,6 @@ function social_main() {
     window.removeEventListener('load', loadHandler);
     social_init();
   });
-  
-  // This is a custom event sent by OverlayManager so we can finalize our init
-  window.addEventListener('dynamicOverlayLoaded', function loadHandler(e) {
-    window.removeEventListener('dynamicOverlayLoaded', loadHandler);
-    social_init();
-  });
 }
 
 social_main();
