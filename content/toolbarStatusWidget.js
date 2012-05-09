@@ -64,8 +64,6 @@ SocialToolbarStatusArea.prototype = {
         iconContainer.addEventListener("click", function(e) {
           var panel = window.document.getElementById("social-notification-panel");
           var notifBrowser = window.document.getElementById("social-notification-browser");
-          //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-          //              .getService(Ci.mozISocialRegistry);
           notifBrowser.service = registry().currentProvider;
 
           var resizer = function() {
@@ -92,8 +90,6 @@ SocialToolbarStatusArea.prototype = {
         //social-status-area-container");
       while (container.firstChild) container.removeChild(container.firstChild);
 
-      //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-      //                        .getService(Ci.mozISocialRegistry);
       let currentProvider = registry().currentProvider;
       if (!currentProvider || !currentProvider.enabled) {
         this.debugLog("no service is enabled, so not rendering status area");
@@ -188,8 +184,6 @@ const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 function buildSocialPopupContents(window, socialpanel)
 {
-  //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-  //                        .getService(Ci.mozISocialRegistry);
   let preg = registry();
 
   function renderNotificationRow(img, title, text) {

@@ -114,8 +114,6 @@ ManifestRegistry.prototype = {
       manifest.contentPatchPath = undefined;
       manifest.enabled = true;
       ManifestDB.put(location, manifest);
-      //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-      //                    .getService(Ci.mozISocialRegistry);
       registry().register(manifest);
       // XXX notification of installation
     }

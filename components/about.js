@@ -46,8 +46,6 @@ var aboutPage = {
       // (doing it too early means the UI state defined in the HTML wins the race)
       let loadHandler = function() {
         aDocument.removeEventListener("DOMContentLoaded", loadHandler, false);
-        //let enabled = Cc["@mozilla.org/socialProviderRegistry;1"]
-        //       .getService(Ci.mozISocialRegistry).enabled;
         let subtopic = "social-browsing-" + (registry().enabled ? "enabled" : "disabled");
         this.observe(null, subtopic, null);
       }.bind(this);
@@ -103,8 +101,6 @@ var aboutPage = {
     let msg = JSON.parse(event.data);
 
     if (msg.topic === "preference-service-change") {
-      //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-      //             .getService(Ci.mozISocialRegistry);
       let data = msg.data;
       if (data.enabled) {
         registry().enableProvider(data.origin);
@@ -115,8 +111,6 @@ var aboutPage = {
       return;
     }
     if (msg.topic === "preference-social-change") {
-      //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-      //             .getService(Ci.mozISocialRegistry);
       registry().enabled = msg.data.enabled;
       return;
     }

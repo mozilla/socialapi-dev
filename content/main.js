@@ -12,8 +12,6 @@ function isAvailable() {
   // Only valid when social is globally disabled and relies on the fact the
   // registry will always return *something* as the currentProvider if
   // there are any currently enabled.
-  //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-  //                 .getService(Ci.mozISocialRegistry);
   return !!registry().currentProvider;
 }
 
@@ -29,9 +27,6 @@ let stateObserver = {
     if (aTopic == 'social-browsing-enabled') {
       // create all the delay-loaded widgets.
       // get the default provider so we can set them on the widgets.
-      //let provider = Cc["@mozilla.org/socialProviderRegistry;1"]
-      //             .getService(Ci.mozISocialRegistry)
-      //             .currentProvider;
       let provider = registry().currentProvider;
 
       for (let name in widgetMap) {
@@ -69,8 +64,6 @@ function set_window_social_enabled_from_doc_state() {
     set_window_social_enabled(false);
   } else {
     // It is allowed to be enabled here so use the global state.
-    //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-    //                 .getService(Ci.mozISocialRegistry);
     set_window_social_enabled(registry().enabled);
   }
 }
@@ -90,8 +83,6 @@ function set_window_social_enabled(val) {
   if (installed && !window.social.toolbarStatusArea) {
     window.social.toolbarStatusArea = new SocialToolbarStatusArea(window);
     window.social.toolbarStatusArea.enable();
-    //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-    //                 .getService(Ci.mozISocialRegistry);
     window.social.toolbarStatusArea.setProvider(registry().currentProvider);
   }
   broadcaster = document.getElementById("socialInstalled");
@@ -115,9 +106,6 @@ function set_window_social_enabled(val) {
 
 // used by chrome to toggle the enabled state.
 function social_toggle() {
-  //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-  //                 .getService(Ci.mozISocialRegistry);
-  //registry.enabled = !registry.enabled;
   let reg = registry();
   reg.enabled = !reg.enabled
   dump("toggled the social brownsing\n");
@@ -125,8 +113,6 @@ function social_toggle() {
 
 // used by chrome to toggle the sidebar state.
 function social_sidebar_toggle() {
-  //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-  //                 .getService(Ci.mozISocialRegistry);
   if (registry().enabled) {
     // ok, we can toggle it
     let broadcaster = document.getElementById("socialSidebarVisible");
@@ -146,8 +132,6 @@ function social_sidebar_toggle() {
 function social_init() {
   if (window.social) return;
   dump("social_init called\n");
-  //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-  //         .getService(Ci.mozISocialRegistry);
 
   window.social = {
     toggle: social_toggle,

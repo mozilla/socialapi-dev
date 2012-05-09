@@ -27,8 +27,6 @@ function baseWidget(aWindow) {
 baseWidget.prototype = {
   create: function(aWindow) {},
   observe: function(aSubject, aTopic, aData) {
-    //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-    //                        .getService(Ci.mozISocialRegistry);
     if (aTopic == 'social-browsing-current-service-changed') {
       this.setProvider(registry().currentProvider);
     }

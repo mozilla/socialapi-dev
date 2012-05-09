@@ -109,8 +109,6 @@ SocialSidebar.prototype = {
   },
   enable: function() {
     // XXX - this is wrong and needs refactoring.
-    //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-    //                    .getService(Ci.mozISocialRegistry);
     this.setProvider(registry().currentProvider);
   },
   disable: function() {
