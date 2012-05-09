@@ -103,10 +103,11 @@ const OverlayManagerInternal = {
       Services.wm.removeListener(this);
 
       for (let windowURL in this.windowEntries) {
-        this.windowEntries[windowURL].forEach(function(aWindowEntry) {
-          this.destroyWindowEntry(aWindowEntry);
-        }, this);
+        for each(let windowEntry in this.windowEntries[windowURL]) {
+          this.destroyWindowEntry(windowEntry);
+        }
       }
+      this.windowEntries = {};
 
       let cm = Cc["@mozilla.org/categorymanager;1"].
                getService(Ci.nsICategoryManager);
@@ -196,16 +197,6 @@ const OverlayManagerInternal = {
       aNode.parentNode.removeChild(aNode);
     }, this);
     aWindowEntry.nodes = [];
-
-    if (!(windowURL in this.windowEntries))
-      throw new Ce("Missing window entry for " + windowURL);
-    let pos = this.windowEntries[windowURL].indexOf(aWindowEntry);
-    if (pos == -1)
-      throw new Ce("Missing window entry for " + windowURL);
-
-    this.windowEntries[windowURL].splice(pos, 1);
-    if (this.windowEntries[windowURL].length == 0)
-      delete this.windowEntries[windowURL];
   },
 
   applyWindowEntryOverlays: function(aWindowEntry, aOverlays) {
@@ -433,7 +424,7 @@ const OverlayManagerInternal = {
 
         // If we are adding overlays for this window and not already tracking
         // this window then start to track it and add the new overlays
-        if ((windowURL in aOverlayList) && !(windowURL in this.windowEntries)) {
+        if ((windowURL in aOverlayList) && !this.windowEntryMap.has(domWindow)) {
           let windowEntry = this.createWindowEntry(domWindow, aOverlayList[windowURL]);
         }
       }
