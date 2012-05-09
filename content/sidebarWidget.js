@@ -72,7 +72,14 @@ SocialSidebar.prototype = {
     // load the new service before we block redirects, etc, we set the attribute
     // since this may be called prior to the browser element being ready to load
     // during initial startup
-    sbrowser.setAttribute("src", aService.sidebarURL);
+    try {
+      sbrowser.setAttribute("src", aService.sidebarURL);
+      sbrowser.contentWindow.location = aService.sidebarURL;
+    } catch(e) {
+      // on initial install of overlay, sbrowse may not have been ready, throwing
+      // and exception on accessing contentWindow.  setting the src attr fixes
+      // that, but we still need to do both for enable/disable to properly work
+    }
     sbrowser.addEventListener("DOMContentLoaded", function sb_contentListener() {
       sbrowser.removeEventListener("DOMContentLoaded", sb_contentListener, true);
       try {
