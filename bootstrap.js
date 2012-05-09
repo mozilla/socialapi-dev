@@ -2,6 +2,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+/**
+ * This bootstrap file uses chrome.manifest to dynamically register
+ * chrome/skin/locale URIs, allowing an overlay based addon to easily
+ * become restartless.  It is based on work by Dave Townsend at
+ * https://github.com/Mossop/WebAppTabs/
+ *
+ * One limitation is that addons cannot use custom XPCOM interfaces (ie. if you
+ * have an IDL file, this wont work). XPCOM registration beyond basic stuff
+ * has not been tested.
+ */
+
 const Cc = Components.classes;
 const Ci = Components.interfaces;
 const Ce = Components.Exception;
