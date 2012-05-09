@@ -13,23 +13,19 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 
 
 const OVERLAYS = {
-  "chrome://browser/content/browser.xul": {
-    documents: [
+  "chrome://browser/content/browser.xul": [
       {overlay: "chrome://socialdev/content/overlay.xul"}
-    ]
-  },
-  "chrome://socialdev/content/serviceWindow.xul": {
-    documents: [
-      {
-        overlay: "chrome://socialdev/content/winSocial.xul",
-        OS: "WINNT"
-      },
-      {
-        overlay: "chrome://socialdev/content/macBrowserOverlay.xul",
-        OS: "Darwin"
-      }
-    ]
-  }
+  ],
+  "chrome://socialdev/content/serviceWindow.xul": [
+    {
+      overlay: "chrome://socialdev/content/winSocial.xul",
+      OS: "WINNT"
+    },
+    {
+      overlay: "chrome://socialdev/content/macBrowserOverlay.xul",
+      OS: "Darwin"
+    }
+  ]
 };
 
 

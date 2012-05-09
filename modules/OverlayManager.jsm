@@ -15,25 +15,6 @@ const XMLURI_PARSE_ERROR = "http://www.mozilla.org/newlayout/xml/parsererror.xml
 
 Cu.import("resource://gre/modules/Services.jsm");
 
-function createSandbox(aPrincipal, aScriptURL, aPrototype) {
-  let args = {
-    sandboxName: aScriptURL
-  };
-
-  if (aPrototype)
-    args.sandboxPrototype = aPrototype;
-
-  let sandbox = Cu.Sandbox(aPrincipal, args);
-
-  try {
-    Services.scriptloader.loadSubScript(aScriptURL, sandbox);
-  }
-  catch (e) {
-    Cu.reportError("Exception loading script " + aScriptURL + ": "+ e);
-  }
-
-  return sandbox
-}
 
 function loadSandbox(aPrincipal, aDocumentURL, aScripts, aPrototype) {
   let args = {
@@ -72,10 +53,6 @@ const OverlayManager = {
 
   addPreference: function(aName, aValue) {
     OverlayManagerInternal.addPreference(aName, aValue);
-  },
-
-  getScriptContext: function(aWindow, aScriptURL) {
-    return OverlayManagerInternal.getScriptContext(aWindow, aScriptURL);
   },
 
   unload: function() {
@@ -152,8 +129,8 @@ const OverlayManagerInternal = {
 
     let newEntry = {
       window: aDOMWindow,
-      scripts: {},
-      overlayScripts: [],
+      url: windowURL,
+      sandbox: null,
       nodes: [],
     };
 
@@ -165,57 +142,34 @@ const OverlayManagerInternal = {
   },
 
   destroyWindowEntry: function(aWindowEntry) {
+    dump("destroy a window\n");
+    try {
     aWindowEntry.window.removeEventListener("unload", this, false);
-
-    let windowURL = aWindowEntry.window.location.toString();
-    Services.console.logStringMessage("Destroying window entry for " + windowURL);
-
     this.windowEntryMap.delete(aWindowEntry.window);
 
-    for (let [,sandbox] in Iterator(aWindowEntry.scripts)) {
-      try {
-        if ("OverlayListener" in sandbox && "unload" in sandbox.OverlayListener)
-          sandbox.OverlayListener.unload();
-      }
-      catch (e) {
-        Cu.reportError("Exception calling script unload listener: "+ e);
-      }
+    try {
+      if ("OverlayListener" in aWindowEntry.sandbox && "unload" in aWindowEntry.sandbox.OverlayListener)
+        aWindowEntry.sandbox.OverlayListener.unload();
     }
-    aWindowEntry.scripts = {};
-    for each(let sandbox in aWindowEntry.overlayScripts) {
-      try {
-        if ("OverlayListener" in sandbox && "unload" in sandbox.OverlayListener)
-          sandbox.OverlayListener.unload();
-      }
-      catch (e) {
-        Cu.reportError("Exception calling script unload listener: "+ e);
-      }
+    catch (e) {
+      Cu.reportError("Exception calling script unload listener: "+ e);
     }
-    aWindowEntry.overlayScripts = [];
+    delete aWindowEntry.sandbox;
 
     aWindowEntry.nodes.forEach(function(aNode) {
       aNode.parentNode.removeChild(aNode);
     }, this);
     aWindowEntry.nodes = [];
+
+    Services.console.logStringMessage("Destroyed window entry for " + aWindowEntry.url);
+    } catch(e) {
+      dump(e+"\n");
+    }
   },
 
   applyWindowEntryOverlays: function(aWindowEntry, aOverlays) {
-    if ("styles" in aOverlays) {
-      aOverlays.styles.forEach(function(aStyleURL) {
-        this.loadStyleOverlay(aWindowEntry, aStyleURL);
-      }, this);
-    }
-
-    if ("documents" in aOverlays) {
-      aOverlays.documents.forEach(function(aDocData) {
-        this.loadDocumentOverlay(aWindowEntry, aDocData);
-      }, this);
-    }
-
-    if ("scripts" in aOverlays) {
-      aOverlays.scripts.forEach(function(aScriptURL) {
-        this.loadScriptOverlay(aWindowEntry, aScriptURL);
-      }, this);
+    for each(let aDocData in aOverlays) {
+      this.loadDocumentOverlay(aWindowEntry, aDocData);
     }
   },
 
@@ -347,12 +301,11 @@ const OverlayManagerInternal = {
     // anything in the xul elements (commands, etc.) need to have some kind
     // of access into the sandbox, so the sandboxed scripts must set something
     // explicitly onto the window object.
-    let sandbox = loadSandbox(aWindowEntry.window, aDocData.overlay, scripts, aWindowEntry.window);
-    aWindowEntry.overlayScripts.push(sandbox);
+    aWindowEntry.sandbox = loadSandbox(aWindowEntry.window, aDocData.overlay, scripts, aWindowEntry.window);
     
-    if ("OverlayListener" in sandbox && "load" in sandbox.OverlayListener) {
+    if ("OverlayListener" in aWindowEntry.sandbox && "load" in aWindowEntry.sandbox.OverlayListener) {
       try {
-        sandbox.OverlayListener.load();
+        aWindowEntry.sandbox.OverlayListener.load();
       }
       catch (e) {
         Cu.reportError("Exception calling overlay script load event: "+ e);
@@ -372,22 +325,6 @@ const OverlayManagerInternal = {
     aWindowEntry.nodes.push(styleNode);
   },
 
-  loadScriptOverlay: function(aWindowEntry, aScriptURL) {
-    Services.console.logStringMessage("Loading script overlay " + aScriptURL);
-
-    let sandbox = createSandbox(aWindowEntry.window, aScriptURL, aWindowEntry.window);
-    aWindowEntry.scripts[aScriptURL] = sandbox;
-
-    if ("OverlayListener" in sandbox && "load" in sandbox.OverlayListener) {
-      try {
-        sandbox.OverlayListener.load();
-      }
-      catch (e) {
-        Cu.reportError("Exception calling script load event " + aScriptURL +": "+ e);
-      }
-    }
-  },
-
   addOverlays: function(aOverlayList) {
     try {
       // First check over the new overlays, merge them into the master list
@@ -395,18 +332,9 @@ const OverlayManagerInternal = {
       for (let [windowURL, overlayData] in Iterator(aOverlayList)) {
 
         if (!(windowURL in this.overlays))
-          this.overlays[windowURL] = {};
-        let existingOverlays = this.overlays[windowURL];
-
-        ["documents", "styles", "scripts"].forEach(function(aType) {
-          if (!(overlayData[aType]))
-            return;
-
-          if (!(aType in existingOverlays))
-            existingOverlays[aType] = overlayData[aType].slice(0);
-          else
-            existingOverlays[aType].push(overlayData[aType]);
-        }, this);
+          this.overlays[windowURL] = overlayData;
+        else
+          this.overlays[windowURL].concat(overlayData);
 
         // Apply the new overlays to any already tracked windows
         if (windowURL in this.windowEntries) {
@@ -425,7 +353,7 @@ const OverlayManagerInternal = {
         // If we are adding overlays for this window and not already tracking
         // this window then start to track it and add the new overlays
         if ((windowURL in aOverlayList) && !this.windowEntryMap.has(domWindow)) {
-          let windowEntry = this.createWindowEntry(domWindow, aOverlayList[windowURL]);
+          this.createWindowEntry(domWindow, aOverlayList[windowURL]);
         }
       }
     }
@@ -507,15 +435,6 @@ const OverlayManagerInternal = {
 
     Services.prefs["set" + type](aName, aValue);
     this.preferences.push([aName, type, oldValue]);
-  },
-
-  getScriptContext: function(aDOMWindow, aScriptURL) {
-    if (!this.windowEntryMap.has(aDOMWindow))
-      return null;
-    let windowEntry = this.windowEntryMap.get(aDOMWindow);
-    if (!(aScriptURL in windowEntry.scripts))
-      return null;
-    return windowEntry.scripts[aScriptURL];
   },
 
   // nsIEventListener implementation

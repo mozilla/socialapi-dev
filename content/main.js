@@ -167,9 +167,15 @@ function social_init() {
 }
 
 function social_unload() {
+  try {
   Services.obs.removeObserver(stateObserver, "social-browsing-enabled", false);
+  } catch(e) { Cu.reportError(e); }
+  try {
   Services.obs.removeObserver(stateObserver, "social-browsing-disabled", false);
+  } catch(e) { Cu.reportError(e); }
+  try {
   Services.obs.removeObserver(stateObserver, "social-service-manifest-changed", false);
+  } catch(e) { Cu.reportError(e); }
   delete window.social;
 }
 
