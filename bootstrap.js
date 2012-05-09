@@ -205,7 +205,7 @@ const OverlayManager = {
       
     }
     catch (e) {
-      Cu.reportCu.reportError("Exception during unload: "+ e);
+      Cu.reportError("Exception during unload: "+ e);
     }
   },
 
