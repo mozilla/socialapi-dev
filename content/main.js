@@ -144,9 +144,15 @@ function social_sidebar_toggle() {
 }
 
 function social_init() {
+  if (window.social) return;
   dump("social_init called\n");
   //let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
   //         .getService(Ci.mozISocialRegistry);
+
+  window.social = {
+    toggle: social_toggle,
+    sidebar_toggle: social_sidebar_toggle
+  };
 
   // watch for when browser disables chrome in tabs, and hide the social sidebar
   document.addEventListener('DOMAttrModified', function(e) {
@@ -176,16 +182,29 @@ function social_init() {
   dump("social startup done on a window - state is " + registry().enabled + "\n");
 }
 
+function social_unload() {
+  Services.obs.removeObserver(stateObserver, "social-browsing-enabled", false);
+  Services.obs.removeObserver(stateObserver, "social-browsing-disabled", false);
+  Services.obs.removeObserver(stateObserver, "social-service-manifest-changed", false);
+  delete window.social;
+}
+
+// support for OverlayManager
+var OverlayListener = {
+  load: social_init,
+  unload: social_unload
+}
+
 function social_main() {
-  window.social = {
-    toggle: social_toggle,
-    sidebar_toggle: social_sidebar_toggle
-  };
   // due to what we are doing in the sidebar, we have to wait for the
   // chromeWindow to load before we do our magic
   window.addEventListener('load', function loadHandler(e) {
     window.removeEventListener('load', loadHandler);
     social_init();
+  });
+  window.addEventListener('unload', function loadHandler(e) {
+    window.removeEventListener('unload', loadHandler);
+    social_unload();
   });
 }
 
