@@ -198,10 +198,12 @@ const OverlayManagerInternal = {
     while (elem) {
       if (elem.nodeName == "xml-stylesheet") {
         // href="chrome://socialdev/skin/browser.css" type="text/css"
-        let m = elem.nodeValue.match(/href=\"(.*)\"\s+type=\"(.*)\"/);
-        if (m[2] == "text/css") {
+        let t = elem.nodeValue.match(/\s+type=\"(.*)\"/);
+        if (t[1] != "text/css")
+          continue;
+        let m = elem.nodeValue.match(/\s+href=\"(.*)\"/);
+        if (m[1])
           this.loadStyleOverlay(aWindowEntry, m[1]);
-        }
       }
       elem = elem.nextSibling;
     }
