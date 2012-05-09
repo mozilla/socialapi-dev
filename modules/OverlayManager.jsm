@@ -386,7 +386,7 @@ const OverlayManagerInternal = {
         if (!this._sandbox) {
           let principal = Cc["@mozilla.org/systemprincipal;1"].
                           createInstance(Ci.nsIPrincipal);
-          this._sandbox = createSandbox(principal, aComponentURL);
+          this._sandbox = loadSandbox(principal, aComponentURL, [aComponentURL]);
         }
 
         if (!("NSGetFactory" in this._sandbox)) {
