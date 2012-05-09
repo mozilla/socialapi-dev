@@ -201,7 +201,7 @@ const OverlayManagerInternal = {
         let t = elem.nodeValue.match(/\s+type=\"(.*)\"/);
         if (t[1] != "text/css")
           continue;
-        let m = elem.nodeValue.match(/\s+href=\"(.*)\"/);
+        let m = elem.nodeValue.match(/href=\"(.*)\"/);
         if (m[1])
           this.loadStyleOverlay(aWindowEntry, m[1]);
       }
