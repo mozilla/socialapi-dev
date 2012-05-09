@@ -143,7 +143,7 @@ toolbar[mode="icons"] .social-status-area-container:not([type="menu-button"])[op
 toolbar[mode="icons"] .social-status-area-container:not([disabled="true"]) > .toolbarbutton-menubutton-button:active:hover:-moz-lwtheme,
 toolbar[mode="icons"] .social-status-area-container[open="true"] > .toolbarbutton-menubutton-dropmarker:-moz-lwtheme,
 toolbar[mode="icons"] #restore-button:not([disabled="true"]):active:hover:-moz-lwtheme {
-  text-shadow: @loweredShadow@;
+  /*text-shadow: @loweredShadow@;*/
   background-color: rgba(0,0,0,0.2);
   box-shadow: inset 0 2px 5px rgba(0,0,0,0.6), 0 1px rgba(255,255,255,0.2);
 }
