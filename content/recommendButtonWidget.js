@@ -3,7 +3,7 @@
 Components.utils.import("resource://gre/modules/Services.jsm");
 Components.utils.import("resource://socialdev/modules/baseWidget.js");
 
-Components.utils.import("resource://socialdev/components/registry.js");
+Components.utils.import("resource://socialdev/modules/registry.js");
 
 function SocialRecommendButton() {
   baseWidget.call(this, window);

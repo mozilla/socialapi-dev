@@ -37,57 +37,35 @@ function install(aParams, aReason) {
 }
 
 function startup(aParams, aReason) {
-    dump("startup started\n");
+  dump("startup started\n");
   Services.console.logStringMessage("socialdev startup called");
   // Register the resource://webapptabs/ mapping
   Cu.import("resource://gre/modules/Services.jsm");
   let res = Services.io.getProtocolHandler("resource").QueryInterface(Ci.nsIResProtocolHandler);
   res.setSubstitution("socialdev", aParams.resourceURI);
 
-
   // Add our chrome registration.  this will spit out warnings about any overlay or
   // component information
   Cm.addBootstrappedManifestLocation(aParams.installPath);
-try {
-  Cu.import("resource://socialdev/components/registry.js");
-} catch(e) {
-  dump(e+"\n");
-}
-  // register our xpcom components from the chrome.manifest
-  //let manifest = aParams.installPath.clone();
-  //manifest.appendRelativePath("chrome.manifest");
-  //Cm.autoRegister(manifest);
-  
-  //let chromeReg = Cc["@mozilla.org/chrome/chrome-registry;1"].
-  //                   getService(Ci.nsIXULChromeRegistry);
-  //chromeReg.checkForNewChrome();
-  //chromeReg.refreshSkins();  // Load the overlay manager
 
+  Cu.import("resource://socialdev/modules/registry.js");
   Cu.import("resource://socialdev/modules/OverlayManager.jsm");
 
-  // XXX because we were using a new interface, we could not be restartless, moving
-  // registry back to a module lets us move towards that.
-  //OverlayManager.addComponent("{1a60fb78-b2d2-104b-b16a-7f497be5626d}",
-  //                            "resource://socialdev/components/registry.js",
-  //                            "@mozilla.org/socialProviderRegistry;1");
-  //OverlayManager.addCategory("profile-after-change", "socialRegistry",
-  //                           "@mozilla.org/socialProviderRegistry;1");
   OverlayManager.addComponent("{ddf3f2e0-c819-b843-b32c-c8834d98ef49}",
                               "resource://socialdev/components/about.js",
                               "@mozilla.org/network/protocol/about;1?what=social");
 
   OverlayManager.addOverlays(OVERLAYS);
   Services.console.logStringMessage("socialdev startup complete");
-    dump("startup complete\n");
+  dump("startup complete\n");
 }
 
 function shutdown(aParams, aReason) {
   dump("shutdown started\n");
   // Don't need to clean anything up if the application is shutting down
-  //if (aReason == APP_SHUTDOWN) {
-  //  dump("got app_shutdown, return\n");
-  //  return;
-  //}
+  if (aReason == APP_SHUTDOWN) {
+    return;
+  }
 
   // Close any of our UI windows
   let windows = Services.wm.getEnumerator(null);
@@ -102,11 +80,6 @@ function shutdown(aParams, aReason) {
   OverlayManager.unload();
   Cu.unload("resource://socialdev/modules/OverlayManager.jsm");
 
-  //// unregister our xpcom components
-  //let compDir = aParams.installPath.clone();
-  //compDir.appendRelativePath("chrome.manifest");
-  //Cm.autoUnregister(compDir);
-  
   // Remove our chrome registration
   Cm.removeBootstrappedManifestLocation(aParams.installPath)
 

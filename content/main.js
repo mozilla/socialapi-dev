@@ -1,6 +1,6 @@
 "use strict";
 
-Cu.import("resource://socialdev/components/registry.js");
+Cu.import("resource://socialdev/modules/registry.js");
 
 function isAvailable() {
   // This will probably go away based on UX - it exists so the social toolbar
