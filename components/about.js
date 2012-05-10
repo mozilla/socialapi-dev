@@ -86,8 +86,7 @@ var aboutPage = {
           data: manifest
         });
         win.postMessage(data, "*");
-      }
-      catch(e) {
+      } catch(e) {
         Cu.reportError(e);
       }
     });
@@ -104,8 +103,7 @@ var aboutPage = {
       let data = msg.data;
       if (data.enabled) {
         registry().enableProvider(data.origin);
-      }
-      else {
+      } else {
         registry().disableProvider(data.origin);
       }
       return;

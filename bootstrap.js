@@ -36,8 +36,9 @@ function loadSandbox(aPrincipal, aDocumentURL, aScripts, aPrototype) {
     sandboxName: aDocumentURL
   };
 
-  if (aPrototype)
+  if (aPrototype) {
     args.sandboxPrototype = aPrototype;
+  }
 
   let sandbox = Cu.Sandbox(aPrincipal, args);
 
@@ -80,21 +81,17 @@ const OverlayManager = {
     for each(let entry in this.manifest) {
       if (entry.type == "content") {
         if (!this.resourceName) this.resourceName = entry.args[0];
-      }
-      else if (entry.type == "resource") {
+      } else if (entry.type == "resource") {
         this.resourceName = entry.args[0];
         resourcePath = entry.args[1];
-      }
-      else if (entry.type == "component") {
+      } else if (entry.type == "component") {
         components[entry.args[0]] = {
           url: entry.args[1],
           contract: null
         }
-      }
-      else if (entry.type == "contract") {
+      } else if (entry.type == "contract") {
         components[entry.args[1]].contract = entry.args[0]
-      }
-      else if (entry.type == "overlay") {
+      } else if (entry.type == "overlay") {
         let windowURL = entry.args[0];
         let overlayData = {
           overlay: entry.args[1]
@@ -106,10 +103,11 @@ const OverlayManager = {
             overlayData[m[1]] = m[2];
           }
         }
-        if (!(windowURL in this.overlays))
+        if (!(windowURL in this.overlays)) {
           this.overlays[windowURL] = [overlayData];
-        else
+        } else {
           this.overlays[windowURL].push(overlayData);
+        }
       }
     }
 
@@ -149,8 +147,9 @@ const OverlayManager = {
       while (windows.hasMoreElements()) {
         let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
         let spec = domWindow.location.toString();
-        if (spec.indexOf(this.resourceURI.spec) == 0)
+        if (spec.indexOf(this.resourceURI.spec) == 0) {
           domWindow.close();
+        }
       }
       Services.wm.removeListener(this);
 
@@ -164,10 +163,11 @@ const OverlayManager = {
       let cm = Cc["@mozilla.org/categorymanager;1"].
                getService(Ci.nsICategoryManager);
       this.categories.forEach(function([aCategory, aEntry, aOldValue]) {
-        if (aOldValue)
+        if (aOldValue) {
           cm.addCategoryEntry(aCategory, aEntry, aOldValue, false, true);
-        else
+        } else {
           cm.deleteCategoryEntry(aCategory, aEntry, false);
+        }
       });
 
       this.components.forEach(function(aCid) {
@@ -180,10 +180,11 @@ const OverlayManager = {
       });
 
       this.preferences.forEach(function([aName, aType, aValue]) {
-        if (aValue === null)
+        if (aValue === null) {
           Services.prefs.clearUserPref(aName);
-        else
+        } else {
           Services.prefs["set" + aType](aName, aValue);
+        }
       });
       
       // Remove our chrome registration
@@ -194,17 +195,16 @@ const OverlayManager = {
       res.setSubstitution(this.resourceName, null);
     
       try {
-        if (!Services.prefs.getBoolPref("extensions."+this.resourceName+".debug"))
+        if (!Services.prefs.getBoolPref("extensions."+this.resourceName+".debug")) {
           return;
+        }
     
         // For testing invalidate the startup cache
         Services.obs.notifyObservers(null, "startupcache-invalidate", null);
-      }
-      catch (e) {
+      } catch (e) {
       }
       
-    }
-    catch (e) {
+    } catch (e) {
       Cu.reportError("Exception during unload: "+ e);
     }
   },
@@ -214,11 +214,13 @@ const OverlayManager = {
 
     let windowURL = aDOMWindow.location.toString();
     Services.console.logStringMessage("Creating window entry for " + windowURL);
-    if (this.windowEntryMap.has(aDOMWindow))
+    if (this.windowEntryMap.has(aDOMWindow)) {
       throw new Ce("Already registered window entry for " + windowURL);
+    }
 
-    if (!(windowURL in this.windowEntries))
+    if (!(windowURL in this.windowEntries)) {
       this.windowEntries[windowURL] = [];
+    }
 
     let newEntry = {
       window: aDOMWindow,
@@ -235,16 +237,15 @@ const OverlayManager = {
   },
 
   destroyWindowEntry: function(aWindowEntry) {
-    dump("destroy a window\n");
     try {
     aWindowEntry.window.removeEventListener("unload", this, false);
     this.windowEntryMap.delete(aWindowEntry.window);
 
     try {
-      if ("OverlayListener" in aWindowEntry.sandbox && "unload" in aWindowEntry.sandbox.OverlayListener)
+      if ("OverlayListener" in aWindowEntry.sandbox && "unload" in aWindowEntry.sandbox.OverlayListener) {
         aWindowEntry.sandbox.OverlayListener.unload();
-    }
-    catch (e) {
+      }
+    } catch (e) {
       Cu.reportError("Exception calling script unload listener: "+ e);
     }
     delete aWindowEntry.sandbox;
@@ -256,7 +257,7 @@ const OverlayManager = {
 
     Services.console.logStringMessage("Destroyed window entry for " + aWindowEntry.url);
     } catch(e) {
-      dump(e+"\n");
+      Cu.reportError(e);
     }
   },
 
@@ -268,8 +269,9 @@ const OverlayManager = {
 
   loadDocumentOverlay: function(aWindowEntry, aDocData) {
     let xulRuntime = Cc["@mozilla.org/xre/app-info;1"].getService(Ci.nsIXULRuntime);
-    if (aDocData.OS && aDocData.OS != xulRuntime.OS)
+    if (aDocData.OS && aDocData.OS != xulRuntime.OS) {
       return;
+    }
     Services.console.logStringMessage("Loading document overlay " + aDocData.overlay);
 
     // TODO make this async
@@ -292,11 +294,13 @@ const OverlayManager = {
       if (elem.nodeName == "xml-stylesheet") {
         // href="chrome://socialdev/skin/browser.css" type="text/css"
         let t = elem.nodeValue.match(/\s+type=\"(.*)\"/);
-        if (t[1] != "text/css")
+        if (t[1] != "text/css") {
           continue;
+        }
         let m = elem.nodeValue.match(/href=\"(.*)\"/);
-        if (m[1])
+        if (m[1]) {
           this.loadStyleOverlay(aWindowEntry, m[1]);
+        }
       }
       elem = elem.nextSibling;
     }
@@ -310,12 +314,12 @@ const OverlayManager = {
         // If possible to descend then do so
         if (node.firstChild) {
           node = node.firstChild;
-        }
-        else {
+        } else {
           // Otherwise find the next node in the document by walking up the tree
           // until there is a nextSibling (or we hit the documentElement)
-          while (!node.nextSibling && node.parentNode != overlayDoc.documentElement)
+          while (!node.nextSibling && node.parentNode != overlayDoc.documentElement) {
             node = node.parentNode;
+          }
 
           // Select the nextSibling (or null if we hit the top)
           node = node.nextSibling;
@@ -332,15 +336,17 @@ const OverlayManager = {
 
         node = node.nextSibling;
 
-        if (currentNode instanceof Ci.nsIDOMElement)
+        if (currentNode instanceof Ci.nsIDOMElement) {
           yield currentNode;
+        }
       }
     }
 
     for (let node in walkDocumentNodes(overlayDoc)) {
       // Remove the node if it is an empty text node
-      if (node.nodeType == Ci.nsIDOMNode.TEXT_NODE && node.nodeValue.trim() == "")
+      if (node.nodeType == Ci.nsIDOMNode.TEXT_NODE && node.nodeValue.trim() == "") {
         node.parentNode.removeChild(node);
+      }
     }
 
     // track any scripts we find
@@ -351,13 +357,11 @@ const OverlayManager = {
         if (containerElement.localName == "script") {
           scripts.push(containerElement.getAttribute("src"));
           continue;
-        }
-        else {
+        } else {
           let elements = targetDoc.getElementsByTagName(containerElement.localName);
           targetElement = elements[0];
         }
-      }
-      else {
+      } else {
         targetElement = targetDoc.getElementById(containerElement.id);
       }
 
@@ -373,17 +377,19 @@ const OverlayManager = {
 
         if (newElement.hasAttribute("insertbefore")) {
           insertBefore = targetDoc.getElementById(newElement.getAttribute("insertbefore"));
-          if (insertBefore && insertBefore.parentNode != targetElement)
+          if (insertBefore && insertBefore.parentNode != targetElement) {
             insertBefore = null;
+          }
         }
 
         if (!insertBefore && newElement.hasAttribute("insertafter")) {
           insertBefore = targetDoc.getElementById(newElement.getAttribute("insertafter"));
           if (insertBefore) {
-            if (insertBefore.parentNode != targetElement)
+            if (insertBefore.parentNode != targetElement) {
               insertBefore = null
-            else
+            } else {
               insertBefore = insertBefore.nextSibling;
+            }
           }
         }
 
@@ -401,8 +407,7 @@ const OverlayManager = {
     if ("OverlayListener" in aWindowEntry.sandbox && "load" in aWindowEntry.sandbox.OverlayListener) {
       try {
         aWindowEntry.sandbox.OverlayListener.load();
-      }
-      catch (e) {
+      } catch (e) {
         Cu.reportError("Exception calling overlay script load event: "+ e);
       }
     }
@@ -426,10 +431,11 @@ const OverlayManager = {
       // and if any are for already tracked windows apply them
       for (let [windowURL, overlayData] in Iterator(aOverlayList)) {
 
-        if (!(windowURL in this.overlays))
+        if (!(windowURL in this.overlays)) {
           this.overlays[windowURL] = overlayData;
-        else
+        } else {
           this.overlays[windowURL].concat(overlayData);
+        }
 
         // Apply the new overlays to any already tracked windows
         if (windowURL in this.windowEntries) {
@@ -451,8 +457,7 @@ const OverlayManager = {
           this.createWindowEntry(domWindow, aOverlayList[windowURL]);
         }
       }
-    }
-    catch (e) {
+    } catch (e) {
       Cu.reportError("Exception adding overlay list: "+ e);
       dump(e.stack+"\n");
     }
@@ -464,10 +469,10 @@ const OverlayManager = {
         let cid = Cm.contractIDToCID(aContract);
         // It's possible to have a contract to CID mapping when the CID doesn't
         // exist
-        if (Cm.isCIDRegistered(cid))
+        if (Cm.isCIDRegistered(cid)) {
           this.contracts.push([aContract, cid]);
-      }
-      catch (e) {
+        }
+      } catch (e) {
       }
     }
 
@@ -489,8 +494,7 @@ const OverlayManager = {
 
         try {
           return this._sandbox.NSGetFactory(aCid).createInstance(aOuter, aIID);
-        }
-        catch (e) {
+        } catch (e) {
           Cu.reportError("Exception initialising component " + aContract + " from " + aComponentURL + ": "+ e);
           throw e;
         }
@@ -506,8 +510,8 @@ const OverlayManager = {
     let oldValue = null;
     try {
       oldValue = cm.getCategoryEntry(aCategory, aEntry);
+    } catch (e) {
     }
-    catch (e) { }
     cm.addCategoryEntry(aCategory, aEntry, aValue, false, true);
     this.categories.push([aCategory, aEntry, oldValue]);
   },
@@ -517,16 +521,17 @@ const OverlayManager = {
 
     let type = "CharPref";
     switch (typeof aValue) {
-    case "number":
-      type = "IntPref";
-      break;
-    case "boolean":
-      type = "BoolPref";
-      break;
+      case "number":
+        type = "IntPref";
+        break;
+      case "boolean":
+        type = "BoolPref";
+        break;
     }
 
-    if (Services.prefs.getPrefType(aName) != Ci.nsIPrefBranch.PREF_INVALID)
+    if (Services.prefs.getPrefType(aName) != Ci.nsIPrefBranch.PREF_INVALID) {
       oldValue = Services.prefs["get" + type](aName);
+    }
 
     Services.prefs["set" + type](aName, aValue);
     this.preferences.push([aName, type, oldValue]);
@@ -538,26 +543,25 @@ const OverlayManager = {
       let domWindow = aEvent.currentTarget;
 
       switch (aEvent.type) {
-      case "DOMContentLoaded":
-        domWindow.removeEventListener("DOMContentLoaded", this, false);
-        let windowURL = domWindow.location.toString();
-        // Track this window if there are overlays for it
-        if (windowURL in this.overlays) {
-          let overlays = this.overlays[windowURL];
-          OverlayManager.createWindowEntry(domWindow, overlays);
-        }
-        break;
-      case "unload":
-        if (!this.windowEntryMap.has(domWindow)) {
-          Cu.reportError("Saw unload event for unknown window " + domWindow.location);
-          return;
-        }
-        let windowEntry = this.windowEntryMap.get(domWindow);
-        OverlayManager.destroyWindowEntry(windowEntry);
-        break;
+        case "DOMContentLoaded":
+          domWindow.removeEventListener("DOMContentLoaded", this, false);
+          let windowURL = domWindow.location.toString();
+          // Track this window if there are overlays for it
+          if (windowURL in this.overlays) {
+            let overlays = this.overlays[windowURL];
+            OverlayManager.createWindowEntry(domWindow, overlays);
+          }
+          break;
+        case "unload":
+          if (!this.windowEntryMap.has(domWindow)) {
+            Cu.reportError("Saw unload event for unknown window " + domWindow.location);
+            return;
+          }
+          let windowEntry = this.windowEntryMap.get(domWindow);
+          OverlayManager.destroyWindowEntry(windowEntry);
+          break;
       }
-    }
-    catch (e) {
+    } catch (e) {
       Cu.reportError("Error during window " + aEvent.type +": "+ e);
     }
   },
@@ -581,24 +585,20 @@ function install(aParams, aReason) {
 }
 
 function startup(aParams, aReason) {
-  dump("startup started\n");
   OverlayManager.init(aParams, function() {
     // addon specific stuff we need to start before
     // applying our overlays
     Cu.import("resource://socialdev/modules/registry.js");
   });
-  dump("startup complete\n");
 }
 
 function shutdown(aParams, aReason) {
-  dump("shutdown started\n");
   // Don't need to clean anything up if the application is shutting down
   if (aReason == APP_SHUTDOWN) {
     return;
   }
   // Unload and remove the overlay manager
   OverlayManager.unload();
-  dump("shutdown completed\n");
 }
 
 function uninstall(aParams, aReason) {
