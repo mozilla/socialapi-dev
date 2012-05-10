@@ -4,6 +4,8 @@ Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://socialdev/modules/manifestDB.jsm");
 
+Cu.import("resource://socialdev/modules/registry.js");
+
 const ABOUTURL = "chrome://socialdev/content/about.html";
 const EXPORTED_SYMBOLS = [];
 
@@ -44,9 +46,7 @@ var aboutPage = {
       // (doing it too early means the UI state defined in the HTML wins the race)
       let loadHandler = function() {
         aDocument.removeEventListener("DOMContentLoaded", loadHandler, false);
-        let enabled = Cc["@mozilla.org/socialProviderRegistry;1"]
-               .getService(Ci.mozISocialRegistry).enabled;
-        let subtopic = "social-browsing-" + (enabled ? "enabled" : "disabled");
+        let subtopic = "social-browsing-" + (registry().enabled ? "enabled" : "disabled");
         this.observe(null, subtopic, null);
       }.bind(this);
       aDocument.addEventListener("DOMContentLoaded", loadHandler, false);
@@ -86,8 +86,7 @@ var aboutPage = {
           data: manifest
         });
         win.postMessage(data, "*");
-      }
-      catch(e) {
+      } catch(e) {
         Cu.reportError(e);
       }
     });
@@ -101,20 +100,16 @@ var aboutPage = {
     let msg = JSON.parse(event.data);
 
     if (msg.topic === "preference-service-change") {
-      let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                   .getService(Ci.mozISocialRegistry);
       let data = msg.data;
       if (data.enabled) {
-        registry.enableProvider(data.origin);
+        registry().enableProvider(data.origin);
       } else {
-        registry.disableProvider(data.origin);
+        registry().disableProvider(data.origin);
       }
       return;
     }
     if (msg.topic === "preference-social-change") {
-      let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                   .getService(Ci.mozISocialRegistry);
-      registry.enabled = msg.data.enabled;
+      registry().enabled = msg.data.enabled;
       return;
     }
   }

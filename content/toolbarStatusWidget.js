@@ -3,6 +3,8 @@
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://socialdev/modules/baseWidget.js");
 
+Cu.import("resource://socialdev/modules/registry.js");
+
 function SocialToolbarStatusArea() {
   baseWidget.call(this, window);
 
@@ -62,22 +64,19 @@ SocialToolbarStatusArea.prototype = {
         iconContainer.addEventListener("click", function(e) {
           var panel = window.document.getElementById("social-notification-panel");
           var notifBrowser = window.document.getElementById("social-notification-browser");
-          let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                        .getService(Ci.mozISocialRegistry);
-          notifBrowser.service = registry.currentProvider;
+          notifBrowser.service = registry().currentProvider;
 
           var resizer = function() {
+            notifBrowser.removeEventListener("DOMContentLoaded", resizer);
             var body = notifBrowser.contentDocument.getElementById("notif");
             notifBrowser.width = body.clientWidth;
             notifBrowser.height = body.clientHeight;
             panel.width = body.clientWidth;
             panel.height = body.clientHeight;              
-            notifBrowser.removeEventListener("DOMContentLoaded", resizer);
           }
           notifBrowser.addEventListener("DOMContentLoaded", resizer, false);
           notifBrowser.setAttribute("src", icon.contentPanel);
           panel.openPopup(iconContainer, "after_start",0,0,false, false);
-
         }, false);
     }
 
@@ -91,18 +90,17 @@ SocialToolbarStatusArea.prototype = {
         //social-status-area-container");
       while (container.firstChild) container.removeChild(container.firstChild);
 
-      let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                              .getService(Ci.mozISocialRegistry);
-      if (!registry.currentProvider || !registry.currentProvider.enabled) {
+      let currentProvider = registry().currentProvider;
+      if (!currentProvider || !currentProvider.enabled) {
         this.debugLog("no service is enabled, so not rendering status area");
         return;
       } else {
-        this.debugLog("Rending toolbar status are; current provider is " + registry.currentProvider);
+        this.debugLog("Rending toolbar status are; current provider is " + currentProvider);
       }
 
       if (window.social.enabled) {
         var image = window.document.getElementById("social-statusarea-service-image");
-        image.setAttribute("src", registry.currentProvider.iconURL);
+        image.setAttribute("src", currentProvider.iconURL);
       }
 
       /* experimenting with provider-specified background vs. chrome-specified (e.g. skin/<theme>/socialstatus.css) background:
@@ -116,8 +114,8 @@ SocialToolbarStatusArea.prototype = {
       iconBox.setAttribute("flex", 1);
 
       var ambientNotificationCount = 0;
-      if (registry.currentProvider.ambientNotificationIcons) {
-        for each (var icon in registry.currentProvider.ambientNotificationIcons)
+      if (currentProvider.ambientNotificationIcons) {
+        for each (var icon in currentProvider.ambientNotificationIcons)
         {
           ambientNotificationCount += 1;
           createNotificationIcon(icon);   
@@ -133,11 +131,11 @@ SocialToolbarStatusArea.prototype = {
       portraitBox.align = "start";
       container.insertBefore(portraitBox, container.firstChild);
 
-      if (registry.currentProvider.ambientNotificationPortrait) {
-        this.debugLog("Setting portrait to " + registry.currentProvider.ambientNotificationPortrait);
+      if (currentProvider.ambientNotificationPortrait) {
+        this.debugLog("Setting portrait to " + currentProvider.ambientNotificationPortrait);
         var portrait = window.document.createElementNS(XUL_NS, "image");
         portrait.setAttribute("class", "social-portrait-image");
-        portrait.setAttribute("src", registry.currentProvider.ambientNotificationPortrait);
+        portrait.setAttribute("src", currentProvider.ambientNotificationPortrait);
         // portrait on left:
         portraitBox.appendChild(portrait);
         // portrait on right: container.appendChild(portrait);
@@ -186,8 +184,7 @@ const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 function buildSocialPopupContents(window, socialpanel)
 {
-  let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                          .getService(Ci.mozISocialRegistry);
+  let preg = registry();
 
   function renderNotificationRow(img, title, text) {
     let row = window.document.createElementNS(HTML_NS, "div");
@@ -231,13 +228,13 @@ function buildSocialPopupContents(window, socialpanel)
     menuitem.setAttribute("image", service.iconURL);
     menuitem.setAttribute("type", "radio");
     menuitem.setAttribute("name", "socialprovider");
-    if (service == registry.currentProvider) {
+    if (service == preg.currentProvider) {
       // no need for a click handler if we're selected
       menuitem.setAttribute("checked", true);
     }
     else {
       menuitem.addEventListener("click", function(event) {
-        registry.currentProvider = service;
+        preg.currentProvider = service;
       });
     }
     container.insertBefore(menuitem, before);
@@ -257,7 +254,7 @@ function buildSocialPopupContents(window, socialpanel)
     } else {
       providerSep.removeAttribute("hidden");
       // Create top-level items
-      registry.each(function(service) {
+      preg.each(function(service) {
         if (service.enabled)
           renderProviderMenuitem(service, socialpanel, providerSep);
       });
