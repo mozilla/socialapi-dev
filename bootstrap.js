@@ -42,13 +42,13 @@ function loadSandbox(aPrincipal, aDocumentURL, aScripts, aPrototype) {
 
   let sandbox = Cu.Sandbox(aPrincipal, args);
 
-  try {
-    for each(let aScriptURL in aScripts) {
+  for each(let aScriptURL in aScripts) {
+    try {
       Services.scriptloader.loadSubScript(aScriptURL, sandbox);
     }
-  }
-  catch (e) {
-    Cu.reportError("Exception loading script " + aScriptURL + ": "+ e);
+    catch (e) {
+      Cu.reportError("Exception loading script " + aScriptURL + ": "+ e);
+    }
   }
 
   return sandbox 
