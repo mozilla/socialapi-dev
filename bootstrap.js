@@ -185,10 +185,9 @@ const OverlayManager = {
         sandboxName: "defaults/preferences"
       };
     
-      let appShell = Cc["@mozilla.org/appshell/appShellService;1"]
-                      .getService(Ci.nsIAppShellService);
-      let hiddenDOMWindow = appShell.hiddenDOMWindow;
-      let sandbox = Cu.Sandbox(hiddenDOMWindow, args);
+      var systemPrincipal = Cc["@mozilla.org/systemprincipal;1"]
+                          .createInstance(Ci.nsIPrincipal);
+      let sandbox = Cu.Sandbox(systemPrincipal, args);
       // set or pref function, addPreference will track the added
       // prefs for removal during unload
       sandbox.importFunction(function pref(name, value) {
