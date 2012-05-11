@@ -34,6 +34,65 @@ function normalizeOriginPort(aURL) {
   return aURL;
 }
 
+
+/**
+ * getDefaultProviders
+ *
+ * look into our addon/feature dir and see if we have any builtin providers to install
+ */
+function getDefaultProviders() {
+  var URIs = [];
+  try {
+    // figure out our installPath
+    let res = Services.io.getProtocolHandler("resource").QueryInterface(Ci.nsIResProtocolHandler);
+    let installURI = Services.io.newURI("resource://socialdev/", null, null);
+    let installPath = res.resolveURI(installURI);
+    let installFile = Services.io.newURI(installPath, null, null);
+    try {
+      installFile = installFile.QueryInterface(Components.interfaces.nsIJARURI);
+    } catch (ex) {} //not a jar file
+
+    // load all prefs in defaults/preferences into a sandbox that has
+    // a pref function
+    let resURI = Services.io.newURI("resource://socialdev/providers", null, null);
+    // If we're a XPI, load from the jar file
+    if (installFile.JARFile) {
+      let fileHandler = Components.classes["@mozilla.org/network/protocol;1?name=file"].
+                  getService(Components.interfaces.nsIFileProtocolHandler);
+      let fileName = fileHandler.getFileFromURLSpec(installFile.JARFile.spec);
+      let zipReader = Cc["@mozilla.org/libjar/zip-reader;1"].
+                      createInstance(Ci.nsIZipReader);
+      try {
+        zipReader.open(fileName);
+        let entries = zipReader.findEntries("providers/*");
+        while (entries.hasMore()) {
+          var entryName = resURI.resolve(entries.getNext());
+          if (entryName.indexOf("app.manifest") >= 0)
+            URIs.push(entryName);
+        }
+      }
+      finally {
+        zipReader.close();
+      }
+    }
+    else {
+      let fURI = resURI.QueryInterface(Components.interfaces.nsIFileURL).file;
+  
+      var entries = fURI.directoryEntries;  
+      while (entries.hasMoreElements()) {  
+        var entry = entries.getNext();  
+        entry.QueryInterface(Components.interfaces.nsIFile);
+        URIs.push(resURI.resolve("providers/"+entry.leafName+"/app.manifest")); 
+      }
+    }
+    //dump(JSON.stringify(URIs)+"\n");
+  } catch(e) {
+    Cu.reportError(e);
+  }
+  return URIs
+}
+
+
 /**
  * manifestRegistry is our internal api for registering manfist files that
    contain data for various services. It holds a registry of installed activity
@@ -49,7 +108,11 @@ function ManifestRegistry() {
   //Services.obs.addObserver(this, "openwebapp-installed", true);
   //Services.obs.addObserver(this, "openwebapp-uninstalled", true);
 
-  installBuiltins();
+  // load the builtin providers if any
+  let URIs = getDefaultProviders();
+  for each(let uri in URIs) {
+    this.loadManifest(null, uri, true);
+  }
 }
 
 const manifestRegistryClassID = Components.ID("{8d764216-d779-214f-8da0-80e211d759eb}");
@@ -106,15 +169,17 @@ ManifestRegistry.prototype = {
 
   importManifest: function manifestRegistry_importManifest(aDocument, location, manifest, userRequestedInstall) {
     //Services.console.logStringMessage("got manifest "+JSON.stringify(manifest));
-
-    let registry = this;
+    let socialManifest = manifest.services.social;
+    socialManifest.enabled = true;
+    if (location.indexOf("resource:") == 0 && socialManifest.URLPrefix)
+      location = socialManifest.URLPrefix
     function installManifest() {
       manifest.origin = location; // make this an origin
       // ensure remote installed social services cannot set contentPatchPath
       manifest.contentPatchPath = undefined;
       manifest.enabled = true;
-      ManifestDB.put(location, manifest);
-      registry().register(manifest);
+      ManifestDB.put(location, socialManifest);
+      registry().register(socialManifest);
       // XXX notification of installation
     }
 
@@ -146,16 +211,16 @@ ManifestRegistry.prototype = {
     // BUG 732264 error and edge case handling
     let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance(Ci.nsIXMLHttpRequest);
     xhr.open('GET', url, true);
-    let registry = this;
+    let self = this;
     xhr.onreadystatechange = function(aEvt) {
       if (xhr.readyState == 4) {
         if (xhr.status == 200 || xhr.status == 0) {
           //Services.console.logStringMessage("got response "+xhr.responseText);
           try {
-            registry.importManifest(aDocument, url, JSON.parse(xhr.responseText), userRequestedInstall);
+            self.importManifest(aDocument, url, JSON.parse(xhr.responseText), userRequestedInstall);
           }
           catch(e) {
-            Cu.reportError("importManifest: "+e);
+            Cu.reportError("importManifest "+url+": "+e);
           }
         }
         else {
