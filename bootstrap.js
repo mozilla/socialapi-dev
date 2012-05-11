@@ -45,12 +45,10 @@ function loadSandbox(aPrincipal, aDocumentURL, aScripts, aPrototype) {
   for each(let aScriptURL in aScripts) {
     try {
       Services.scriptloader.loadSubScript(aScriptURL, sandbox);
-    }
-    catch (e) {
+    } catch (e) {
       Cu.reportError("Exception loading script " + aScriptURL + ": "+ e);
     }
   }
-
   return sandbox 
 }
 
@@ -123,9 +121,6 @@ const OverlayManager = {
     // properly register chrome/skin/locale URIs
     Cm.addBootstrappedManifestLocation(aParams.installPath);
     
-    // load any prefs.js file
-    OverlayManager.loadPrefs(aParams);
-    
     // register our components
     for (let [cid, component] in Iterator(components)) {
       OverlayManager.addComponent(cid,
@@ -142,72 +137,6 @@ const OverlayManager = {
     OverlayManager.addOverlays(this.overlays);
   },
   
-  loadPrefs: function(aParams) {
-    try {
-      // load all prefs in defaults/preferences into a sandbox that has
-      // a pref function
-      let prefPath = aParams.resourceURI.resolve("./defaults/preferences");
-      let dirURI = Services.io.newURI(prefPath, null, null);
-  
-      var URIs = [];
-      // If we're a XPI, load from the jar file
-      if (dirURI.scheme == "jar") {
-        let zipReader = Cc["@mozilla.org/libjar/zip-reader;1"].
-                        createInstance(Ci.nsIZipReader);
-        try {
-          zipReader.open(aParams.installPath);
-          let entries = zipReader.findEntries("defaults/preferences/*");
-          while (entries.hasMore()) {
-            var entryName = entries.getNext();
-            if (entryName[entryName.length-1] == "/") continue;
-            URIs.push(this.resourceURI.resolve(entryName)); 
-          }
-        }
-        finally {
-          zipReader.close();
-        }
-      }
-      else {
-        let fURI = dirURI.QueryInterface(Components.interfaces.nsIFileURL).file;
-    
-        var entries = fURI.directoryEntries;  
-        while (entries.hasMoreElements()) {  
-          var entry = entries.getNext();  
-          entry.QueryInterface(Components.interfaces.nsIFile);
-          URIs.push(this.resourceURI.resolve("defaults/preferences/"+entry.leafName)); 
-        }
-      }
-      //dump(JSON.stringify(URIs)+"\n");
-      
-      // make a sandbox, load all the prefs URIs into it
-  
-      let args = {
-        sandboxName: "defaults/preferences"
-      };
-    
-      var systemPrincipal = Cc["@mozilla.org/systemprincipal;1"]
-                          .createInstance(Ci.nsIPrincipal);
-      let sandbox = Cu.Sandbox(systemPrincipal, args);
-      // set or pref function, addPreference will track the added
-      // prefs for removal during unload
-      sandbox.importFunction(function pref(name, value) {
-        OverlayManager.addPreference(name, value);
-      }, 'pref');
-  
-      for each(let aScriptURL in URIs) {
-      try {
-          Services.scriptloader.loadSubScript(aScriptURL, sandbox);
-        }
-        catch (e) {
-          Cu.reportError("Exception loading script " + aScriptURL + ": "+ e);
-        }
-      }
-
-    } catch(e) {
-      Cu.reportError("PREFS LOAD: "+e);
-    }
-  },
-
   unload: function() {
     Services.console.logStringMessage("unload");
     try {
@@ -583,27 +512,6 @@ const OverlayManager = {
     }
     cm.addCategoryEntry(aCategory, aEntry, aValue, false, true);
     this.categories.push([aCategory, aEntry, oldValue]);
-  },
-
-  addPreference: function(aName, aValue) {
-    let oldValue = null;
-
-    let type = "CharPref";
-    switch (typeof aValue) {
-      case "number":
-        type = "IntPref";
-        break;
-      case "boolean":
-        type = "BoolPref";
-        break;
-    }
-
-    if (Services.prefs.getPrefType(aName) != Ci.nsIPrefBranch.PREF_INVALID) {
-      oldValue = Services.prefs["get" + type](aName);
-    }
-
-    Services.prefs["set" + type](aName, aValue);
-    this.preferences.push([aName, type, oldValue]);
   },
 
   // nsIEventListener implementation
