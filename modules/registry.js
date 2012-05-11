@@ -366,7 +366,7 @@ ProviderRegistry.prototype = {
     // we are not pushing into manifestDB here, rather manifestDB is calling us
     try {
       let provider = new SocialProvider(manifest);
-      this._providers[manifest.origin] = provider
+      this._providers[manifest.origin] = provider;
       // registration on startup could happen in any order, so we avoid
       // setting this as "current".
     }
