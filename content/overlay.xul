@@ -101,12 +101,12 @@
               <menuitem id="social-statusarea-togglesidebar"
                         type="checkbox"
                         command="cmd_socialSidebarToggle">
-                <!-- See above - why don't the observers set directly on the
-                     command work such that we we need to have them here???
-                -->
                 <observes element="socialSidebarVisible" attribute="checked"/>
                 <observes element="socialEnabled" attribute="hidden"/>
               </menuitem>
+              <!-- See above - why don't the observers set directly on the
+                   command work such that we we need to have them here???
+              -->
 
               <menuitem id="social-statusarea-togglesocial"
                         type="checkbox"
