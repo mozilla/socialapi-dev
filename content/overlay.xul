@@ -4,82 +4,164 @@
 %socialDTD;
 ]>
 
-<?xml-stylesheet href="resource://socialdev/skin/browser.css" type="text/css"?>
+<?xml-stylesheet href="chrome://socialdev/skin/browser.css" type="text/css"?>
+<?xml-stylesheet href="chrome://socialdev-plat/skin/socialstatus.css" type="text/css"?>
 
 <overlay id="socialdev-overlay"
          xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
   
   <script type="application/x-javascript" src="chrome://socialdev/content/recommendButtonWidget.js"/>
-  <script type="application/x-javascript" src="chrome://socialdev/content/toolbarButtonWidget.js"/>
+  <script type="application/x-javascript" src="chrome://socialdev/content/toolbarStatusWidget.js"/>
   <script type="application/x-javascript" src="chrome://socialdev/content/sidebarWidget.js"/>
-  <script type="application/x-javascript">
-  <![CDATA[
-    {
-      // quick hack to move to an overlay
-      window.social = {};
-      // due to what we are doing in the sidebar, we have to wait for the
-      // chromeWindow to load before we do our magic
-      window.addEventListener('load', function(e) {
-        social.recommendButton = new SocialRecommendButton(window);
-        social.sidebar = new SocialSidebar(window);
-        social.toolbarButton = new SocialToolbarButton(window);
-      });
-    }
-  ]]>
-  </script>
+  <script type="application/x-javascript" src="chrome://socialdev/content/main.js"/>
 
-  <stringbundleset id="stringbundleset">  
-    <stringbundle src="chrome://socialdev/locale/social.properties" id="socialdev-strings" />   
-  </stringbundleset>
+  <broadcasterset>
+    <broadcaster id="socialInstalled" checked="false" hidden="true"/>
+    <broadcaster id="socialEnabled" checked="false" hidden="true"/>
+    <broadcaster id="socialSidebarVisible" checked="false" hidden="true"/>
+  </broadcasterset>
 
   <commandset id="mainCommandSet">
     <command id="cmd_socialRecommend" oncommand="social.recommendButton.oncommand(event);"/>
-    <command id="cmd_socialPreferences" oncommand="openUILink('about:social')"/>
-    <command id="cmd_socialBrowsingToggle" oncommand="social.toolbarButton.onToggleEnabled()"/>
-    <command id="cmd_socialToolbarToggle" oncommand="social.toolbarButton.onToggleVisible()"/>
+    <command id="cmd_socialPreferences"
+             label="&socialdev.prefslabel;"
+             oncommand="openUILink('about:social')"/>
+    <command id="cmd_socialBrowsingToggle"
+             label="&socialenable.label;"
+             oncommand="social.toggle();">
+      <observes element="socialEnabled" attribute="checked"/>
+    </command>
+
+    <command id="cmd_socialSidebarToggle"
+             checked="false"
+             hidden="true"
+             label="&socialsidebar.label;"
+             oncommand="social.sidebar_toggle();">
+      <!-- *sob* - the "hidden" thing doesn't seem to work, so the observers
+           are duplicated below on the menuitem.
+           But the "checked" observer on cmd_socialBrowsingToggle *does*?
+      -->
+      <observes element="socialSidebarVisible" attribute="checked"/>
+      <observes element="socialEnabled" attribute="hidden"/>
+    </command>
+    <command id="cmd_socialSidebarRefresh"
+             oncommand="var cw=window.social.sidebar.browser.contentWindow; cw.location = cw.location.href;"
+             label="&socialsidebarrefresh.label;"/>
   </commandset>
-  
+
   <keyset id="mainKeyset">
     <key id="key_socialRecommend" keycode="VK_F2" command="cmd_socialRecommend"/>
     <!--<key id="key_socialBrowsingToggle" keycode="VK_F2" command="cmd_socialBrowsingToggle"/>-->
     <!--<key id="key_socialToolbarToggle" keycode="VK_F2" command="cmd_socialToolbarToggle"/>-->
   </keyset>
 
-<toolbarpalette id="BrowserToolbarPalette">
+  <menupopup id="menu_ToolsPopup">
+    <menuitem id="social-togglenable-toolsmenu"
+              command='cmd_socialBrowsingToggle'
+              type="checkbox"/>
+  </menupopup>
+
+  <popupset id="mainPopupSet">
+    <menupopup id="menu_SocialSidebarPopup">
+      <menuitem id="social-sidebar-refresh"
+                command='cmd_socialSidebarRefresh'/>
+    </menupopup>
+  </popupset>
+
+<!--<toolbarpalette id="BrowserToolbarPalette">-->
+<toolbar id="nav-bar">
   <toolbaritem
-    id="social-button-container"
-    class= "chromeclass-toolbar-additional"
+    id="social-status-area-container"
+    class="chromeclass-toolbar-additional social-status-area-container"
     removable="true"
-    title="&socialdev.label;">
-    <toolbarbutton
-      id="socialdev-button"
-      class="toolbarbutton-1"
-      type="menu-button"
-      tooltiptext="&socialdev.toolbartext;"
-      removable="true"
-      command="cmd_socialToolbarToggle">
-      <menupopup id="social-toolbar-menu"
-        onpopupshown="social.toolbarButton.onpopupshown(event)"
-        onpopupshowing="social.toolbarButton.onpopupshowing(event)"
-        onpopuphidden="social.toolbarButton.onpopuphidden(event)">
-        <menuitem id="social-socialtoolbar-menu" label="&socialtoobar.label;" command="cmd_socialToolbarToggle"/>
-        <menuitem id="social-socialbrowsing-menu" label="&socialenable.label;" command="cmd_socialBrowsingToggle"/>
-        <menuseparator/>
-        <menuseparator id="social-providers-separator"/>
-        <menuitem id="social-demonotification-menu" label="Fire a demo notification" oncommand="social.toolbarButton.fireDemoNotification(event)"/>
-        <menuseparator/>
-        <menuitem id="social-pref-menu" label="&socialdev.prefslabel;" command="cmd_socialPreferences"/>
-      </menupopup>
-    </toolbarbutton>
+    observes="socialInstalled"
+    title="Social status area">
+
+    <div class="social-statusarea-contentbox" flex="1">
+      <box>
+        <button class="social-statusarea-service-button"
+                      type="menu"
+                      anonid="social-statusarea-service-button">
+          <image 
+              id="social-statusarea-service-image"
+              class="social-statusarea-service-image"
+              src="chrome://socialdev/skin/social.png"/>
+
+            <image class="social-statusarea-dropmarker-image"/>
+            <menupopup
+              class="social-statusarea-popup"
+              id="social-statusarea-popup"
+              anonid="social-statusarea-popup"
+              onpopupshown="social.toolbarStatusArea.onpopupshown(event)"
+              onpopupshowing="social.toolbarStatusArea.onpopupshowing(event)"
+              onpopuphidden="social.toolbarStatusArea.onpopuphidden(event)">
+
+              <!-- list of enabled services goes here -->
+              <menuseparator id="social-statusarea-providers-separator"/>
+              <menuitem id="social-statusarea-togglesidebar"
+                        type="checkbox"
+                        command="cmd_socialSidebarToggle">
+                <observes element="socialSidebarVisible" attribute="checked"/>
+                <observes element="socialEnabled" attribute="hidden"/>
+              </menuitem>
+              <!-- See above - why don't the observers set directly on the
+                   command work such that we we need to have them here???
+              -->
+
+              <menuitem id="social-statusarea-togglesocial"
+                        type="checkbox"
+                        command="cmd_socialBrowsingToggle"/>
+
+              <menuseparator/>
+              <menuitem id="social-pref-menu" command="cmd_socialPreferences"/>
+            </menupopup>
+        </button>
+      </box>
+      <hbox id="social-status-content-container"
+            class="social-status-content-container"
+            observes="socialEnabled"
+            hidden="true">
+      </hbox>
+    </div>
   </toolbaritem>
-</toolbarpalette>
+</toolbar>
+<!--</toolbarpalette>-->
 
 <hbox id="urlbar-icons">
   <image id="social-recommend-button"
          insertbefore="star-button"
+         observes="socialEnabled"
          hidden="true"
          class="social-recommend-button"
          onclick="social.recommendButton.oncommand(event);"/>
+</hbox>
+
+<popupset id="mainPopupSet">
+  <panel id="social-notification-panel">
+    <browser id="social-notification-browser" type="content" style="width:300px;height:300px" />
+  </panel>
+</popupset>
+
+<!-- the social sidebar -->
+<hbox id="browser">
+  <splitter id="social-sidebar-splitter"
+            hidden="true"
+            class="chromeclass-extrachrome"
+            observes="socialSidebarVisible">
+  </splitter>
+
+  <vbox id="social-vbox"
+        width="240"
+        hidden="true"
+        style="overflow: hidden"
+        context="menu_SocialSidebarPopup"
+        observes="socialSidebarVisible">
+    <browser id="social-status-sidebar-browser"
+             type="content"
+             flex="1"
+             style="overflow: hidden">
+    </browser>
+  </vbox>
 </hbox>
 
 </overlay>

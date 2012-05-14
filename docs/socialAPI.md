@@ -1,6 +1,8 @@
 Browser Social API Reference
 ============================
 
+The "test" directory contains a test provider implementation that demonstrates the use of many of these APIs.  Reading through it will help illustrate the documentation provided here.
+
 ## Contents
 
 1. Terms
@@ -20,7 +22,8 @@ Browser Social API Reference
         1. Messages Sent To Widget
 6. Service Windows
 7. Message Serialization
-8. Example Interactions
+8. Discovery and Installation
+9. Example Interactions
 
 # Terms
 
@@ -60,7 +63,7 @@ Creation and Lifecycle of a Social Service Worker
 
 It is expected that a Social Service Provider will be defined by a structured text file (JSON) containing a number of keyed URLs, a name, an icon, and a "root domain" prefix.
 
-A Service Worker is instantiated with the Servicer Worker URL provided by the service provider, which should resolve to a JavaScript file that will be evaluated by the Server Worker. The Worker is a Shared Worker, rendered "headlessly", as per the Shared Web Workers specification.
+A Service Worker is instantiated with the Service Worker URL provided by the service provider, which should resolve to a JavaScript file that will be evaluated by the Server Worker. The Worker is a Shared Worker, rendered "headlessly", in a style very similar to the Web Workers specification (though note that the current implementation is not, in fact, a Worker)
 
 The Service Worker lives until terminated, either by browser shutdown or by an explicit control command from the user.
 
@@ -75,40 +78,121 @@ A Service Worker inherits all the limitations and behaviors available to HTML5 S
 
 The Worker can use the `ononline`, `onoffline`, and `navigator.online` methods and properties that are available to all Workers to obtain notification of the browser's online/offline status.
 
-In addition to the standard methods, Service Workers have access these to these methods and events:
+In addition to the standard methods, Service Workers have access to additional functionality, all of which are implemented using messages sent and received by worker "message ports".  As message ports are inherently asynchronous, any message that requires a response will involve two messages - one for the request and one for the response.  Not all message require a response - this is part of the message specification.  Messages which don't require a response are analogous to an unsolicitied 'event'.  If a message does require a response, then the response must always be sent on the same port as the request and in general, the 'topic' of the response will be the topic of the request with "-response" appended.
 
-Methods available to Service Workers
-------------------------------------
-`navigator.mozNotification.createNotification`
+Service workers are expected to provide functions, at global scope, named `onconnect` and `ondisconnect`.  The browser will invoke `onconnect` at startup time, passing in an event.  The worker should access the `ports` property of this event to extract a stable communication port back to the browser, and persist it for the life of the worker, like this:
 
-Creates a Notification object. By constructing and showing a Notification, the Worker requests that the browser notify the user of an immediately-relevant change in state. See https://developer.mozilla.org/en/DOM/navigator.mozNotification for more detail. The Worker may attach an `onclick` or `onclose` handler to the notification, if desired.
+```
+var apiPort;
+
+onconnect = function(e) {
+    port = e.ports[0];
+    apiPort.onmessage = function (msgEvent) 
+    {
+        var msg = msgEvent.data;
+        if (msg.topic == "social.port-closing") {
+            if (port == apiPort) {
+                apiPort.close();
+                apiPort = null;
+            }
+            return;
+        }
+        if (msg.topic == "social.initialize") {
+            apiPort = port;
+            initializeAmbientNotifications();
+        }
+    }
+}
+```
+
+Every message has a data element with 2 fields; 'topic' and 'data'.  The topic identifies which method or event is being used, and the data specifies additional data unique to the topic.  All standardized methods and events have topics that begin with "social." - this means services are free to use topics without this prefix as a private implementation detail (for example, to communicate between some content from the service and the service's worker)
+
+
+Control Messages sent to Service Workers
+----------------------------------------
+### `social.initialize`
+
+Sent by the browser during startup.  When a worker's JavaScript has been successfully loaded and evaluated, the browser will send a message with this topic.
+
+### `social.port-closing`
+
+Sent by the browser during worker shutdown, when a MessagePort to the worker is about to be closed.  This will be the last message the worker receives on the port.
+
+Ambient Notification Control
+----------------------------
+### `social.ambient-notification-area`
+
+Sent by the worker, to set the properties for the ambient notification area.
+
+*Argument:*
+**background**
+> String, optional.  If supplied, specifies the CSS value for the background
+of the area.  Typically this will just supply a background color.
+
+**portrait**
+> String, optional.  If supplied, specifies the URL to a small, square image
+of the user.
+
+### `social.ambient-notification-update`
+
+Sent by the worker, to update or create an ambient notification icon.
+
+*Argument:*
+**name**
+> String.  An identifier for the icon.  The first time a given name is seen,
+it effectively creates a new icon.  If the same name is used in subsequent
+calls, the existing icon is updated.
+
+**background**
+> String, optional.  If supplied, specifies the CSS value for the background
+of the icon.  This string will typically include a `url()` portion which
+specifies an image to use.
+
+**counter**
+> Number, optional.  Specifies a number that will be overlaid over the icon,
+typically used to convey an `unread` concept.
+
+**contentPanel**
+> String, optional.  Specifies the URL of content that will be displayed in
+the popup panel for the icon.
+
+
+Active Notification Control
+---------------------------
+### `social.notification-create`
+
+Sent by the worker, to create and display a notification object. This requests that the browser notify the user of an immediately-relevant change in state. See https://developer.mozilla.org/en/DOM/navigator.mozNotification for more detail.  There is no 'response' sent back to the worker upon creation, however, if the user clicks on the notification a `social.notification-click` will be sent back with the ID of the notification.
 
 NOTE: We want to augment the mozNotification object defined in the docs with an additional "type" field. Details TBD.
-
-Messages Sent by Service Workers
----------------------------------
-### `observe-isidle`
-By constructing and posting an observe-isidle message, the Worker requests notification when the user has become idle.
-
-* For more see https://wiki.mozilla.org/WebAPI/IdleAPI
-
-### `user-recommend-prompt-response`
-
-The Worker constructs and posts a user-recommend-prompt-response in response to a user-recommend-prompt message received from the browser.
+NOTE: No way of allowing duration and no way exposed to "cancel" a notification (assumption is they are very short-lived).  Is this OK?
 
 *Arguments:*
 
-**url**
-> String. Must be set to the URL that was included in the user-recommend-prompt that causes this response, if any. This allows the browser to catch race conditions (i.e. when the user has navigated away from content before the service responded).
+** icon **
+> String/null. The URL of an image to be placed in the notification.  While this can be any valid URL, implementors are strongly encouraged to use a data URL to minimize latency.
 
-**img**
-> String. Will be set as the "src" property of an image contained in the user-facing click target for the "recommend" action. It can contain a web-addressible image or a data URL containing dynamically-generated image data. Implementors are strongly encouraged to use a data URL to minimize latency.
+** title **
+> String: The title or heading displayed in the notification.
 
-Note that for some configurations, the browser will never provide a domain or url property in the user-recommend-prompt event; the Worker should be prepared to serve up static (e.g. data URL) content in these cases. (TODO: do we want to come up with a system to signal that it hasn't changed to speed up rendering?)
+** body **
+> String: The body of the notification message.  This body will be rendered as a hyperlink and may be clicked.  HTML markup is not supported.
 
-Messages Sent To Service Workers
---------------------------------
-### `user-recommend-prompt`
+** id **
+> String: An optional ID for the notification.  This ID will not be displayed but will be passed back via a `social.notification-click` event if the user clicks on the notification.  If null or an empty string, the body will not be rendered as a hyperlink and no notification will be sent on click.  
+
+
+### `social.notification-click`
+
+*Arguments:*
+**id**
+> String: the ID of the notification that was clicked.
+
+
+
+Link Recommendation Control
+---------------------------
+
+### `social.user-recommend-prompt`
 
 Sent by the browser to request the visual prompt for the "user recommendation" interface element. The user agent MAY include a "url" or "domain" property with the request, indicating the current browsing context. The Worker should respond with a user-recommend-prompt-response
 
@@ -122,7 +206,24 @@ Note that most user agents will NOT include the domain and url in user-recommend
 **url**
 > String, optional. If present, indicates the full URL, including query string, but minus any hash text, of the root of the current browser viewing context.
 
-###  `user-recommend`
+### `social.user-recommend-prompt-response`
+
+The Worker constructs and posts a user-recommend-prompt-response in response to a `social.user-recommend-prompt` message received from the browser.  See `social.user-recommend-prompt` for more details.
+
+*Arguments:*
+
+**url**
+> String. Must be set to the URL that was included in the user-recommend-prompt that causes this response, if any. This allows the browser to catch race conditions (i.e. when the user has navigated away from content before the service responded).
+
+**img**
+> String. Will be set as the "src" property of an image contained in the user-facing click target for the "recommend" action. It can contain a web-addressible image or a data URL containing dynamically-generated image data. Implementors are strongly encouraged to use a data URL to minimize latency.
+
+**message**
+> String.  Will be used as the tooltip on the Recommend UI widget.
+
+Note that for some configurations, the browser will never provide a domain or url property in the user-recommend-prompt event; the Worker should be prepared to serve up static (e.g. data URL) content in these cases. (TODO: do we want to come up with a system to signal that it hasn't changed to speed up rendering?)
+
+###  `social.user-recommend`
 
 Indicates that the user has clicked the "user recommendation" interface element. The message includes:
 
@@ -131,7 +232,11 @@ Indicates that the user has clicked the "user recommendation" interface element.
 **url**
 > String, required. The URL that the user is viewing, including query string, but minus any hash text, of the root of the current browser viewing context.
 
-No response is necessary; however, the service may respond with a user-recommend-prompt-response if the click target should change its appearance.
+No response is necessary; however, the service may respond on the same port with a user-recommend-prompt-response if the click target should change its appearance.
+
+
+User Idle Notification
+----------------------
 
 ### `user-isidle`
 
@@ -141,12 +246,22 @@ Sent by the browser when the idle timer requested in an earlier observe-isidle i
 
 Sent by the browser when user activity resumes; only sent when a previous user-isidle has been sent.  No arguments.
 
+Cookie Change Notification
+--------------------------
+### `social.cookie-changed`
+
+Sent when Firefox detects that a cookie has changed on the domain of the worker.  A cookie may have been removed or changed and no indication is given of either the cookie name or the action that was taken.
+
+Firefox will send this message up to 1 second after it has detected a cookie has changed and any changes that happen in this period will only be reported once.  For example, if 3 cookies are changed within a 1 second period, only one `social.cookie-changed` notification will be sent.
+
+*Arguments:*
+
+No arguments.
+
 Service Content API Reference
 =============================
 
 These methods are available to all Widget and ServiceWindow content.
-
-TODO: Can Widget and ServiceWindow content send and receive the same messages as the Service Worker, or does that complicate things?
 
 Methods:
 --------
@@ -154,7 +269,7 @@ Methods:
 
 returns a reference to the Service Worker. 
 
-The content can then call postMessage on it as normal.
+The content can then call postMessage on it as normal.  Messages posted this way may be private implementation messages or any of the standard `social.` messages described above.
 
 ### `openServiceWindow( url, name, options, title, readyCallback)`
 NOTE The openServiceWindow call is likely to change.
@@ -175,18 +290,21 @@ SidebarWidget
 
 If a service defines a SidebarWidget, the browser will instantiate a content region with the SidebarWidget URL as the location on some browser windows. These regions will not be instantiated until the Worker has been fully loaded. The content in these regions has the additional API defined in the Service Content API reference, above.
 
-Sidebars can be in a *maximized*, *minimized*, or *hidden* state.
+Sidebars can be in a *visible* or *hidden* state.
 
-* When maximized, they will receive a vertical rectangle of screen space in which to render; this rectangle is stable across changes in tab focus and has an independent scrollbar from the scrollbar of tabbed browsing content.
-* When minimized, they will receive a horizontal rectangle of screen space to the right of the (tab bar / navigation bar/ TBD) in which to render a small visual element. Service providers are encouraged to use this space for ambient notification and current-login-status.
-* When hidden, a sidebar is completely removed from the visual hierarchy. The user agent will continue to deliver messages to it, and the sidebar may pre-render its DOM for later display. (TODO: Is this right? Or should we "suspend" when we minimize? If we do, it becomes harder to dynamically display sidebar later; maybe this isn't a problem) 
+* When visible, they will receive a vertical rectangle of screen space in which to render; this rectangle is stable across changes in tab focus and has an independent scrollbar from the scrollbar of tabbed browsing content.
+* When hidden, a sidebar is completely removed from the visual hierarchy. The user agent will continue to deliver messages to it, and the sidebar may pre-render its DOM for later display. (TODO: Is this right? Or should we "suspend" when we minimize? If we do, it becomes harder to dynamically display sidebar later; maybe this isn't a problem).
 
 Sidebar windows will only be instantiated on browser windows that have a full tabbed-browsing interface; windows created with window.open that do not have these interface elements will not have a sidebar.
+
+When a tab that is rendered directly by the browser without a location bar is selected, the sidebar will automatically be placed into the *hidden* state.  When the user navigates away from that tab, the sidebar will be made *visible* again.  These tabs include the Add-ons management page, about:permissions, etc.
 
 The minimized/maximized/hidden state of the sidebar widget is a per-window setting. The most-recently-set state is remembered and used for new windows, and is persisted across browser restarts.
 
 Messages Sent to Widget
 -----------------------
+
+XXX Not yet implemented: this section is TBD and may change
 
 ### `content-hidden`
 
@@ -202,22 +320,12 @@ TODO: does this fire when the user initiates the minimize or after animation? if
 
 Sent by the browser when the user maximizes the sidebar content.
 
-Browser Visual Integration
---------------------------
-
-To allow remote content to integrate smoothly with browser chrome, the following CSS classes are automatically introduced to sidebar content:
-
-### `mozSidebarMinimizedHeight:`
-> Sets "height:<int>px", with the height of the visual region that is available to sidebar content when it has been minimized.
-
-TODO: Perhaps this should be a message instead?
-
 Browser "Panel" Integration
 ---------------------------
 
 To allow content to place an ephemeral window in front of normal browser content and chrome, the following API is used:
 
-    TODO
+    TODO - not yet implemented
 
 ShareWidget
 ===========
@@ -265,6 +373,59 @@ Message Serialization
 For a message with topic `topic` and arguments (arg1:val1, arg2:val2), construct an object like:
     
     { topic: topic, arg1: val1, arg2: val2 }
+
+
+Discovery and Service Manifest
+==============================
+
+As a user browses web sites Firefox can discover new social providers and offer installation of those
+providers.  A social providers website would include a LINK tag in the header pointing to a manifest
+file to enable this form of discovery.  If the user either has stored authentication credentials in
+the Firefox password manager, or if the user frequents the website, Firefox will show a notification
+bar allowing the user to install the service.
+
+TODO: provide a mechanism by which a service provider can offer an INSTALL button.
+
+```
+<link rel="manifest" type="text/json" href="manifest.json"></link>
+```
+
+The manifest file should be serviced with a content-type text/json.  The format of the JSON file is:
+
+```
+{
+  "services": {
+    "social": {
+      "name": "Provider Name",
+      "iconURL": "https://site.com/site.png",
+      "workerURL": "https://site.com/socialapi/worker.js",
+      "sidebarURL": "https://site.com/socialapi/sidebar.html",
+      "URLPrefix": "https://site.com/socialapi/",
+    }
+  }
+}
+```
+
+### `name`
+
+Service name used for display purposes.
+
+### `iconURL`
+
+An icon used for display purposes.
+
+### `workerURL`
+
+Location of the JavaScript file to be loaded in the background worker.
+
+### `sidebarURL`
+
+Location of the content to be loaded into the sidebar.
+
+### `URLPrefix`
+
+Used to determin if a link should be opened in a browser tab, or in the sidebar.
+
 
 Example interactions / expected implementation flow
 ===================================================

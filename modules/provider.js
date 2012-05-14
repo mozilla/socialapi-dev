@@ -17,6 +17,7 @@ Cu.import("resource://gre/modules/Services.jsm");
 let frameworker = {};
 Cu.import("resource://socialdev/modules/frameworker.js", frameworker);
 Cu.import("resource://socialdev/modules/servicewindow.js");
+Cu.import("resource://socialdev/modules/workerapi.js");
 
 const EXPORTED_SYMBOLS = ["SocialProvider"];
 
@@ -31,13 +32,6 @@ const EXPORTED_SYMBOLS = ["SocialProvider"];
  * @constructor
  * @param {jsobj} portion of the manifest file describing this provider
  *
- * Several notifications are sent by this class:
- *
- * social-service-init-ready   sent after class initialization
- * social-service-shutdown     sent upon shutdown of a service
- * social-service-activated    sent when this provider is made active
- * social-service-deactivated  sent when a different provider is made active
- *
  * The 'active' provider is the currently selected provider in the UI.
  */
 function SocialProvider(input) {
@@ -49,7 +43,8 @@ function SocialProvider(input) {
   this.iconURL = input.iconURL;
   this.origin = input.origin;
   this.enabled = input.enabled;  // disabled services cannot be used
-  this._active = input.enabled;   // active when we have a frameworker running
+  this._active = false; // must call .activate() to be active.
+  this._workerapi = null;
   // we only patch content for builtins
   if (input.contentPatchPath && input.contentPatchPath.indexOf('resource:')==0)
     this.contentPatchPath = input.contentPatchPath;
@@ -68,7 +63,6 @@ SocialProvider.prototype = {
     if (!this.enabled) return;
     this._log("init");
     this.windowCreatorFn = windowCreatorFn;
-    Services.obs.notifyObservers(null, "social-service-init-ready", this.origin);
   },
   
   /**
@@ -78,17 +72,18 @@ SocialProvider.prototype = {
    * frameworker.
    */
   shutdown: function() {
+    if (this._workerapi) {
+      this._workerapi.shutdown();
+      this._workerapi = null;
+    }
     try {
       this._log("shutdown");
-      var worker = this.makeWorker(null);
-      worker.port.close(); // shouldn't be necessary...
-      worker.terminate();
+      this.makeWorker(null).terminate();
     }
     catch (e) {
       this._log(e);
     }
     this._active = false;
-    Services.obs.notifyObservers(null, "social-service-shutdown", this.origin);
   },
   
   /**
@@ -98,8 +93,8 @@ SocialProvider.prototype = {
   activate: function() {
     if (this.enabled) {
       this.init();
+      this._workerapi = new workerAPI(this.makeWorker(), this);
       this._active = true;
-      Services.obs.notifyObservers(null, "social-service-activated", this.origin);
     }
   },
   
@@ -110,7 +105,6 @@ SocialProvider.prototype = {
     if (!this._active) return;
     closeWindowsForService(this);
     this._active = false;
-    Services.obs.notifyObservers(null, "social-service-deactivated", this.origin);
     // XXX is deactivate the same as shutdown?
     this.shutdown();
   },
@@ -131,13 +125,11 @@ SocialProvider.prototype = {
     if (!this.enabled) {
       throw new Error("cannot use disabled service "+this.origin);
     }
-    if (this.workerURL) {
-      return frameworker.FrameWorker(this.workerURL);
-    }
-    else {
+    if (!this.workerURL) {
       this._log("makeWorker cannot create worker: no workerURL specified");
       throw new Error("makeWorker cannot create worker: no workerURL specified for "+this.origin);
     }
+    return frameworker.FrameWorker(this.workerURL, window);
   },
   
   /**
@@ -169,7 +161,7 @@ SocialProvider.prototype = {
     // navigator is part of the sandbox proto. We're not using
     // nsIDOMGlobalPropertyInitializer here since we're selectivly injecting
     // this only into social panels.
-    Object.defineProperty(sandbox.navigator, "mozSocial", {
+    Object.defineProperty(sandbox.window.navigator, "mozSocial", {
       value: {
         // XXX - why a function?  May mis-lead people into
         // thinking it is creating a *new* worker which
@@ -193,14 +185,14 @@ SocialProvider.prototype = {
       try {
         // this only happens if contentPatch is local, we'll keep it simple
         // and just use the scriptLoader
-        Services.scriptloader.loadSubScript(this.contentPatchPath, sandbox);
+        Services.scriptloader.loadSubScript(this.contentPatchPath, targetWindow);
         this._log("Successfully applied content patch");
       }
       catch (e) {
         this._log("Error while applying content patch: " + e);
       }
     }
-  
+
     targetWindow.addEventListener("unload", function() {
       try {
         worker.port.close();
@@ -210,6 +202,39 @@ SocialProvider.prototype = {
       }
     }, false);
   
-  }
+  },
 
+  setAmbientNotificationBackground: function(background) {
+    this.ambientNotificationBackground = background;
+    Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
+  },
+
+  createAmbientNotificationIcon: function(name) {
+    // if we already have one named, return that
+    if (!this.ambientNotificationIcons) this.ambientNotificationIcons = {};
+    if (this.ambientNotificationIcons[name]) {
+      return this.ambientNotificationIcons[name];      
+    }
+    var icon = {
+      setBackground: function(backgroundText) {
+        icon.background = backgroundText;
+        Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
+      },
+      setCounter: function(counter) {
+        icon.counter = counter;
+        Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
+      },
+      setContentPanel: function(url) {
+        icon.contentPanel = url;
+      }
+      // XXX change counter color, font, etc?
+    };
+    this.ambientNotificationIcons[name] = icon;
+    return icon;
+  },
+
+  setAmbientNotificationPortrait: function(url) {
+    this.ambientNotificationPortrait = url;
+    Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?    
+  }
 }

@@ -22,51 +22,196 @@
 const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 
-var notification = {};
-Cu.import("resource://socialdev/modules/notification.js", notification);
-
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 var workerInfos = {}; // keyed by URL.
 
+
 function log(msg) {
   Services.console.logStringMessage(new Date().toISOString() + " [frameworker]: " + msg);
+  dump(new Date().toISOString() + " [frameworker]: " + msg + "\n");
 };
 
 var _nextPortId = 1;
-var _numPortsAlive = 0;
+
+// This function is magically injected into the sandbox and used there.
+// Thus, it is only ever dealing with "worker" ports.
+function __initWorkerMessageHandler() {
+
+  let ports = {}; // all "worker" ports currently alive, keyed by ID.
+
+  function _messageHandler(event) {
+    // We will ignore all messages destined for otherType.
+    let data = event.data;
+    let portid = data.portId;
+    let port;
+    if (!data.portFromType || data.portFromType === "worker") {
+      // this is a message posted by ourself so ignore it.
+      return;
+    }
+    switch (data.portTopic) {
+      case "port-create":
+        // a new port was created on the "client" side - create a new worker
+        // port and store it in the map
+        port = new WorkerPort(portid);
+        ports[portid] = port;
+        // and call the "onconnect" handler.
+        onconnect({ports: [port]});
+        break;
+
+      case "port-close":
+        // the client side of the port was closed, so close this side too.
+        port = ports[portid];
+        if (!port) {
+          // port already closed (which will happen when we call port.close()
+          // below - the client side will send us this message but we've
+          // already closed it.)
+          return;
+        }
+        delete ports[portid];
+        port.close();
+        break;
+
+      case "port-message":
+        // the client posted a message to this worker port.
+        port = ports[portid];
+        if (!port) {
+          // port must be closed - this shouldn't happen!
+          dump("port-message but port is closed\n");
+          return;
+        }
+        port._onmessage(data.data);
+        break;
+
+      default:
+        dump("unexpected worker message: " + event.data + "\n");
+        break;
+    }
+  }
+  // this can probably go once debugged and working correctly!
+  function messageHandler(event) {
+    try {
+      _messageHandler(event);
+    } catch (ex) {
+      dump("ERROR handling worker port control message: " + ex + "\n" + ex.stack);
+    }
+  }
+  // _addEventListener is injected into the sandbox.
+  _addEventListener('message', messageHandler);
+}
+
+// And this is the message listener for the *client* (ie, chrome) side of the world.
+function initClientMessageHandler(workerInfo, workerWindow) {
+  function _messageHandler(event) {
+    // We will ignore all messages destined for otherType.
+    let data = event.data;
+    let portid = data.portId;
+    let port;
+    if (!data.portFromType || data.portFromType === "client") {
+      // this is a message posted by ourself so ignore it.
+      return;
+    }
+    switch (data.portTopic) {
+      // No "port-create" here - client ports are created explicitly.
+
+      case "port-close":
+        // the worker side of the port was closed, so close this side too.
+        port = workerInfo.ports[portid];
+        if (!port) {
+          // port already closed (which will happen when we call port.close()
+          // below - the worker side will send us this message but we've
+          // already closed it.)
+          return;
+        }
+        delete workerInfo.ports[portid];
+//        dump(port + " being closed - now " + Object.keys(workerInfo.ports).length + " client ports alive\n");
+        port.close();
+        break;
+
+      case "port-message":
+        // the client posted a message to this worker port.
+        port = workerInfo.ports[portid];
+        if (!port) {
+          // port must be closed - this shouldn't happen!
+          dump("port-message but port is closed\n");
+          return;
+        }
+        port._onmessage(data.data);
+        break;
+
+      default:
+        dump("unexpected worker message: " + JSON.stringify(event.data) + "\n");
+        break;
+    }
+  }
+  // this can probably go once debugged and working correctly!
+  function messageHandler(event) {
+    try {
+      _messageHandler(event);
+    } catch (ex) {
+      Cu.reportError("Error handling client port control message: " + ex + "\n" + ex.stack);
+    }
+  }
+  workerWindow.addEventListener('message', messageHandler);
+}
 
 
-/**
- * MessagePort
- *
- * An entagled message port is used for each connection from a content panel
- * into a frameworker.
- */
-function MessagePort(name) {
-  this._name = name + "(" + _nextPortId++ + ")";
-  this._entangled = null; // null, or another MessagePort object
-  this._onmessage = undefined; // set when the owner sets worker.onmessage.
-  this._pendingMessages = []; // pending messages before the other side has attached.
-  this._worker = null; // null, or for the port in the worker, the worker global.
-  _numPortsAlive++;
-};
+// The port implementation which is shared between clients and workers.
+function AbstractPort(portid) {
+  this._portid = portid;
+  this._handler = undefined;
+  // pending messages sent to this port before it has a message handler.
+  this._pendingMessagesIncoming = [];
+}
 
-MessagePort.prototype = {
-  __exposedProps__: {postMessage: "r", onmessage: "rw", close: "r", toString: "r"},
-  set onmessage(handler) { // property setter for onmessage
-    this._onmessage = function(ev) {
-      //log(this._name+ " onmessage "+ev.data.topic);
-      let newEv = JSON.parse(JSON.stringify(ev));
+AbstractPort.prototype = {
+  _portType: null, // set by a subclass.
+  // abstract methods to be overridden.
+  _dopost: function(data) {
+    throw new Error("not implemented");
+  },
+  _onerror: function(err) {
+    throw new Error("not implemented");
+  },
+
+  // and concrete methods shared by client and workers.
+  toString: function() {
+    return "MessagePort(portType='" + this._portType + "', portId=" + this._portid + ")";
+  },
+  _JSONParse: function(data) JSON.parse(data),
+
+ _postControlMessage: function(topic, data) {
+    let postData = {portTopic: topic,
+                    portId: this._portid,
+                    portFromType: this._portType,
+                    data: data};
+    this._dopost(postData);
+  },
+
+  _onmessage: function(data) {
+    // See comments in postMessage below - we work around a cloning
+    // issue by using JSON for these messages.
+    // Further, we allow the workers to override exactly how the JSON parsing
+    // is done - we try and do such parsing in the client window so things
+    // like prototype overrides on Array work as expected.
+    data = this._JSONParse(data);
+    if (!this._handler) {
+      this._pendingMessagesIncoming.push(data);
+    }
+    else {
       try {
-        handler(newEv);
+        this._handler({data: data});
       }
-      catch(e) {
-        Cu.reportError("Port handler failed: " + e);
+      catch (ex) {
+        this._onerror(ex);
       }
     }
-    while (this._pendingMessages.length) {
-      handler(JSON.parse(JSON.stringify(this._pendingMessages.shift())));
+  },
+
+  set onmessage(handler) { // property setter for onmessage
+    this._handler = handler;
+    while (this._pendingMessagesIncoming.length) {
+      this._onmessage(this._pendingMessagesIncoming.shift());
     }
   },
 
@@ -79,60 +224,104 @@ MessagePort.prototype = {
    * @param {jsobj} data
    */
   postMessage: function(data) {
-    //log(this._name+ " postMessage "+data.topic);
-    // dump("postMessage " + data + "\n");
-    let eventToPost = {data: data};
-    let entangled = this._entangled;
-    if (!entangled) {
-      throw new Error("port closed or not started");
-    }
-    if (entangled._onmessage) {
-        entangled._onmessage(eventToPost);
-    }
-    else {
-      entangled._pendingMessages.push(eventToPost);
-    }
+    // There seems to be an issue with passing objects directly and letting
+    // the structured clone thing work - we sometimes get:
+    // [Exception... "The object could not be cloned."  code: "25" nsresult: "0x80530019 (DataCloneError)"]
+    // The best guess is that this happens when funky things have been added to the prototypes.
+    // It doesn't happen for our "control" messages, only in messages from
+    // content - so we explicitly use JSON on these messages as that avoids
+    // the problem.
+    this._postControlMessage("port-message", JSON.stringify(data));
   },
 
-  /**
-   * close
-   *
-   * closes both ends of an entangled port
-   */
   close: function() {
-    if (!this._entangled) {
+    if (!this._portid) {
       return; // already closed.
     }
-    // XXX - note that the W3C spec for workers doesn't define an ondisconnect
-    // method, but we need one so the worker removes the broadcast ports.
-    if (this._worker) {
-      this._worker.ondisconnect({ports: [this]});
-      this._worker = null;
-    }
-
-    // not sure this is 100% correct, but also close the other side.
-    let other = this._entangled;
-    this._entangled = null; // must reset early to avoid recursion death.
-    other.close();
-    this._onmessage = null;
-    this._pendingMessages = null;
-    _numPortsAlive--;
-    log("closed port " + this._name + " - now " + _numPortsAlive + " ports alive");
-  },
-
-  _entangle: function(that) {
-    // XXX - check this and that aren't already entangled etc.
-    this._entangled = that;
-    that._entangled = this;
-  },
-
-  toString: function() {
-    return "MessagePort('" + this._name + "')";
+//    dump(this + " is being closed\n");
+    this._postControlMessage("port-close");
+    // and clean myself up.
+    this._handler = null;
+    this._pendingMessagesIncoming = null;
+    this._portid = null;
   }
-};
+}
 
+// Note: this is never instantiated in chrome - the source is sent across
+// to the worker and it is evaluated there and created in response to a
+// port-create message we send.
+function WorkerPort(portid) {
+  AbstractPort.call(this, portid);
+}
 
+WorkerPort.prototype = {
+  __proto__: AbstractPort.prototype,
+  _portType: "worker",
 
+  _dopost: function(data) {
+    // _postMessage is injected into the sandbox.
+    _postMessage(data, "*");
+  },
+
+  _onerror: function(err) {
+    // hrmph - probably want to send a message back to the chrome code?
+    dump("Port " + this + " handler failed: " + err + "\n" + err.stack);
+  }
+}
+
+// This port lives entirely in chrome.
+function ClientPort(portid, clientWindow) {
+  this._clientWindow = clientWindow
+  this._window = null;
+  // messages posted to the worker before the worker has loaded.
+  this._pendingMessagesOutgoing = [];
+  AbstractPort.call(this, portid);
+}
+
+ClientPort.prototype = {
+  __proto__: AbstractPort.prototype,
+  _portType: "client",
+
+  _JSONParse: function(data) {
+    if (this._clientWindow) {
+      return this._clientWindow.JSON.parse(data);
+    }
+    return JSON.parse(data);
+  },
+
+  _createWorkerAndEntangle: function(workerInfo) {
+    this._window = workerInfo.frame.contentWindow;
+    workerInfo.ports[this._portid] = this;
+    this._postControlMessage("port-create");
+    while (this._pendingMessagesOutgoing.length) {
+      this._dopost(this._pendingMessagesOutgoing.shift());
+    }
+  },
+
+  _dopost: function(data) {
+    if (!this._window) {
+      this._pendingMessagesOutgoing.push(data);
+    } else {
+      this._window.postMessage(data, "*");
+    }
+  },
+
+  _onerror: function(err) {
+    Cu.reportError("Port " + this + " handler failed: " + err + "\n" + err.stack);
+  },
+
+  close: function() {
+    if (!this._portid) {
+      return; // already closed.
+    }
+    // a leaky abstraction due to the worker spec not specifying how the
+    // other end of a port knows it is closing.
+    this.postMessage({topic: "social.port-closing"});
+    AbstractPort.prototype.close.call(this);
+    this._window = null;
+    this._pendingMessagesOutgoing = null;
+  }
+}
 
 /**
  * FrameWorker
@@ -149,12 +338,12 @@ MessagePort.prototype = {
  * @param {String} url
  * @returns {Object} object containing a port and terminate function
  */
-function FrameWorker(url) {
+function FrameWorker(url, clientWindow) {
   log("creating worker for " + url);
-  // first create the ports we are going to use and entangle them.
-  let clientPort = new MessagePort('client');
-  let workerPort = new MessagePort('worker');
-  clientPort._entangle(workerPort);
+  // first create the client port we are going to use.  Laster we will
+  // message the worker to create the worker port.
+  let portid = _nextPortId++;
+  let clientPort = new ClientPort(portid, clientWindow);
 
   let workerInfo = workerInfos[url];
   if (!workerInfo) {
@@ -178,7 +367,8 @@ function FrameWorker(url) {
     // setup the workerInfo and add this connection to the pending queue
     workerInfo = workerInfos[url] = {
       frame: frame,
-      pendingWorkers: [workerPort],
+      pendingPorts: [clientPort], // ports yet to be connected.
+      ports: {}, // all live, connected ports
       loaded: false
     };
 
@@ -202,13 +392,15 @@ function FrameWorker(url) {
                          'MozBlobBuilder', 'FileReader', 'Blob',
                          'navigator'];
         for each(let fn in workerAPI) {
-          if (workerWindow[fn]) {
-            sandbox.importFunction(workerWindow[fn], fn);
+          try {
+            if (workerWindow[fn]) {
+              sandbox.importFunction(workerWindow[fn], fn);
+            }
+          }
+          catch(e) {
+            Cu.reportError("failed to import API "+fn+"\n"+e+"\n");
           }
         }
-
-        // chrome functions we want to have accessible to the sandbox
-        sandbox.importFunction(notification.Notification, "Notification");
         sandbox.importFunction(function importScripts(uris) {
           if (uris instanceof Array) {
             for each(let uri in uris) {
@@ -227,57 +419,96 @@ function FrameWorker(url) {
           Cu.evalInSandbox("ononline();", sandbox);
         }, false);
 
+        sandbox.importFunction(workerWindow.postMessage, "_postMessage");
+        sandbox.importFunction(workerWindow.addEventListener, "_addEventListener");
+
+        // And a very hacky work-around for bug 734215
+        workerWindow.bufferToArrayHack = function(a) {
+            return new workerWindow.Uint8Array(a);
+        };
+        sandbox.importFunction(workerWindow.bufferToArrayHack, "bufferToArrayHack");
+
         workerWindow.addEventListener("load", function() {
-          log("got worker onload event");
-          // after the iframe has loaded the js file as text, get the text and
-          // eval it into the sandbox
-
+          log("got worker onload event for " + url);
+          // the iframe has loaded the js file as text - first inject the magic
+          // port-handling code into the sandbox.
+          function getProtoSource(ob) {
+            let raw = ob.prototype.toSource();
+            return ob.name + ".prototype=" + raw + ";"
+          }
           try {
-            try {
-              let scriptText = workerWindow.document.body.textContent;
-              Cu.evalInSandbox(scriptText, sandbox, "1.8", workerWindow.location.href, 1);  
-            } catch (e) {
-              log("Error while evaluating worker script for " + url + ": " + e, e.stack);
-              log(e.stack);
-              return;
-            }
-
-            // so finally we are ready to roll - dequeue all the pending connects
-            workerInfo.loaded = true;
-            let pending = workerInfo.pendingWorkers;
-            log("worker window " + url + " loaded - connecting " + pending.length + " workers");
-            log("worker window is " + workerWindow);
-            while (pending.length) {
-              let port = pending.shift();
-              port._worker = sandbox;
-              sandbox.onconnect({ports: [port]});
-            }
+            let scriptText = [AbstractPort.toSource(),
+                              getProtoSource(AbstractPort),
+                              WorkerPort.toSource(),
+                              getProtoSource(WorkerPort),
+                              // *sigh* - toSource() doesn't do __proto__
+                              "WorkerPort.prototype.__proto__=AbstractPort.prototype;",
+                              __initWorkerMessageHandler.toSource(),
+                              "__initWorkerMessageHandler();" // and bootstrap it.
+                             ].join("\n")
+            Cu.evalInSandbox(scriptText, sandbox, "1.8", "<injected port handling code>", 1);
           }
-          catch(e) {
-            Cu.reportError("Failed to dequeue pending worker events", e, "\n", e.stack);
+          catch (e) {
+            Cu.reportError("Error injecting port code into content side of the worker: " + e + "\n" + e.stack);
           }
-          // save the sandbox somewhere convenient
+          // and wire up the client message handling.
+          try {
+            initClientMessageHandler(workerInfo, workerWindow);
+          }
+          catch (e) {
+            Cu.reportError("Error setting up event listener for chrome side of the worker: " + e + "\n" + e.stack);
+          }
+          // Now get the worker js code and eval it into the sandbox
+          try {
+            let scriptText = workerWindow.document.body.textContent;
+            Cu.evalInSandbox(scriptText, sandbox, "1.8", workerWindow.location.href, 1);
+          } catch (e) {
+            Cu.reportError("Error evaluating worker script for " + url + ": " + e + "; " + 
+                (e.lineNumber ? ("Line #" + e.lineNumber) : "") + 
+                (e.stack ? ("\n" + e.stack) : ""));
+            return;
+          }
+          // so finally we are ready to roll - dequeue all the pending connects
+          workerInfo.loaded = true;
+          // save the sandbox somewhere convenient before we connect.
           frame.sandbox = sandbox;
+          let pending = workerInfo.pendingPorts;
+          log("worker window " + url + " loaded - connecting " + pending.length + " ports");
+          while (pending.length) {
+            let port = pending.shift();
+            if (port._portid) { // may have already been closed!
+              try {
+                port._createWorkerAndEntangle(workerInfo);
+              }
+              catch(e) {
+                Cu.reportError("Failed to create worker port: " + e + "\n" + e.stack);
+              }
+            }
+          }
+
         }, true);
       }
       catch(e) {
-        Cu.reportError("frameworker unable to inject for "+doc.location);
+        Cu.reportError("frameworker unable to inject for "+doc.location + " ("+ e + ")");
       }
     };
     Services.obs.addObserver(injectController, 'document-element-inserted', false);
     let doc = hiddenDOMWindow.document;
     let container = doc.body ? doc.body : doc.documentElement;
     container.appendChild(frame);
-
   }
   else {
     // already have a worker - either queue or make the connection.
     if (workerInfo.loaded) {
-      workerPort._worker = workerInfo.frame.sandbox;
-      workerInfo.frame.sandbox.onconnect({ports: [workerPort]});
+      try {
+        clientPort._createWorkerAndEntangle(workerInfo);
+      }
+      catch (ex) {
+        Cu.reportError("Failed to connect a port: " + e + "\n" + e.stack);
+      }
     }
     else {
-      workerInfo.pendingWorkers.push(workerPort);
+      workerInfo.pendingPorts.push(clientPort);
     }
   }
 
@@ -288,16 +519,29 @@ function FrameWorker(url) {
   // TODO: work out a sane impl for 'terminate'.
   function terminate() {
     log("worker at " + url + " terminating");
-    workerInfo.frame.sandbox.onterminate();
-    // now nuke the iframe itself and forget everything about this worker.
-    let appShell = Cc["@mozilla.org/appshell/appShellService;1"]
-                    .getService(Ci.nsIAppShellService);
-    let hiddenDOMWindow = appShell.hiddenDOMWindow;
-        let doc = hiddenDOMWindow.document;
-    let container = doc.body ? doc.body : doc.documentElement;
-    container.removeChild(workerInfo.frame);
-    workerInfos[url] = null;
-    log("worker terminated!");
+    // closing the port also removes it from workerInfo.ports, so we don't
+    // iterate over that directly, just over the port IDs.
+    for each (let portid in Object.keys(workerInfo.ports)) {
+      try {
+        workerInfo.ports[portid].close();
+      }
+      catch (ex) {
+        Cu.reportError(ex);
+      }
+    }
+    // and do the actual killing on a timeout so the pending events get
+    // delivered first.
+    workerInfo.frame.contentWindow.setTimeout(function() {
+      // now nuke the iframe itself and forget everything about this worker.
+      let appShell = Cc["@mozilla.org/appshell/appShellService;1"]
+                      .getService(Ci.nsIAppShellService);
+      let hiddenDOMWindow = appShell.hiddenDOMWindow;
+      let doc = hiddenDOMWindow.document;
+      let container = doc.body ? doc.body : doc.documentElement;
+      container.removeChild(workerInfo.frame);
+      delete workerInfos[url];
+      log("worker terminated!");
+    }, 0);
   }
   return {port: clientPort, terminate: terminate};
 };

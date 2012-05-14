@@ -4,10 +4,12 @@ Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://socialdev/modules/manifestDB.jsm");
 
+Cu.import("resource://socialdev/modules/registry.js");
+
 const ABOUTURL = "chrome://socialdev/content/about.html";
 const EXPORTED_SYMBOLS = [];
 
-//----- about:passwords implementation
+//----- about:social implementation
 const AboutSocialUUID = Components.ID("{ddf3f2e0-c819-b843-b32c-c8834d98ef49}");
 const AboutSocialContract = "@mozilla.org/network/protocol/about;1?what=social";
 
@@ -32,15 +34,47 @@ AboutSocial.prototype = {
 
 var aboutPage = {
   observe: function(aDocument, aTopic, aData) {
-    if (aTopic != 'document-element-inserted' || !aDocument ||
-        (aDocument.location != ABOUTURL && aDocument.location != "about:social")) {
+    // the notifications from about:social as it starts
+    if (aTopic == 'document-element-inserted' && aDocument &&
+        (aDocument.location == ABOUTURL || aDocument.location == "about:social")) {
+      // setup messaging for our about prefs page
+      this.hookupPrefs(aDocument);
+      aDocument.defaultView.addEventListener("message",
+                                             this.onPrefsMessage.bind(this),
+                                             true);
+      // when the document load completes we setup the enabled-disabled state.
+      // (doing it too early means the UI state defined in the HTML wins the race)
+      let loadHandler = function() {
+        aDocument.removeEventListener("DOMContentLoaded", loadHandler, false);
+        let subtopic = "social-browsing-" + (registry().enabled ? "enabled" : "disabled");
+        this.observe(null, subtopic, null);
+      }.bind(this);
+      aDocument.addEventListener("DOMContentLoaded", loadHandler, false);
       return;
     }
-    // setup messaging for our about prefs page
-    this.hookupPrefs(aDocument);
-    aDocument.defaultView.addEventListener("message",
-                                          this.onPrefsMessage.bind(this),
-                                          true);
+    if (aTopic == 'social-browsing-disabled' || aTopic == 'social-browsing-enabled') {
+      this.postToAll({topic: aTopic});
+      return;
+    }
+    if (aTopic == 'social-service-manifest-changed') {
+      ManifestDB.get(aData, function( manifest) {
+        this.postToAll({topic: aTopic, data: manifest});
+      }.bind(this));
+    }
+  },
+
+  postToAll: function(data) {
+    // enumerate all about:social windows and post 'em the data.
+    var enumerator = Services.wm.getEnumerator("navigator:browser");
+    while(enumerator.hasMoreElements()) {
+      var win = enumerator.getNext();
+      for (let i=0; i < win.gBrowser.browsers.length; i++) {
+        let tabWindow = win.gBrowser.getBrowserAtIndex(i).contentWindow;
+        if (tabWindow.location == ABOUTURL || tabWindow.location == "about:social") {
+          tabWindow.postMessage(JSON.stringify(data), "*");
+        }
+      }
+    }
   },
 
   hookupPrefs: function(aDocument) {
@@ -48,34 +82,45 @@ var aboutPage = {
       try {
         var win = aDocument.defaultView;
         let data = JSON.stringify({
-          topic: "service-manifest",
+          topic: "social-service-manifest-changed",
           data: manifest
         });
         win.postMessage(data, "*");
-      }
-      catch(e) {
+      } catch(e) {
         Cu.reportError(e);
       }
     });
   },
   
   onPrefsMessage: function(event) {
+    // XXX - WARNING - this also receives messages *we* post!  Otherwise we
+    // could just reuse the topic names and keep things sane.  But this means
+    // we need one topic for setting a value, and another for observing a
+    // change from the html.
     let msg = JSON.parse(event.data);
-    if (msg.topic !== "preference-change")
+
+    if (msg.topic === "preference-service-change") {
+      let data = msg.data;
+      if (data.enabled) {
+        registry().enableProvider(data.origin);
+      } else {
+        registry().disableProvider(data.origin);
+      }
       return;
-    // send a notification, the providerRegistry watches for this
-    let data = msg.data;
-    if (data.enabled)
-      Services.obs.notifyObservers(null, "social-service-enabled", data.origin);
-    else
-      Services.obs.notifyObservers(null, "social-service-disabled", data.origin);
+    }
+    if (msg.topic === "preference-social-change") {
+      registry().enabled = msg.data.enabled;
+      return;
+    }
   }
 }
 
 // global init
 Services.obs.addObserver(aboutPage, 'document-element-inserted', false);
+Services.obs.addObserver(aboutPage, 'social-browsing-enabled', false);
+Services.obs.addObserver(aboutPage, 'social-browsing-disabled', false);
+Services.obs.addObserver(aboutPage, 'social-service-manifest-changed', false);
 
 
 const components = [AboutSocial];
 const NSGetFactory = XPCOMUtils.generateNSGetFactory(components);
-

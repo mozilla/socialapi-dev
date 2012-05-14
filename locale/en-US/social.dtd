@@ -1,6 +1,7 @@
 <!ENTITY socialdev.label       "Social">
 <!ENTITY socialdev.accesskey   "F2">
 <!ENTITY socialdev.toolbartext    "Social Browsing">
-<!ENTITY socialdev.prefslabel      "Preferences...">
-<!ENTITY socialtoobar.label       "Minimize/Show Social Sidebar">
-<!ENTITY socialenable.label       "Enable/Disable Social Browsing">
+<!ENTITY socialdev.prefslabel      "Manage Social Services...">
+<!ENTITY socialsidebar.label       "Show Social sidebar">
+<!ENTITY socialenable.label       "Enable Social Browsing">
+<!ENTITY socialsidebarrefresh.label "Refresh">

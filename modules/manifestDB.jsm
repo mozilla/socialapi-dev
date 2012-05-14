@@ -37,7 +37,12 @@ var ManifestDB = (function() {
       return uri.host;
     }
     catch(e) {
-      Cu.reportError(e);
+      // this function is regularly called with just the origin (ie, no
+      // leading http:// etc), so regularly reports failure to normalize.
+      // We probably need to rethink this (ie, this code should either be
+      // used always with a scheme or always without it.
+      // for now though there is no point reporting the "error"...
+      //Cu.reportError(e);
     }
     return aURL;
   }

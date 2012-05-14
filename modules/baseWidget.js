@@ -5,52 +5,60 @@ const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
+Cu.import("resource://socialdev/modules/registry.js");
+
 const EXPORTED_SYMBOLS = ["baseWidget"];
 
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
+const topics = [
+  'social-browsing-current-service-changed',
+  'social-browsing-enabled',
+  'social-browsing-disabled'
+];
+
 function baseWidget(aWindow) {
   this.create(aWindow);
 
-  Services.obs.addObserver(this, 'social-service-init-ready', false);
-  Services.obs.addObserver(this, 'social-service-changed', false);
-  Services.obs.addObserver(this, 'social-browsing-enabled', false);
-  Services.obs.addObserver(this, 'social-browsing-disabled', false);
-
-  let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                          .getService(Ci.mozISocialRegistry);
-  let service = registry.currentProvider;
-  if (service) {
-    this.setProvider(service);
+  for each (let topic in topics) {
+    Services.obs.addObserver(this, topic, false);
   }
 }
 baseWidget.prototype = {
   create: function(aWindow) {},
   observe: function(aSubject, aTopic, aData) {
-    let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                            .getService(Ci.mozISocialRegistry);
-    if (aTopic == 'social-service-changed') {
-      this.setProvider(registry.currentProvider);
-    }
-    else if (aTopic == 'social-service-init-ready') {
-      let service = registry.get(aData);
-      if (service == registry.currentProvider) {
-        this.setProvider(service);
-      }
+    if (aTopic == 'social-browsing-current-service-changed') {
+      this.setProvider(registry().currentProvider);
     }
     else if (aTopic == 'social-browsing-enabled') {
       this.enable();
     }
     else if (aTopic == 'social-browsing-disabled') {
       this.disable();
+    } else if (aTopic == 'social-browsing-ambient-notification-changed') {
+      this.ambientNotificationChanged();
     }
   },
   setProvider: function(aProvider) {},
-  enable: function(aIconURL, aTooltiptext) {},
+  enable: function() {},
   disable: function() {},
-  show: function() {},
-  hide: function() {},
+  ambientNotificationChanged: function() {},
   remove: function() {
-    this._widget.parentNode.removeChild(this._widget);
+    for each (let topic in topics) {
+      Services.obs.removeObserver(this, topic, false);
+    }
+    if (this._widget) {
+      this._widget.parentNode.removeChild(this._widget);
+    }
+  },
+  debugLog: function(msg) {
+    try {
+      let prefBranch = Services.prefs.getBranch("social.debug").QueryInterface(Ci.nsIPrefBranch2);
+      debugEnabled = prefBranch.getBoolPref("enabled");
+      if (!debugEnabled) return;
+    } catch(e) {
+      return;
+    }
+    Services.console.logStringMessage(new Date().toISOString() + " [socialdebug] " + msg);
   }
 }
