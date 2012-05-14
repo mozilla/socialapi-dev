@@ -22,7 +22,8 @@ The "test" directory contains a test provider implementation that demonstrates t
         1. Messages Sent To Widget
 6. Service Windows
 7. Message Serialization
-8. Example Interactions
+8. Discovery and Installation
+9. Example Interactions
 
 # Terms
 
@@ -372,6 +373,55 @@ Message Serialization
 For a message with topic `topic` and arguments (arg1:val1, arg2:val2), construct an object like:
     
     { topic: topic, arg1: val1, arg2: val2 }
+
+
+Discovery and Service Manifest
+==============================
+
+As a user browses web sites Firefox can discover new social providers and offer installation of those
+providers.  A social providers website would include a LINK tag in the header pointing to a manifest
+file to enable this form of discovery.  If the user either has stored authentication credentials in
+the Firefox password manager, or if the user frequents the website, Firefox will show a notification
+bar allowing the user to install the service.
+
+TODO: provide a mechanism by which a service provider can offer an INSTALL button.
+
+ &lt;link rel="manifest" type="text/json" href="manifest.json"&gt;&lt;/&gt;
+
+The manifest file should be serviced with a content-type text/json.  The format of the JSON file is:
+
+  {
+    "services": {
+      "social": {
+        "name": "Provider Name",
+        "iconURL": "https://site.com/site.png",
+        "workerURL": "https://site.com/socialapi/worker.js",
+        "sidebarURL": "https://site.com/socialapi/sidebar.html",
+        "URLPrefix": "https://site.com/socialapi/",
+      }
+    }
+  }
+
+### `name`
+
+Service name used for display purposes.
+
+### `iconURL`
+
+An icon used for display purposes.
+
+### `workerURL`
+
+Location of the JavaScript file to be loaded in the background worker.
+
+### `sidebarURL`
+
+Location of the content to be loaded into the sidebar.
+
+### `URLPrefix`
+
+Used to determin if a link should be opened in a browser tab, or in the sidebar.
+
 
 Example interactions / expected implementation flow
 ===================================================
