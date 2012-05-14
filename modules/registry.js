@@ -203,7 +203,17 @@ ManifestRegistry.prototype = {
                      .rootTreeItem
                      .QueryInterface(Ci.nsIInterfaceRequestor)
                      .getInterface(Ci.nsIDOMWindow);
-      this.askUserInstall(xulWindow, installManifest, location)
+      this.askUserInstall(xulWindow, function() {
+        installManifest();
+        // user requested install, lets make sure we enable after the install.
+        // This is especially important on first time install.
+        registry().enabled = true;
+        let prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
+        prefBranch.setBoolPref("visible", true);
+        Services.obs.notifyObservers(null,
+                                 "social-browsing-enabled",
+                                 registry().currentProvider.origin);
+      }, location)
       return;
     }
   },
