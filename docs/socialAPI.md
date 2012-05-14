@@ -386,21 +386,25 @@ bar allowing the user to install the service.
 
 TODO: provide a mechanism by which a service provider can offer an INSTALL button.
 
- &lt;link rel="manifest" type="text/json" href="manifest.json"&gt;&lt;/&gt;
+```
+<link rel="manifest" type="text/json" href="manifest.json"></link>
+```
 
 The manifest file should be serviced with a content-type text/json.  The format of the JSON file is:
 
-  {
-    "services": {
-      "social": {
-        "name": "Provider Name",
-        "iconURL": "https://site.com/site.png",
-        "workerURL": "https://site.com/socialapi/worker.js",
-        "sidebarURL": "https://site.com/socialapi/sidebar.html",
-        "URLPrefix": "https://site.com/socialapi/",
-      }
+```
+{
+  "services": {
+    "social": {
+      "name": "Provider Name",
+      "iconURL": "https://site.com/site.png",
+      "workerURL": "https://site.com/socialapi/worker.js",
+      "sidebarURL": "https://site.com/socialapi/sidebar.html",
+      "URLPrefix": "https://site.com/socialapi/",
     }
   }
+}
+```
 
 ### `name`
 
