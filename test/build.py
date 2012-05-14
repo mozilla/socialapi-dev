@@ -26,7 +26,6 @@ copytree(join(social_path, "content"), join(stage_path, "content"))
 copytree(join(social_path, "locale"), join(stage_path, "locale"))
 copytree(join(social_path, "modules"), join(stage_path, "modules"))
 copytree(join(social_path, "skin"), join(stage_path, "skin"))
-copytree(join(social_path, "defaults"), join(stage_path, "defaults"))
 copy(join(social_path, "install.rdf"), stage_path)
 
 # Now copy in the test provider resources:
@@ -35,6 +34,5 @@ for p in PROVIDERS:
 
 # And patch the default services file to install it:
 chdir(stage_path)
-system("patch -p1 < ../test/testDefaultService.patch")
 system("zip -q -r " + xpi_name + " *")
 print "Created", xpi_name
