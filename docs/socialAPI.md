@@ -1,6 +1,8 @@
 Browser Social API Reference
 ============================
 
+The "test" directory contains a test provider implementation that demonstrates the use of many of these APIs.  Reading through it will help illustrate the documentation provided here.
+
 ## Contents
 
 1. Terms
@@ -287,20 +289,21 @@ SidebarWidget
 
 If a service defines a SidebarWidget, the browser will instantiate a content region with the SidebarWidget URL as the location on some browser windows. These regions will not be instantiated until the Worker has been fully loaded. The content in these regions has the additional API defined in the Service Content API reference, above.
 
-Sidebars can be in a *maximized*, *minimized*, or *hidden* state.
+Sidebars can be in a *visible* or *hidden* state.
 
-* When maximized, they will receive a vertical rectangle of screen space in which to render; this rectangle is stable across changes in tab focus and has an independent scrollbar from the scrollbar of tabbed browsing content.
-* When minimized, they will receive a horizontal rectangle of screen space to the right of the (tab bar / navigation bar/ TBD) in which to render a small visual element. Service providers are encouraged to use this space for ambient notification and current-login-status.
-* When hidden, a sidebar is completely removed from the visual hierarchy. The user agent will continue to deliver messages to it, and the sidebar may pre-render its DOM for later display. (TODO: Is this right? Or should we "suspend" when we minimize? If we do, it becomes harder to dynamically display sidebar later; maybe this isn't a problem) 
+* When visible, they will receive a vertical rectangle of screen space in which to render; this rectangle is stable across changes in tab focus and has an independent scrollbar from the scrollbar of tabbed browsing content.
+* When hidden, a sidebar is completely removed from the visual hierarchy. The user agent will continue to deliver messages to it, and the sidebar may pre-render its DOM for later display. (TODO: Is this right? Or should we "suspend" when we minimize? If we do, it becomes harder to dynamically display sidebar later; maybe this isn't a problem).
 
 Sidebar windows will only be instantiated on browser windows that have a full tabbed-browsing interface; windows created with window.open that do not have these interface elements will not have a sidebar.
+
+When a tab that is rendered directly by the browser without a location bar is selected, the sidebar will automatically be placed into the *hidden* state.  When the user navigates away from that tab, the sidebar will be made *visible* again.  These tabs include the Add-ons management page, about:permissions, etc.
 
 The minimized/maximized/hidden state of the sidebar widget is a per-window setting. The most-recently-set state is remembered and used for new windows, and is persisted across browser restarts.
 
 Messages Sent to Widget
 -----------------------
 
-XXX this section is TBD and may change
+XXX Not yet implemented: this section is TBD and may change
 
 ### `content-hidden`
 
@@ -316,22 +319,12 @@ TODO: does this fire when the user initiates the minimize or after animation? if
 
 Sent by the browser when the user maximizes the sidebar content.
 
-Browser Visual Integration
---------------------------
-
-To allow remote content to integrate smoothly with browser chrome, the following CSS classes are automatically introduced to sidebar content:
-
-### `mozSidebarMinimizedHeight:`
-> Sets "height:<int>px", with the height of the visual region that is available to sidebar content when it has been minimized.
-
-TODO: Perhaps this should be a message instead?
-
 Browser "Panel" Integration
 ---------------------------
 
 To allow content to place an ephemeral window in front of normal browser content and chrome, the following API is used:
 
-    TODO
+    TODO - not yet implemented
 
 ShareWidget
 ===========
