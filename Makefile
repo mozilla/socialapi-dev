@@ -15,7 +15,7 @@ xpi_dir=$(TOPSRCDIR)/dist
 srcdir = $(TOPSRCDIR)
 
 xpi_name := socialdev.xpi
-xpi_files := chrome.manifest modules install.rdf providers content components skin locale
+xpi_files := bootstrap.js chrome.manifest modules install.rdf providers content components skin locale
 dep_files := Makefile $(shell find modules -type f | grep -v .DS_Store) $(shell find components -type f | grep -v .DS_Store)
 
 SLINK = ln -sf
@@ -34,10 +34,13 @@ xpi: $(xpi_dir)/$(xpi_name)
 $(xpi_dir):
 	mkdir -p $(xpi_dir)
 
-stage_files = $(stage_dir)/install.rdf $(stage_dir)/chrome.manifest $(stage_dir)/modules $(stage_dir)/skin $(stage_dir)/providers $(stage_dir)/content $(stage_dir)/components $(stage_dir)/locale
+stage_files = $(stage_dir)/bootstrap.js $(stage_dir)/install.rdf $(stage_dir)/chrome.manifest $(stage_dir)/modules $(stage_dir)/skin $(stage_dir)/providers $(stage_dir)/content $(stage_dir)/components $(stage_dir)/locale
 
 $(stage_dir):
 	mkdir -p $(stage_dir)
+
+$(stage_dir)/bootstrap.js: $(srcdir)/bootstrap.js
+	$(SLINK) $(srcdir)/bootstrap.js $(stage_dir)/bootstrap.js
 
 $(stage_dir)/chrome.manifest: $(srcdir)/chrome.manifest
 	$(SLINK) $(srcdir)/chrome.manifest $(stage_dir)/chrome.manifest

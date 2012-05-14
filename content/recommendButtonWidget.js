@@ -3,6 +3,8 @@
 Components.utils.import("resource://gre/modules/Services.jsm");
 Components.utils.import("resource://socialdev/modules/baseWidget.js");
 
+Components.utils.import("resource://socialdev/modules/registry.js");
+
 function SocialRecommendButton() {
   baseWidget.call(this, window);
 }
@@ -41,8 +43,6 @@ SocialRecommendButton.prototype = {
     this.worker.port.postMessage({topic: "social.user-recommend-prompt"});
   },
   oncommand: function(event) {
-    let providerRegistry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                            .getService(Ci.mozISocialRegistry);
     let url = window.gBrowser.currentURI.cloneIgnoringRef().spec;
     this.worker.port.postMessage({topic: "social.user-recommend",
                                   data: {

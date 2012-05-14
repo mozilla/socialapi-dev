@@ -5,6 +5,8 @@ const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
+Cu.import("resource://socialdev/modules/registry.js");
+
 const EXPORTED_SYMBOLS = ["baseWidget"];
 
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
@@ -25,10 +27,8 @@ function baseWidget(aWindow) {
 baseWidget.prototype = {
   create: function(aWindow) {},
   observe: function(aSubject, aTopic, aData) {
-    let registry = Cc["@mozilla.org/socialProviderRegistry;1"]
-                            .getService(Ci.mozISocialRegistry);
     if (aTopic == 'social-browsing-current-service-changed') {
-      this.setProvider(registry.currentProvider);
+      this.setProvider(registry().currentProvider);
     }
     else if (aTopic == 'social-browsing-enabled') {
       this.enable();

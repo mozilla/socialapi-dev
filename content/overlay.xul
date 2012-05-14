@@ -28,7 +28,7 @@
              oncommand="openUILink('about:social')"/>
     <command id="cmd_socialBrowsingToggle"
              label="&socialenable.label;"
-             oncommand="social_toggle();">
+             oncommand="social.toggle();">
       <observes element="socialEnabled" attribute="checked"/>
     </command>
 
@@ -36,7 +36,7 @@
              checked="false"
              hidden="true"
              label="&socialsidebar.label;"
-             oncommand="social_sidebar_toggle();">
+             oncommand="social.sidebar_toggle();">
       <!-- *sob* - the "hidden" thing doesn't seem to work, so the observers
            are duplicated below on the menuitem.
            But the "checked" observer on cmd_socialBrowsingToggle *does*?
@@ -68,7 +68,8 @@
     </menupopup>
   </popupset>
 
-<toolbarpalette id="BrowserToolbarPalette">
+<!--<toolbarpalette id="BrowserToolbarPalette">-->
+<toolbar id="nav-bar">
   <toolbaritem
     id="social-status-area-container"
     class="chromeclass-toolbar-additional social-status-area-container"
@@ -100,12 +101,12 @@
               <menuitem id="social-statusarea-togglesidebar"
                         type="checkbox"
                         command="cmd_socialSidebarToggle">
-                <!-- See above - why don't the observers set directly on the
-                     command work such that we we need to have them here???
-                -->
                 <observes element="socialSidebarVisible" attribute="checked"/>
                 <observes element="socialEnabled" attribute="hidden"/>
               </menuitem>
+              <!-- See above - why don't the observers set directly on the
+                   command work such that we we need to have them here???
+              -->
 
               <menuitem id="social-statusarea-togglesocial"
                         type="checkbox"
@@ -123,7 +124,8 @@
       </hbox>
     </div>
   </toolbaritem>
-</toolbarpalette>
+</toolbar>
+<!--</toolbarpalette>-->
 
 <hbox id="urlbar-icons">
   <image id="social-recommend-button"
