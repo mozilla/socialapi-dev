@@ -125,7 +125,7 @@ function social_sidebar_toggle() {
     let topic = newState ? "social-sidebar-visible" : "social-sidebar-hidden";
     Services.obs.notifyObservers(window, topic, null);
   } else {
-    cu.reportError("can't toggle the social sidebar if social is disabled!");
+    Cu.reportError("can't toggle the social sidebar if social is disabled!");
   }
 }
 
