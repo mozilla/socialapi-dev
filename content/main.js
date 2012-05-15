@@ -141,7 +141,7 @@ function social_init() {
   // watch for when browser disables chrome in tabs, and hide the social sidebar
   document.addEventListener('DOMAttrModified', function(e) {
     if (e.target == document.documentElement &&
-        (e.attrName == "disablechrome" || e.attrname == "chromehidden")) {
+        (e.attrName == "disablechrome" || e.attrName == "chromehidden")) {
       set_window_social_enabled_from_doc_state();
     }
   }.bind(this));
