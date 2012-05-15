@@ -331,7 +331,7 @@ ClientPort.prototype = {
  * URL of some JavaScript that will be run in the context of the window;
  * the script does not have a full DOM but is instead run in a sandbox
  * that has a select set of methods cloned from the URL's domain.
- * 
+ *
  * The FrameWorker iframe is a singleton for a given script URL.  If one
  * alread, exists, the FrameWorker constructor will connect to it.
  *
@@ -410,7 +410,7 @@ function FrameWorker(url, clientWindow) {
             log("importScripts loading "+scriptURL);
             // load the url *synchronously*
             let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"]
-                        .createInstance(Ci.nsIXMLHttpRequest);  
+                        .createInstance(Ci.nsIXMLHttpRequest);
             xhr.open('GET', scriptURL, false);
             xhr.onreadystatechange = function(aEvt) {
               if (xhr.readyState == 4) {
@@ -483,8 +483,8 @@ function FrameWorker(url, clientWindow) {
             let scriptText = workerWindow.document.body.textContent;
             Cu.evalInSandbox(scriptText, sandbox, "1.8", workerWindow.location.href, 1);
           } catch (e) {
-            Cu.reportError("Error evaluating worker script for " + url + ": " + e + "; " + 
-                (e.lineNumber ? ("Line #" + e.lineNumber) : "") + 
+            Cu.reportError("Error evaluating worker script for " + url + ": " + e + "; " +
+                (e.lineNumber ? ("Line #" + e.lineNumber) : "") +
                 (e.stack ? ("\n" + e.stack) : ""));
             return;
           }
