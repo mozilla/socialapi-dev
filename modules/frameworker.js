@@ -401,14 +401,34 @@ function FrameWorker(url, clientWindow) {
             Cu.reportError("failed to import API "+fn+"\n"+e+"\n");
           }
         }
-        sandbox.importFunction(function importScripts(uris) {
-          if (uris instanceof Array) {
-            for each(let uri in uris) {
-              Services.scriptloader.loadSubScript(uri, sandbox);
-            }
+        sandbox.importFunction(function importScripts() {
+          if (arguments.length < 1) return;
+          let workerURI = Services.io.newURI(url, null, null);
+          for each(let uri in arguments) {
+            // resolve the uri against the loaded worker
+            let scriptURL = workerURI.resolve(uri);
+            log("importScripts loading "+scriptURL);
+            // load the url *synchronously*
+            let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"]
+                        .createInstance(Ci.nsIXMLHttpRequest);  
+            xhr.open('GET', scriptURL, false);
+            xhr.onreadystatechange = function(aEvt) {
+              if (xhr.readyState == 4) {
+                if (xhr.status == 200 || xhr.status == 0) {
+                  try {
+                    Cu.evalInSandbox(xhr.responseText, sandbox);
+                  }
+                  catch(e) {
+                    Cu.reportError("importScripts eval failed: "+e);
+                  }
+                }
+                else {
+                  Cu.reportError("Unable to importScripts ["+scriptURL+"], status " + xhr.status);
+                }
+              }
+            };
+            xhr.send(null);
           }
-          else
-            Services.scriptloader.loadSubScript(uris, sandbox);
         }, 'importScripts');
         // and we delegate ononline and onoffline events to the worker.
         // See http://www.whatwg.org/specs/web-apps/current-work/multipage/workers.html#workerglobalscope
