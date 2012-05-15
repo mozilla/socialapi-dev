@@ -78,12 +78,12 @@ function getDefaultProviders() {
     }
     else {
       let fURI = resURI.QueryInterface(Components.interfaces.nsIFileURL).file;
-  
-      var entries = fURI.directoryEntries;  
-      while (entries.hasMoreElements()) {  
-        var entry = entries.getNext();  
+
+      var entries = fURI.directoryEntries;
+      while (entries.hasMoreElements()) {
+        var entry = entries.getNext();
         entry.QueryInterface(Components.interfaces.nsIFile);
-        URIs.push(resURI.resolve("providers/"+entry.leafName+"/app.manifest")); 
+        URIs.push(resURI.resolve("providers/"+entry.leafName+"/app.manifest"));
       }
     }
     //dump(JSON.stringify(URIs)+"\n");
@@ -306,6 +306,7 @@ function ProviderRegistry() {
   this.manifestRegistry = new ManifestRegistry();
   this._prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
 
+  Services.obs.addObserver(this, "private-browsing", false);
   Services.obs.addObserver(this, 'quit-application', true);
 
   let self = this;
@@ -363,9 +364,18 @@ ProviderRegistry.prototype = {
   _providers: {},
   _currentProvider: null,
   _enabled: null,
+  _enabledBeforePrivateBrowsing: false,
 
   observe: function(aSubject, aTopic, aData) {
-    if (aTopic == 'quit-application') {
+    if (aTopic == "private-browsing") {
+      if (aData == "enter") {
+        this._enabledBeforePrivateBrowsing = this.enabled;
+        this.enabled = false;
+      } else if (aData == "exit") {
+        this.enabled = this._enabledBeforePrivateBrowsing;
+      }
+    }
+    else if (aTopic == 'quit-application') {
       this.each(function(provider) {
         provider.shutdown();
       })
@@ -512,6 +522,13 @@ ProviderRegistry.prototype = {
     if (new_state == this._enabled) {
       return;
     }
+
+    // XXX for now, we don't allow enabling social browsing during private browsing
+    if (new_state && Components.classes["@mozilla.org/privatebrowsing;1"]
+                .getService(Components.interfaces.nsIPrivateBrowsingService)
+                .privateBrowsingEnabled)
+      return;
+
     this._enabled = new_state; // set early so later .enabled requests don't recurse.
     if (new_state) {
       for each(let provider in this._providers) {
