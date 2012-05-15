@@ -57,7 +57,7 @@ var TESTS = [
 
 function runTests()
 {
-	testResults = [];
+	var testResults = [];
 	for each (var aTest in TESTS) 
 	{
 		try {
@@ -93,6 +93,8 @@ function runTests()
 		s += "</div>";
 	}
 	document.getElementById("result").innerHTML = s;
+	// return the test results for the benefit of the mochitests
+	return testResults;
 }
 
 document.getElementById("runTestsButton").addEventListener("click", runTests, false);
