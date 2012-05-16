@@ -7,6 +7,17 @@ Components.utils.import("resource://socialdev/modules/registry.js");
 
 function SocialRecommendButton() {
   baseWidget.call(this, window);
+
+  // use tabbrowser to tell us when we need to update our prompt
+  let self = this;
+  gBrowser.addProgressListener({
+    onLocationChange: function(aWebProgress, aRequest, aLocation, aFlags) {
+      let topLevel = aWebProgress.DOMWindow == gBrowser.contentWindow;
+      if (topLevel) {
+        self.updatePrompt(aLocation.spec);
+      }
+    }
+  });
 }
 SocialRecommendButton.prototype = {
   __proto__: baseWidget.prototype,
@@ -18,6 +29,10 @@ SocialRecommendButton.prototype = {
       this.worker.port.close();
       this.worker = null;
     }
+  },
+  updatePrompt: function(url) {
+    // XXX Dont send the url until we deal with user control
+    this.worker.port.postMessage({topic: "social.user-recommend-prompt"});
   },
   setProvider: function(aProvider) {
     let self = this;
@@ -40,7 +55,7 @@ SocialRecommendButton.prototype = {
         widget.setAttribute("src", data.img);
       };
     };
-    this.worker.port.postMessage({topic: "social.user-recommend-prompt"});
+    this.updatePrompt(gBrowser.currentLocation.spec);
   },
   oncommand: function(event) {
     let url = window.gBrowser.currentURI.cloneIgnoringRef().spec;
