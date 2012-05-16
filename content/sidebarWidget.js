@@ -37,7 +37,7 @@ SocialSidebar.prototype = {
     if (!aService.enabled) {
       return;// sanity check
     }
-  
+
     // retarget the sidebar
     var sbrowser = document.getElementById("social-status-sidebar-browser");
     var make_visible = !sbrowser.service || sbrowser.service !== aService;
@@ -58,17 +58,7 @@ SocialSidebar.prototype = {
     } catch(e) {
       // nightly throws exception?  happens on startup only
     }
-  
-    // set up a locationwatcher
-    try {
-      if (sbrowser.watcher) {
-        sbrowser.removeProgressListener(sbrowser.watcher);
-        sbrowser.watcher = null;
-      }
-    }
-    catch (e) {
-      Cu.reportError(e);
-    }
+
     // load the new service before we block redirects, etc, we set the attribute
     // since this may be called prior to the browser element being ready to load
     // during initial startup
@@ -80,93 +70,18 @@ SocialSidebar.prototype = {
       // and exception on accessing contentWindow.  setting the src attr fixes
       // that, but we still need to do both for enable/disable to properly work
     }
-    sbrowser.addEventListener("DOMContentLoaded", function sb_contentListener() {
-      sbrowser.removeEventListener("DOMContentLoaded", sb_contentListener, true);
-      try {
-        // Keep a reference to the listener so it doesn't get collected
-        sbrowser.watcher = new SocialLocationWatcher({
-          onStateChange: function(aWebProgress, aRequest, aStateFlags, aStatus) {
-            // We want to prevent the panel from loading any page that is not
-            // within it's domain/pathPrefix
-            if (aStateFlags & Components.interfaces.nsIWebProgressListener.STATE_START &&
-                aStateFlags & Components.interfaces.nsIWebProgressListener.STATE_IS_DOCUMENT) {
-              // about:blank is a special case as we explicitly set the URL to that when unloading.
-              // file:// is a temporary special case that ultimately should probably go...
-              if (aRequest.name.indexOf(sbrowser.service.URLPrefix) != 0 && aRequest.name != "about:blank" && aRequest.name.indexOf("file://") != 0) {
-                Services.console.logStringMessage("blocking document change to "+aRequest.name);
-                aRequest.cancel(Cr.NS_BINDING_ABORTED);
-                let parentWin = Services.wm.getMostRecentWindow("navigator:browser");
-                let newTab = parentWin.gBrowser.addTab(aRequest.name);
-                parentWin.gBrowser.selectedTab = newTab;
-              }
-            }
-          }
-        });
-        sbrowser.addProgressListener(sbrowser.watcher, Ci.nsIWebProgress.NOTIFY_STATE_DOCUMENT);
-      }
-      catch (e) {
-        Cu.reportError(e);
-      }
-    }, true);
+    // setting isAppTab causes clicks to open new tabs
+    sbrowser.docShell.isAppTab = true;
   },
   enable: function() {
     // XXX - this is wrong and needs refactoring.
     this.setProvider(registry().currentProvider);
   },
   disable: function() {
-    // turn everything off.
-    let sbrowser = this.browser;
-    try {
-      if (sbrowser.watcher)
-        sbrowser.removeProgressListener(sbrowser.watcher);
-    }
-    catch(e) {
-      Cu.reportError(e);
-    }
-    sbrowser.watcher = null;
-    sbrowser.contentWindow.location = "about:blank";
+    this.browser.contentWindow.location = "about:blank";
   },
   remove: function() {
     // no concept of "remove" in our overlay based world!
   }
 }
 
-
-function SocialLocationWatcher(callbacks) {
-  this._callbacks = callbacks;
-}
-
-SocialLocationWatcher.prototype = {
-  QueryInterface: XPCOMUtils.generateQI([Ci.nsIWebProgressListener,
-                                         Ci.nsIWebProgressListener2,
-                                         Ci.nsISupportsWeakReference]),
-  onStateChange: function(/*in nsIWebProgress*/ aWebProgress,
-                     /*in nsIRequest*/ aRequest,
-                     /*in unsigned long*/ aStateFlags,
-                     /*in nsresult*/ aStatus) {
-    if (this._callbacks.onStateChange) {
-      this._callbacks.onStateChange(aWebProgress, aRequest, aStateFlags, aStatus);
-    }
-  },
-
-  onProgressChange: function(/*in nsIWebProgress*/ aWebProgress,
-                        /*in nsIRequest*/ aRequest,
-                        /*in long*/ aCurSelfProgress,
-                        /*in long */aMaxSelfProgress,
-                        /*in long */aCurTotalProgress,
-                        /*in long */aMaxTotalProgress) {},
-  onLocationChange: function(/*in nsIWebProgress*/ aWebProgress,
-                        /*in nsIRequest*/ aRequest,
-                        /*in nsIURI*/ aLocation) {
-    if (this._callbacks.onLocationChange) {
-      this._callbacks.onLocationChange(aWebProgress, aRequest, aLocation);
-    }
-  },
-  onStatusChange: function(/*in nsIWebProgress*/ aWebProgress,
-                      /*in nsIRequest*/ aRequest,
-                      /*in nsresult*/ aStatus,
-                      /*in wstring*/ aMessage) {},
-  onSecurityChange: function(/*in nsIWebProgress*/ aWebProgress,
-                        /*in nsIRequest*/ aRequest,
-                        /*in unsigned long*/ aState) {},
-}
