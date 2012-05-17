@@ -165,3 +165,32 @@ toolbar[mode="icons"] .social-status-area-container > menupopup {
 /*#navigator-toolbox > toolbar {
   counter-reset: smallicons;
 }*/
+
+.social-panel .panel-arrowcontent {
+    margin: 0;
+    padding: 0;
+}
+
+.social-panel[type="arrow"] {
+}
+
+.social-panel .panel-arrow[side="top"] {
+  list-style-image: url("chrome://socialdev/skin/pinstripe/panelarrow-up.png");
+  margin-bottom: -1px;
+}
+
+.social-panel .panel-arrow[side="bottom"] {
+  list-style-image: url("chrome://socialdev/skin/pinstripe/panelarrow-down.png");
+  margin-top: -1px;
+}
+
+.social-panel .panel-arrow[side="left"] {
+  list-style-image: url("chrome://socialdev/skin/pinstripe/panelarrow-horiz.png");
+  margin-right: -1px;
+  -moz-transform: scaleX(-1);
+}
+
+.social-panel .panel-arrow[side="right"] {
+  list-style-image: url("chrome://socialdev/skin/pinstripe/panelarrow-horiz.png");
+  margin-left: -1px;
+}

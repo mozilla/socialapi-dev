@@ -9,7 +9,7 @@
 
 <overlay id="socialdev-overlay"
          xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
-  
+
   <script type="application/x-javascript" src="chrome://socialdev/content/recommendButtonWidget.js"/>
   <script type="application/x-javascript" src="chrome://socialdev/content/toolbarStatusWidget.js"/>
   <script type="application/x-javascript" src="chrome://socialdev/content/sidebarWidget.js"/>
@@ -82,7 +82,7 @@
         <button class="social-statusarea-service-button"
                       type="menu"
                       anonid="social-statusarea-service-button">
-          <image 
+          <image
               id="social-statusarea-service-image"
               class="social-statusarea-service-image"
               src="chrome://socialdev/skin/social.png"/>
@@ -137,7 +137,7 @@
 </hbox>
 
 <popupset id="mainPopupSet">
-  <panel id="social-notification-panel">
+  <panel id="social-notification-panel" class="social-panel" type="arrow">
     <browser id="social-notification-browser" type="content" style="width:300px;height:300px" />
   </panel>
 </popupset>
