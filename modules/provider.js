@@ -64,7 +64,7 @@ SocialProvider.prototype = {
     this._log("init");
     this.windowCreatorFn = windowCreatorFn;
   },
-  
+
   /**
    * shutdown
    *
@@ -85,7 +85,7 @@ SocialProvider.prototype = {
     }
     this._active = false;
   },
-  
+
   /**
    * called by the ProviderRegistry to ensure the provider is initialized
    * and ready.
@@ -97,7 +97,7 @@ SocialProvider.prototype = {
       this._active = true;
     }
   },
-  
+
   /**
    * called by the ProviderRegistry to close down this provider.
    */
@@ -108,7 +108,7 @@ SocialProvider.prototype = {
     // XXX is deactivate the same as shutdown?
     this.shutdown();
   },
-  
+
   /**
    * makeWorker
    *
@@ -131,13 +131,13 @@ SocialProvider.prototype = {
     }
     return frameworker.FrameWorker(this.workerURL, window);
   },
-  
+
   /**
    * attachToWindow
    *
    * loads sandboxed support functions and socialAPI into content panels for
    * this provider.
-   * 
+   *
    * @param {DOMWindow}
    */
   attachToWindow: function(targetWindow) {
@@ -152,6 +152,14 @@ SocialProvider.prototype = {
         self._log("worker message: " + JSON.stringify(e));
       };
     }
+
+    var xulWindow = targetWindow.QueryInterface(Ci.nsIInterfaceRequestor)
+               .getInterface(Ci.nsIWebNavigation)
+               .QueryInterface(Ci.nsIDocShellTreeItem)
+               .rootTreeItem
+               .QueryInterface(Ci.nsIInterfaceRequestor)
+               .getInterface(Ci.nsIDOMWindow);
+    let self = this;
 
     let sandbox = new Cu.Sandbox(targetWindow, {
       sandboxPrototype: targetWindow,
@@ -173,6 +181,58 @@ SocialProvider.prototype = {
         },
         openServiceWindow: function(toURL, name, options, title, readyCallback) {
           return createServiceWindow(toURL, name, options, self, title, readyCallback);
+        },
+        openPopup: function(toURL) {
+          //dump("open popup to "+toURL+"\n");
+          var panel = xulWindow.document.getElementById("social-notification-panel");
+          var anchor = xulWindow.document.getElementById("social-status-sidebar-browser");
+          var notifBrowser = xulWindow.document.getElementById("social-notification-browser");
+          notifBrowser.service = self;
+
+          var hide = function(a) {
+            let doc = notifBrowser.contentDocument;
+            try {
+            doc.getElementById(a).style.display = "None";
+            } catch(e) {}
+          }
+          var resizer = function() {
+            // We hack the tickerstory page to hide stuff
+            notifBrowser.removeEventListener("DOMContentLoaded", resizer);
+            var body = notifBrowser.contentDocument.getElementById("notif");
+
+            hide('fbChatErrorNub');
+            hide('fbDockChatBuddylistNub');
+            hide('pageFooter');
+            hide('pagelet_ego_pane');
+            hide('pagelet_chat');
+            hide('pagelet_sidebar');
+            hide('pagelet_presence');
+            hide('pagelet_bluebar');
+            hide('footerContainer');
+
+            let doc = notifBrowser.contentDocument;
+
+            let content = doc.getElementById('content');
+            content.firstChild.className = "";
+            content.firstChild.firstChild.className = "";
+            doc.getElementById('globalContainer').style.width = "auto";
+            doc.body.className = "";
+            let tickerBody = doc.getElementsByClassName('tickerDialogBody')[0];
+            // use our wrapper to get the right size, using the body element
+            // for sizing is not working since body.style.overflow=hidden.
+            //var wrapper = document.getElementById("wrapper");
+            let width = tickerBody.scrollWidth + 16;
+            let height = tickerBody.scrollHeight < 500 ? tickerBody.scrollHeight : 500;
+            //let width = body ? body.clientWidth : "300px";
+            //let height = body ? body.clientHeight : "400px";
+            notifBrowser.width = width;
+            notifBrowser.height = height;
+            panel.width = width;
+            panel.height = height;
+          }
+          notifBrowser.addEventListener("DOMContentLoaded", resizer, false);
+          notifBrowser.setAttribute("src", toURL);
+          panel.openPopup(anchor, "start_before", 0, 40);
         },
         hasBeenIdleFor: function(ms) {
           const idleService = Cc["@mozilla.org/widget/idleservice;1"].getService(Ci.nsIIdleService);
@@ -201,7 +261,7 @@ SocialProvider.prototype = {
         self._log("Exception while closing worker: " + e);
       }
     }, false);
-  
+
   },
 
   setAmbientNotificationBackground: function(background) {
@@ -213,7 +273,7 @@ SocialProvider.prototype = {
     // if we already have one named, return that
     if (!this.ambientNotificationIcons) this.ambientNotificationIcons = {};
     if (this.ambientNotificationIcons[name]) {
-      return this.ambientNotificationIcons[name];      
+      return this.ambientNotificationIcons[name];
     }
     var icon = {
       setBackground: function(backgroundText) {
@@ -235,6 +295,6 @@ SocialProvider.prototype = {
 
   setAmbientNotificationPortrait: function(url) {
     this.ambientNotificationPortrait = url;
-    Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?    
+    Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
   }
 }
