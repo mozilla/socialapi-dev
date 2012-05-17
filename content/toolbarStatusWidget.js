@@ -76,7 +76,7 @@ SocialToolbarStatusArea.prototype = {
           }
           notifBrowser.addEventListener("DOMContentLoaded", resizer, false);
           notifBrowser.setAttribute("src", icon.contentPanel);
-          panel.openPopup(iconContainer, "after_start",0,0,false, false);
+          panel.openPopup(iconImage, "bottomcenter topleft",0,0,false, false);
         }, false);
     }
 
