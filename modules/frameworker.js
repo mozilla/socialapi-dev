@@ -381,6 +381,9 @@ function FrameWorker(url, clientWindow) {
 
         let workerWindow = frame.contentWindow;
 
+        // Work around wrapper/proxy issues - give the XMLHttpRequest object
+        // an empty __exposedProps__ to make it work in the sandbox context.
+        workerWindow.XMLHttpRequest.__exposedProps__ = [];
         let sandbox = new Cu.Sandbox(workerWindow);
         // copy the window apis onto the sandbox namespace only functions or
         // objects that are naturally a part of an iframe, I'm assuming they are
