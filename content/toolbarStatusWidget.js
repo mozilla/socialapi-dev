@@ -15,7 +15,7 @@ function SocialToolbarStatusArea() {
   navbar.currentSet = newset;
   navbar.setAttribute("currentset", newset );
   window.document.persist("nav-bar", "currentset");
-  
+
   Services.obs.addObserver(this, 'social-browsing-ambient-notification-changed', false);
 }
 
@@ -46,10 +46,10 @@ SocialToolbarStatusArea.prototype = {
         var iconImage = window.document.createElementNS("http://www.w3.org/1999/xhtml", "div");
         iconImage.setAttribute("class", "social-notification-icon-image");
         iconImage.style.background = icon.background;
-        
-        var iconCounter = window.document.createElementNS(XUL_NS, "div");        
+
+        var iconCounter = window.document.createElementNS(XUL_NS, "div");
         iconCounter.setAttribute("class", "social-notification-icon-counter");
-        
+
         if (icon.counter) {
           iconCounter.appendChild(window.document.createTextNode(icon.counter));
         } else {
@@ -58,7 +58,7 @@ SocialToolbarStatusArea.prototype = {
 
         iconContainer.appendChild(iconBackground);
         iconContainer.appendChild(iconImage);
-        iconContainer.appendChild(iconCounter);  
+        iconContainer.appendChild(iconCounter);
         iconBox.appendChild(iconContainer);
 
         iconContainer.addEventListener("click", function(e) {
@@ -72,7 +72,7 @@ SocialToolbarStatusArea.prototype = {
             notifBrowser.width = body.clientWidth;
             notifBrowser.height = body.clientHeight;
             panel.width = body.clientWidth;
-            panel.height = body.clientHeight;              
+            panel.height = body.clientHeight;
           }
           notifBrowser.addEventListener("DOMContentLoaded", resizer, false);
           notifBrowser.setAttribute("src", icon.contentPanel);
@@ -118,7 +118,7 @@ SocialToolbarStatusArea.prototype = {
         for each (var icon in currentProvider.ambientNotificationIcons)
         {
           ambientNotificationCount += 1;
-          createNotificationIcon(icon);   
+          createNotificationIcon(icon);
         }
         iconBox.style.minWidth = (26 * ambientNotificationCount) + "px";
       }
@@ -143,11 +143,11 @@ SocialToolbarStatusArea.prototype = {
 
       // And finally crop the toolbar item to the right width
 
-      window.document.getElementById("social-status-area-container").width = 
+      window.document.getElementById("social-status-area-container").width =
         (60 + ambientNotificationCount * 26) + "px";
     } catch (e) {
       Cu.reportError(e);
-    } 
+    }
   },
 
   onpopupshown: function(event) {
@@ -189,7 +189,7 @@ function buildSocialPopupContents(window, socialpanel)
   function renderNotificationRow(img, title, text) {
     let row = window.document.createElementNS(HTML_NS, "div");
     row.setAttribute("style", "clear:all;cursor:pointer;margin-left:8px;height:32px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:-moz-system-font;border-right:");
-    
+
     let imgElem = window.document.createElementNS(HTML_NS, "img");
     imgElem.setAttribute("src", img);
     imgElem.setAttribute("style", "width:28px;height:28px;margin-right:8px;float:left");
