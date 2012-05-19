@@ -2,6 +2,12 @@
 <!DOCTYPE window PUBLIC "-//MOZILLA//DTD XUL V1.0//EN" "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 
 <?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<!-- browser.css is included only for:
+    #titlebar {  -moz-binding: url("chrome://global/content/bindings/general.xml#windowdragbox"); }
+    so the window can be moved with the mouse on Windows.  There may be other
+    subtle things too, so the entire css seems reasonable for now.
+-->
+<?xml-stylesheet href="chrome://browser/content/browser.css" type="text/css"?>
 <?xml-stylesheet href="chrome://browser/skin/" type="text/css"?>
 
 <window id="main-window"
@@ -26,7 +32,9 @@
   <keyset id="mainKeyset"/>
   <keyset id="baseMenuKeyset"/>
   <vbox id="titlebar"/>
-  <menubar id="main-menubar"/>
+  <toolbar id="toolbar-menubar" type="menubar" class="chromeclass-menubar" autohide="true" inactive="true">
+    <menubar id="main-menubar"/>
+  </toolbar>
 
   <browser id="browser" src="about:blank" enablehistory="true" type="content-primary" flex="1" height="100%"/>
     
