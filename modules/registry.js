@@ -168,20 +168,77 @@ ManifestRegistry.prototype = {
     }
   },
 
-  importManifest: function manifestRegistry_importManifest(aDocument, location, manifest, systemInstall) {
+  /**
+   * validateManifest
+   *
+   * Given the manifest data, create a clean version of the manifest.  Ensure
+   * any URLs are same-origin (proto+host+port).  If the manifest is a builtin,
+   * URLs must either be resource or same-origin resolved against URLPrefix.
+   * We ignore any manifest entries that are not supported.  favicons are often
+   * at different locations than origin, eg. google has theirs on gstatic.com,
+   * so we do not enforce same-origin for the favicon.
+   *
+   * @param location   string      string version of manifest location
+   * @param manifest   json-object raw manifest data
+   * @returns manifest json-object a cleaned version of the manifest
+   */
+  validateManifest: function manifestRegistry_validateManifest(location, rawManifest) {
+    // anything in URLEntries will require same-origin policy
+    let URLEntries = ['workerURL', 'sidebarURL'];
+    // only items in validEntries will move into our cleaned manifest
+    let validEntries = ['iconURL', 'name'].concat(URLEntries);
+    let builtin = location.indexOf("resource:") == 0;
+    if (builtin) {
+      // builtin manifests may have a couple other entries
+      validEntries = validEntries.concat('URLPrefix', 'contentPatchPath');
+    }
+    // store the location we got the manifest from
+    let manifest = {
+      location: location
+    };
+    for (var k in rawManifest.services.social) {
+      if (validEntries.indexOf(k) >= 0) manifest[k] = rawManifest.services.social[k];
+    }
+    // we've saved original location in manifest above, switch our location
+    // temporarily so we can correctly resolve urls for our builtins
+    if (builtin && manifest.URLPrefix) {
+      location = manifest.URLPrefix;
+    }
+    // full proto+host+port origin for url resolving
+    manifest.origin = Services.io.newURI(location, null, null).prePath;
+    // make locationURI, and resolve all URLEntries against that.
+    let originURI = Services.io.newURI(manifest.origin, null, null);
+    for each(let k in URLEntries) {
+      if (!manifest[k]) continue;
+      if (builtin && manifest[k].indexOf("resource:") == 0) continue;
+
+      // the url MUST resolve to origin
+      let url = originURI.resolve(manifest[k]);
+      if (url.indexOf(manifest.origin) < 0)
+        throw new Error("manifest url origin mismatch " +manifest.origin+ " != " + manifest[k] +"\n")
+    }
+    //dump("manifest "+JSON.stringify(manifest)+"\n");
+    return manifest;
+  },
+
+  importManifest: function manifestRegistry_importManifest(aDocument, location, rawManifest, systemInstall) {
     //Services.console.logStringMessage("got manifest "+JSON.stringify(manifest));
-    let socialManifest = manifest.services.social;
-    socialManifest.enabled = true;
-    if (location.indexOf("resource:") == 0 && socialManifest.URLPrefix)
-      location = socialManifest.URLPrefix
+    let manifest = this.validateManifest(location, rawManifest);
     function installManifest() {
-      manifest.origin = location; // make this an origin
-      // ensure remote installed social services cannot set contentPatchPath
-      manifest.contentPatchPath = undefined;
-      manifest.enabled = true;
-      ManifestDB.put(location, socialManifest);
-      registry().register(socialManifest);
-      // XXX notification of installation
+      ManifestDB.get(manifest.origin, function(key, item) {
+        if (!item || !item.location || /* older pre-release manifests did not store location */
+            item.location.indexOf("resource:") == 0 ||
+            manifest.location.indexOf(item.origin) == 0) {
+          // XXX temporary debug output
+          if (item)
+            dump("overwriting manifest entry for "+key+"\n");
+          else
+            dump("adding manifest entry for"+key+"\n");
+          manifest.enabled = true;
+          ManifestDB.put(manifest.origin, manifest);
+          registry().register(manifest);
+        }
+      });
     }
 
     if (systemInstall) {
