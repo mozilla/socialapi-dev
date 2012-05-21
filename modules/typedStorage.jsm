@@ -130,7 +130,7 @@ ObjectStore.prototype = {
       },
       handleCompletion: function(reason) {
         keyStatement.reset();
-        if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED) 
+        if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED)
           Cu.reportError("Keys query canceled or aborted! " + reason);
         else {
           try {
@@ -148,9 +148,9 @@ ObjectStore.prototype = {
     // sometimes asynchronous calls can make your head hurt
     let store = this;
     this.keys(function(allKeys) {
-      for (let i = 0; i < allKeys.length; i++) {
-        store.get(allKeys[i], function(values) {
-          let result = cb(allKeys[i], values);
+      for each(let key in allKeys) {
+        store.get(key, function(values) {
+          let result = cb(key, values);
           if (result === false) return;
         });
       }
@@ -192,4 +192,3 @@ function TypedStorage() {
   return TypedStorageImplSingleton;
 }
 var EXPORTED_SYMBOLS = ["TypedStorage"];
-
