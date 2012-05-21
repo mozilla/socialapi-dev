@@ -168,7 +168,7 @@ ManifestRegistry.prototype = {
     }
   },
 
-  importManifest: function manifestRegistry_importManifest(aDocument, location, manifest, userRequestedInstall) {
+  importManifest: function manifestRegistry_importManifest(aDocument, location, manifest, systemInstall) {
     //Services.console.logStringMessage("got manifest "+JSON.stringify(manifest));
     let socialManifest = manifest.services.social;
     socialManifest.enabled = true;
@@ -184,7 +184,7 @@ ManifestRegistry.prototype = {
       // XXX notification of installation
     }
 
-    if (userRequestedInstall) {
+    if (systemInstall) {
       installManifest();
     }
     else {
@@ -218,7 +218,7 @@ ManifestRegistry.prototype = {
     }
   },
 
-  loadManifest: function manifestRegistry_loadManifest(aDocument, url, userRequestedInstall) {
+  loadManifest: function manifestRegistry_loadManifest(aDocument, url, systemInstall) {
     // BUG 732264 error and edge case handling
     let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance(Ci.nsIXMLHttpRequest);
     xhr.open('GET', url, true);
@@ -228,7 +228,7 @@ ManifestRegistry.prototype = {
         if (xhr.status == 200 || xhr.status == 0) {
           //Services.console.logStringMessage("got response "+xhr.responseText);
           try {
-            self.importManifest(aDocument, url, JSON.parse(xhr.responseText), userRequestedInstall);
+            self.importManifest(aDocument, url, JSON.parse(xhr.responseText), systemInstall);
           }
           catch(e) {
             Cu.reportError("importManifest "+url+": "+e);
