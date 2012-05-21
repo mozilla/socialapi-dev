@@ -57,7 +57,7 @@ var aboutPage = {
       return;
     }
     if (aTopic == 'social-service-manifest-changed') {
-      ManifestDB.get(aData, function( manifest) {
+      ManifestDB.get(aData, function(key, manifest) {
         this.postToAll({topic: aTopic, data: manifest});
       }.bind(this));
     }
@@ -91,7 +91,7 @@ var aboutPage = {
       }
     });
   },
-  
+
   onPrefsMessage: function(event) {
     // XXX - WARNING - this also receives messages *we* post!  Otherwise we
     // could just reuse the topic names and keep things sane.  But this means

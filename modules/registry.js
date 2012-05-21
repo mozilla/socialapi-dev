@@ -274,7 +274,7 @@ ManifestRegistry.prototype = {
         let baseUrl = aDocument.defaultView.location.href;
         let url = Services.io.newURI(baseUrl, null, null).resolve(link.getAttribute('href'));
         //Services.console.logStringMessage("base "+baseUrl+" resolved to "+url);
-        ManifestDB.get(url, function(item) {
+        ManifestDB.get(url, function(key, item) {
           if (!item) {
             self.loadManifest(aDocument, url);
           }
@@ -454,7 +454,7 @@ ProviderRegistry.prototype = {
       return false;
     }
 
-    ManifestDB.get(origin, function(manifest) {
+    ManifestDB.get(origin, function(key, manifest) {
       manifest.enabled = true;
       ManifestDB.put(origin, manifest);
       Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
@@ -479,7 +479,7 @@ ProviderRegistry.prototype = {
     // and update the manifest.
     // XXX - this is wrong!  We should track that state elsewhere, otherwise
     // a manifest being updated by a provider loses this state!
-    ManifestDB.get(origin, function(manifest) {
+    ManifestDB.get(origin, function(key, manifest) {
       manifest.enabled = false;
       ManifestDB.put(origin, manifest);
       Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
