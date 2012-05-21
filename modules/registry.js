@@ -224,6 +224,14 @@ ManifestRegistry.prototype = {
   importManifest: function manifestRegistry_importManifest(aDocument, location, rawManifest, systemInstall) {
     //Services.console.logStringMessage("got manifest "+JSON.stringify(manifest));
     let manifest = this.validateManifest(location, rawManifest);
+
+    // we want automatic updates to the manifest entry if we change our
+    // builtin manifest files.   We also want to allow the "real" provider
+    // to overwrite our builtin manifest, however we NEVER want a builtin
+    // manifest to overwrite something installed from the "real" provider
+    //
+    // if the original manifest is a builtin resource, allow overwrite
+    // otherwise, if the manifest.location is same origin allow overwrite
     function installManifest() {
       ManifestDB.get(manifest.origin, function(key, item) {
         if (!item || !item.location || /* older pre-release manifests did not store location */
