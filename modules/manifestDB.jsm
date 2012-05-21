@@ -21,30 +21,12 @@ var ManifestDB = (function() {
   var typedStorage = TypedStorage();
   var storage = typedStorage.open("manifest", "destiny");
 
-  // TODO:
-  // given an origin, normalize it (like, http://foo:80 --> http://foo), or
-  // https://bar:443 --> https://bar, or even http://baz/ --> http://baz)
-  // Special treatment for resource:// URLs to support "builtin" apps - for
-  // these, the "origin" is considered to be the *path* to the .webapp - eg,
-  // "resource://foo/bar/app.webapp" is considered to be
-  // "resource://foo/bar" - thus, any services etc for such apps must be
-  // under resource://foo/bar"
-  // XXX - is this handling of builtin apps OK???
-  function normalizeOrigin(aURL) {
-    try {
-      let uri = Services.io.newURI(aURL, null, null);
-      if (uri.scheme == 'resource') return aURL;
-      return uri.host;
-    }
-    catch(e) {
-      // this function is regularly called with just the origin (ie, no
-      // leading http:// etc), so regularly reports failure to normalize.
-      // We probably need to rethink this (ie, this code should either be
-      // used always with a scheme or always without it.
-      // for now though there is no point reporting the "error"...
-      //Cu.reportError(e);
-    }
-    return aURL;
+  // get the host+port of the url to use as a db key
+  function normalizeKey(aURL) {
+    let URI = Services.io.newURI(aURL, null, null);
+    if (URI.port > 0)
+      return URI.host+":"+URI.port;
+    return URI.host;
   }
 
   /**
@@ -56,24 +38,20 @@ var ManifestDB = (function() {
    */
   function put(origin, manifest, cb) {
     // TODO validate the manifest now?  what do we validate?
-    origin = normalizeOrigin(origin);
     manifest.last_modified = new Date().getTime();
-    manifest.origin = origin;
-    storage.put(origin, manifest, cb);
+    storage.put(normalizeKey(origin), manifest, cb);
   }
 
   function insert(origin, manifest, cb) {
     // TODO validate the manifest now?  what do we validate?
-    origin = normalizeOrigin(origin);
     manifest.last_modified = new Date().getTime();
-    manifest.origin = origin;
-    storage.insert(origin, manifest, cb);
+    storage.insert(normalizeKey(origin), manifest, cb);
   }
 
   function remove(origin, cb) {
     var self = this;
-    origin = normalizeOrigin(origin);
-    storage.get(origin, function(key, item) {
+    let originKey = normalizeKey(origin);
+    storage.get(originKey, function(key, item) {
       if (!item) {
         cb(false);
       }
@@ -86,8 +64,7 @@ var ManifestDB = (function() {
   }
 
   function get(origin, cb) {
-    origin = normalizeOrigin(origin);
-    storage.get(origin, cb);
+    storage.get(normalizeKey(origin), cb);
   }
 
   function iterate(cb) {
