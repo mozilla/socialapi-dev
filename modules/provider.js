@@ -64,7 +64,7 @@ SocialProvider.prototype = {
     this._log("init");
     this.windowCreatorFn = windowCreatorFn;
   },
-  
+
   /**
    * shutdown
    *
@@ -85,7 +85,7 @@ SocialProvider.prototype = {
     }
     this._active = false;
   },
-  
+
   /**
    * called by the ProviderRegistry to ensure the provider is initialized
    * and ready.
@@ -97,7 +97,7 @@ SocialProvider.prototype = {
       this._active = true;
     }
   },
-  
+
   /**
    * called by the ProviderRegistry to close down this provider.
    */
@@ -108,7 +108,7 @@ SocialProvider.prototype = {
     // XXX is deactivate the same as shutdown?
     this.shutdown();
   },
-  
+
   /**
    * makeWorker
    *
@@ -131,13 +131,13 @@ SocialProvider.prototype = {
     }
     return frameworker.FrameWorker(this.workerURL, window);
   },
-  
+
   /**
    * attachToWindow
    *
    * loads sandboxed support functions and socialAPI into content panels for
    * this provider.
-   * 
+   *
    * @param {DOMWindow}
    */
   attachToWindow: function(targetWindow) {
@@ -201,7 +201,7 @@ SocialProvider.prototype = {
         self._log("Exception while closing worker: " + e);
       }
     }, false);
-  
+
   },
 
   setAmbientNotificationBackground: function(background) {
@@ -213,7 +213,7 @@ SocialProvider.prototype = {
     // if we already have one named, return that
     if (!this.ambientNotificationIcons) this.ambientNotificationIcons = {};
     if (this.ambientNotificationIcons[name]) {
-      return this.ambientNotificationIcons[name];      
+      return this.ambientNotificationIcons[name];
     }
     var icon = {
       setBackground: function(backgroundText) {
@@ -235,6 +235,6 @@ SocialProvider.prototype = {
 
   setAmbientNotificationPortrait: function(url) {
     this.ambientNotificationPortrait = url;
-    Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?    
+    Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
   }
 }
