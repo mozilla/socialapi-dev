@@ -130,7 +130,7 @@ ObjectStore.prototype = {
       },
       handleCompletion: function(reason) {
         keyStatement.reset();
-        if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED) 
+        if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED)
           Cu.reportError("Keys query canceled or aborted! " + reason);
         else {
           try {
@@ -192,4 +192,3 @@ function TypedStorage() {
   return TypedStorageImplSingleton;
 }
 var EXPORTED_SYMBOLS = ["TypedStorage"];
-
