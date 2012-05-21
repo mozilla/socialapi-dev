@@ -83,7 +83,9 @@ function getDefaultProviders() {
       while (entries.hasMoreElements()) {
         var entry = entries.getNext();
         entry.QueryInterface(Components.interfaces.nsIFile);
-        URIs.push(resURI.resolve("providers/"+entry.leafName+"/app.manifest"));
+        if (entry.leafName.length > 0 && entry.leafName[0] != '.') {
+          URIs.push(resURI.resolve("providers/"+entry.leafName+"/app.manifest"));
+        }
       }
     }
     //dump(JSON.stringify(URIs)+"\n");
