@@ -72,7 +72,7 @@ ObjectStore.prototype = {
           Cu.reportError("Get query canceled or aborted! " + reason);
         else {
           try {
-            cb(value);
+            cb(key, value);
           }
           catch (e) {
             Cu.reportError("Error in completion callback for ObjectStore.get(): " + e);
@@ -108,7 +108,7 @@ ObjectStore.prototype = {
   },
 
   has: function(key, cb) {
-    this.get(key, function(data) {
+    this.get(key, function(key, data) {
       cb(data !== null);
     })
   },
@@ -149,8 +149,8 @@ ObjectStore.prototype = {
     let store = this;
     this.keys(function(allKeys) {
       for each(let key in allKeys) {
-        store.get(key, function(values) {
-          let result = cb(key, values);
+        store.get(key, function(k, values) {
+          let result = cb(k, values);
           if (result === false) return;
         });
       }
