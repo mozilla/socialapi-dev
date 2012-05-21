@@ -73,12 +73,12 @@ var ManifestDB = (function() {
   function remove(origin, cb) {
     var self = this;
     origin = normalizeOrigin(origin);
-    storage.get(origin, function(item) {
+    storage.get(origin, function(key, item) {
       if (!item) {
         cb(false);
       }
       else {
-        storage.remove(origin, function() {
+        storage.remove(key, function() {
           cb(true);
         });
       }
