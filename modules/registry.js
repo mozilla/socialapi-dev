@@ -83,7 +83,9 @@ function getDefaultProviders() {
       while (entries.hasMoreElements()) {
         var entry = entries.getNext();
         entry.QueryInterface(Components.interfaces.nsIFile);
-        URIs.push(resURI.resolve("providers/"+entry.leafName+"/app.manifest"));
+        if (entry.leafName.length > 0 && entry.leafName[0] != '.') {
+          URIs.push(resURI.resolve("providers/"+entry.leafName+"/app.manifest"));
+        }
       }
     }
     //dump(JSON.stringify(URIs)+"\n");
@@ -222,6 +224,7 @@ ManifestRegistry.prototype = {
   },
 
   importManifest: function manifestRegistry_importManifest(aDocument, location, rawManifest, systemInstall) {
+    //Services.console.logStringMessage("got manifest "+JSON.stringify(manifest));
     let manifest = this.validateManifest(location, rawManifest);
 
     // we want automatic updates to the manifest entry if we change our
@@ -233,7 +236,8 @@ ManifestRegistry.prototype = {
     // otherwise, if the manifest.location is same origin allow overwrite
     function installManifest() {
       ManifestDB.get(manifest.origin, function(key, item) {
-        if (!item || item.location.indexOf("resource:") == 0 ||
+        if (!item || !item.location || /* older pre-release manifests did not store location */
+            item.location.indexOf("resource:") == 0 ||
             manifest.location.indexOf(item.origin) == 0) {
           // XXX temporary debug output
           if (item)

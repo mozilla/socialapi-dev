@@ -3,16 +3,17 @@
 .social-status-area-container
  {
   -moz-box-orient: vertical;
-/*  -moz-appearance: toolbarbutton;*/
+/*  -moz-appearance: toolbarbutton;
+
   min-width: 28px;
   width:150px;
-  /*height: 28px;*/
+  // height: 28px;
   margin:0px 0px 0px 0px;
 
   background-color:rgba(151, 152, 153, 0.05);
   background-image:-moz-linear-gradient(rgba(251, 252, 253, 0.95), rgba(246, 247, 248, 0.47) 49%, rgba(231, 232, 233, 0.45) 51%, rgba(225, 226, 229, 0.3));
 
-  border-radius: 2.5px; /*@toolbarbuttonCornerRadius@;*/
+  border-radius: 2.5px;
   border-width: 1px;
   border-style:solid;
   border-top-color:rgba(0,0,0,0.12);
@@ -20,6 +21,46 @@
   border-bottom-color:rgba(0,0,0,0.38);
   border-left-color:rgba(0,0,0,0.19);
   box-shadow:0pt 0pt 0pt 1px rgba(255, 255, 255, 0.3) inset, 0pt 0pt 0pt 2px rgba(255, 255, 255, 0.1) inset;
+*/
+
+  padding: 1px 5px;
+  background: rgba(151,152,153,.05)
+              -moz-linear-gradient(rgba(251,252,253,.95), rgba(246,247,248,.47) 49%, 
+                                   rgba(231,232,233,.45) 51%, rgba(225,226,229,.3));
+  background-clip: padding-box;
+  border-radius: 2.5px;
+  border: 1px solid;
+  border-color: rgba(0,0,0,.12) rgba(0,0,0,.19) rgba(0,0,0,.38);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.3) inset,
+              0 0 0 2px rgba(255,255,255,.1) inset;
+  color: black;
+  text-shadow: 0 0 2px white;
+
+}
+
+.social-status-area-container[disabled="true"] {
+  opacity: .4;
+}
+/*
+.social-status-area-container:not([disabled="true"]):not(:active):hover {
+  background-color: hsla(190,60%,70%,.5);
+  border-color: hsla(190,50%,65%,.8) hsla(190,50%,50%,.8) hsla(190,50%,40%,.8);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.3) inset,
+              0 0 0 1.5px rgba(255,255,255,.1) inset,
+              0 0 3.5px hsl(190,90%,80%);
+  -moz-transition: background-color .4s ease-in,
+                   border-color .3s ease-in,
+                   box-shadow .3s ease-in;
+}
+*/
+.social-status-area-container:not([disabled="true"]):hover:active,
+.social-status-area-container[open="true"] {
+  background-color: transparent;
+  border-color: rgba(0,0,0,.65) rgba(0,0,0,.55) rgba(0,0,0,.5);
+  box-shadow: 0 0 6.5px rgba(0,0,0,.4) inset,
+              0 0 2px rgba(0,0,0,.4) inset,
+              0 1px 0 rgba(255,255,255,.4);
+  text-shadow: none;
 }
 
 /* contentbox has icons, arrow, and content */
@@ -78,7 +119,8 @@
 }
 
 .social-statusarea-dropmarker-image {
-  list-style-image: url("chrome://browser/skin/searchbar-dropmarker.png");
+  list-style-image: url("chrome://global/skin/arrow/arrow-dn.gif");
+
   -moz-margin-start: 2px;
 }
 

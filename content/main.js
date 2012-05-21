@@ -139,15 +139,29 @@ function social_init() {
   };
 
   // watch for when browser disables chrome in tabs, and hide the social sidebar
-  document.addEventListener('DOMAttrModified', function(e) {
-    if (e.target == document.documentElement &&
-        (e.attrName == "disablechrome" || e.attrName == "chromehidden")) {
-      set_window_social_enabled_from_doc_state();
-    }
-  }.bind(this));
+  if (MozMutationObserver) {
+    var observer = new MozMutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        if (mutation.type === 'attributes') {
+          set_window_social_enabled_from_doc_state();
+        }
+      });
+    });
 
-  // and the initial startup state.
-  set_window_social_enabled_from_doc_state();
+    observer.observe(document.documentElement, {
+      attributes: true, attributeFilter: ["disablechrome", "chromehidden"]
+    });
+  } else {
+    // bug 756674 not sure what version MozMutationObserver became available, keep the fallback
+    document.addEventListener('DOMAttrModified', function(e) {
+      if (e.target == document.documentElement &&
+          (e.attrName == "disablechrome" || e.attrName == "chromehidden")) {
+        set_window_social_enabled_from_doc_state();
+      }
+    }.bind(this));
+    // and the initial startup state.
+    set_window_social_enabled_from_doc_state();
+  }
 
   if (registry().enabled || isAvailable()) {
     window.social.toolbarStatusArea = new SocialToolbarStatusArea(window);
