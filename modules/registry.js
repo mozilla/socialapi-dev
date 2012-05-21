@@ -519,8 +519,8 @@ ProviderRegistry.prototype = {
 
     ManifestDB.get(origin, function(key, manifest) {
       manifest.enabled = true;
-      ManifestDB.put(origin, manifest);
-      Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
+      ManifestDB.put(key, manifest);
+      Services.obs.notifyObservers(null, "social-service-manifest-changed", key);
     });
     provider.enabled = true;
     // if browsing is disabled we can't activate it!
@@ -544,8 +544,8 @@ ProviderRegistry.prototype = {
     // a manifest being updated by a provider loses this state!
     ManifestDB.get(origin, function(key, manifest) {
       manifest.enabled = false;
-      ManifestDB.put(origin, manifest);
-      Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
+      ManifestDB.put(key, manifest);
+      Services.obs.notifyObservers(null, "social-service-manifest-changed", key);
     });
 
     if (this._currentProvider && this._currentProvider == provider) {
