@@ -191,7 +191,7 @@ ManifestRegistry.prototype = {
     let origin;
     if (builtin) {
       // builtin manifests may have a couple other entries
-      validEntries = validEntries.push('contentPatchPath');
+      validEntries.push('contentPatchPath');
       // and we trust a URLPrefix attribute as the "origin".
       try {
         origin = rawManifest.services.social.URLPrefix;
