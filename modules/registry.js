@@ -170,23 +170,89 @@ ManifestRegistry.prototype = {
     }
   },
 
-  importManifest: function manifestRegistry_importManifest(aDocument, location, manifest, userRequestedInstall) {
+  /**
+   * validateManifest
+   *
+   * Given the manifest data, create a clean version of the manifest.  Ensure
+   * any URLs are same-origin (proto+host+port).  If the manifest is a builtin,
+   * URLs must either be resource or same-origin resolved against the manifest
+   * origin. We ignore any manifest entries that are not supported.
+   *
+   * @param location   string      string version of manifest location
+   * @param manifest   json-object raw manifest data
+   * @returns manifest json-object a cleaned version of the manifest
+   */
+  validateManifest: function manifestRegistry_validateManifest(location, rawManifest) {
+    // anything in URLEntries will require same-origin policy
+    let URLEntries = ['workerURL', 'sidebarURL'];
+    // only items in validEntries will move into our cleaned manifest
+    let validEntries = ['iconURL', 'name'].concat(URLEntries);
+    let builtin = location.indexOf("resource:") == 0;
+    let origin;
+    if (builtin) {
+      // builtin manifests may have a couple other entries
+      validEntries = validEntries.push('contentPatchPath');
+      // and we trust a URLPrefix attribute as the "origin".
+      try {
+        origin = rawManifest.services.social.URLPrefix;
+      } catch (ex) {
+        pass; // we'll calculate it.
+      }
+    }
+    if (!origin) {
+      origin = Services.io.newURI(location, null, null).prePath;
+    }
+    // store the location we got the manifest from and the origin.
+    let manifest = {
+      location: location,
+      origin: origin
+    };
+    for (var k in rawManifest.services.social) {
+      if (validEntries.indexOf(k) >= 0) manifest[k] = rawManifest.services.social[k];
+    }
+    // resolve all URLEntries against the origin.
+    let originURI = Services.io.newURI(origin, null, null);
+    for each(let k in URLEntries) {
+      if (!manifest[k]) continue;
+      // shortcut - resource:// URIs don't get same-origin checks.
+      if (builtin && manifest[k].indexOf("resource:") == 0) continue;
+      // the url MUST resolve to origin
+      let url = originURI.resolve(manifest[k]);
+      if (url.indexOf(manifest.origin) != 0) {
+        throw new Error("manifest url origin mismatch " +manifest.origin+ " != " + manifest[k] +"\n")
+      }
+      manifest[k] = url; // store the resolved version
+    }
+    //dump("manifest "+JSON.stringify(manifest)+"\n");
+    return manifest;
+  },
+
+  importManifest: function manifestRegistry_importManifest(aDocument, location, rawManifest, systemInstall, callback) {
     //Services.console.logStringMessage("got manifest "+JSON.stringify(manifest));
-    let socialManifest = manifest.services.social;
-    socialManifest.enabled = true;
-    if (location.indexOf("resource:") == 0 && socialManifest.URLPrefix)
-      location = socialManifest.URLPrefix
+    let manifest = this.validateManifest(location, rawManifest);
+
+    // we want automatic updates to the manifest entry if we change our
+    // builtin manifest files.   We also want to allow the "real" provider
+    // to overwrite our builtin manifest, however we NEVER want a builtin
+    // manifest to overwrite something installed from the "real" provider
     function installManifest() {
-      manifest.origin = location; // make this an origin
-      // ensure remote installed social services cannot set contentPatchPath
-      manifest.contentPatchPath = undefined;
-      manifest.enabled = true;
-      ManifestDB.put(location, socialManifest);
-      registry().register(socialManifest);
-      // XXX notification of installation
+      ManifestDB.get(manifest.origin, function(key, item) {
+        // URLPrefix is the "magic" key in the manifest that says we are
+        // builtin as it is only valid from a resource:// location.
+        if (manifest.URLPrefix && item && !item.URLPrefix) {
+          // being passed a builtin and existing not builtin - ignore.
+          return;
+        }
+        manifest.enabled = true;
+        ManifestDB.put(manifest.origin, manifest);
+        registry().register(manifest);
+        if (callback) {
+          callback();
+        }
+      });
     }
 
-    if (userRequestedInstall) {
+    if (systemInstall) {
       installManifest();
     }
     else {
@@ -220,7 +286,7 @@ ManifestRegistry.prototype = {
     }
   },
 
-  loadManifest: function manifestRegistry_loadManifest(aDocument, url, userRequestedInstall) {
+  loadManifest: function manifestRegistry_loadManifest(aDocument, url, systemInstall) {
     // BUG 732264 error and edge case handling
     let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance(Ci.nsIXMLHttpRequest);
     xhr.open('GET', url, true);
@@ -230,7 +296,7 @@ ManifestRegistry.prototype = {
         if (xhr.status == 200 || xhr.status == 0) {
           //Services.console.logStringMessage("got response "+xhr.responseText);
           try {
-            self.importManifest(aDocument, url, JSON.parse(xhr.responseText), userRequestedInstall);
+            self.importManifest(aDocument, url, JSON.parse(xhr.responseText), systemInstall);
           }
           catch(e) {
             Cu.reportError("importManifest "+url+": "+e);
@@ -336,17 +402,9 @@ function ProviderRegistry() {
 
       if (sbrowser && sbrowser.contentDocument == doc) {
         let service = sbrowser.service? sbrowser.service : xulWindow.service;
-        if (service.workerURL)
+        if (service.workerURL) {
           service.attachToWindow(doc.defaultView);
-      // XXX dev code, allows us to load social panels into tabs and still
-      // call attachToWindow on them
-      //} else {
-      //  for each(let svc in this._providers) {
-      //    if ((doc.location+"").indexOf(svc.URLPrefix) == 0) {
-      //      svc.attachToWindow(doc.defaultView);
-      //      break;
-      //    }
-      //  };
+        }
       }
     }
     catch(e) {
@@ -459,8 +517,8 @@ ProviderRegistry.prototype = {
 
     ManifestDB.get(origin, function(key, manifest) {
       manifest.enabled = true;
-      ManifestDB.put(origin, manifest);
-      Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
+      ManifestDB.put(key, manifest);
+      Services.obs.notifyObservers(null, "social-service-manifest-changed", key);
     });
     provider.enabled = true;
     // if browsing is disabled we can't activate it!
@@ -484,8 +542,8 @@ ProviderRegistry.prototype = {
     // a manifest being updated by a provider loses this state!
     ManifestDB.get(origin, function(key, manifest) {
       manifest.enabled = false;
-      ManifestDB.put(origin, manifest);
-      Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
+      ManifestDB.put(key, manifest);
+      Services.obs.notifyObservers(null, "social-service-manifest-changed", key);
     });
 
     if (this._currentProvider && this._currentProvider == provider) {
@@ -553,7 +611,7 @@ ProviderRegistry.prototype = {
       Services.obs.notifyObservers(null, "social-browsing-current-service-changed", null);
     } else {
       for each(let provider in this._providers) {
-        provider.deactivate();
+        provider.shutdown();
       }
       this._currentProvider = null;
       Services.obs.notifyObservers(null, "social-browsing-disabled", null);

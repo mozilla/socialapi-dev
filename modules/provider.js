@@ -39,7 +39,6 @@ function SocialProvider(input) {
   this.name = input.name;
   this.workerURL = input.workerURL;
   this.sidebarURL = input.sidebarURL;
-  this.URLPrefix = input.URLPrefix;
   this.iconURL = input.iconURL;
   this.origin = input.origin;
   this.enabled = input.enabled;  // disabled services cannot be used
@@ -86,7 +85,7 @@ SocialProvider.prototype = {
     this._log("init");
     this.windowCreatorFn = windowCreatorFn;
   },
-  
+
   /**
    * shutdown
    *
@@ -94,6 +93,7 @@ SocialProvider.prototype = {
    * frameworker.
    */
   shutdown: function() {
+    closeWindowsForService(this);
     if (this._workerapi) {
       this._workerapi.shutdown();
       this._workerapi = null;
@@ -107,7 +107,7 @@ SocialProvider.prototype = {
     }
     this._active = false;
   },
-  
+
   /**
    * called by the ProviderRegistry to ensure the provider is initialized
    * and ready.
@@ -119,18 +119,7 @@ SocialProvider.prototype = {
       this._active = true;
     }
   },
-  
-  /**
-   * called by the ProviderRegistry to close down this provider.
-   */
-  deactivate: function() {
-    if (!this._active) return;
-    closeWindowsForService(this);
-    this._active = false;
-    // XXX is deactivate the same as shutdown?
-    this.shutdown();
-  },
-  
+
   /**
    * makeWorker
    *
@@ -153,13 +142,13 @@ SocialProvider.prototype = {
     }
     return frameworker.FrameWorker(this.workerURL, window);
   },
-  
+
   /**
    * attachToWindow
    *
    * loads sandboxed support functions and socialAPI into content panels for
    * this provider.
-   * 
+   *
    * @param {DOMWindow}
    */
   attachToWindow: function(targetWindow) {
@@ -223,7 +212,7 @@ SocialProvider.prototype = {
         self._log("Exception while closing worker: " + e);
       }
     }, false);
-  
+
   },
 
   setAmbientNotificationBackground: function(background) {
@@ -235,7 +224,7 @@ SocialProvider.prototype = {
     // if we already have one named, return that
     if (!this.ambientNotificationIcons) this.ambientNotificationIcons = {};
     if (this.ambientNotificationIcons[name]) {
-      return this.ambientNotificationIcons[name];      
+      return this.ambientNotificationIcons[name];
     }
     var icon = {
       setBackground: function(backgroundText) {
@@ -257,6 +246,6 @@ SocialProvider.prototype = {
 
   setAmbientNotificationPortrait: function(url) {
     this.ambientNotificationPortrait = url;
-    Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?    
+    Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
   }
 }
