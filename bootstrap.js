@@ -49,7 +49,7 @@ function loadSandbox(aPrincipal, aDocumentURL, aScripts, aPrototype) {
       Cu.reportError("Exception loading script " + aScriptURL + ": "+ e);
     }
   }
-  return sandbox 
+  return sandbox
 }
 
 
@@ -69,7 +69,7 @@ const OverlayManager = {
     Services.console.logStringMessage("init");
 
     let manifestURI = Services.io.newURI(aParams.resourceURI.resolve("./chrome.manifest"), null, null);
-  
+
     this.manifest = ChromeManifestParser.parseSync(manifestURI);
 
     // browse through our chrome.manifest and load up anything we may need
@@ -117,10 +117,10 @@ const OverlayManager = {
     let resURI = Services.io.newURI(aParams.resourceURI.resolve(resourcePath), null, null);
     res.setSubstitution(this.resourceName, resURI);
     this.resourceURI = Services.io.newURI("resource://"+this.resourceName+"/", null, null);
-    
+
     // properly register chrome/skin/locale URIs
     Cm.addBootstrappedManifestLocation(aParams.installPath);
-    
+
     // register our components
     for (let [cid, component] in Iterator(components)) {
       OverlayManager.addComponent(cid,
@@ -129,14 +129,14 @@ const OverlayManager = {
     }
 
     Services.wm.addListener(this);
-    
+
     // load any addon specific stuff not handled via manifest
     preload();
-    
+
     // load our overlays
     OverlayManager.addOverlays(this.overlays);
   },
-  
+
   unload: function() {
     Services.console.logStringMessage("unload");
     try {
@@ -184,24 +184,24 @@ const OverlayManager = {
           Services.prefs["set" + aType](aName, aValue);
         }
       });
-      
+
       // Remove our chrome registration
       Cm.removeBootstrappedManifestLocation(aParams.installPath)
-    
+
       // Clear our resource registration
       let res = Services.io.getProtocolHandler("resource").QueryInterface(Ci.nsIResProtocolHandler);
       res.setSubstitution(this.resourceName, null);
-    
+
       try {
         if (!Services.prefs.getBoolPref("extensions."+this.resourceName+".debug")) {
           return;
         }
-    
+
         // For testing invalidate the startup cache
         Services.obs.notifyObservers(null, "startupcache-invalidate", null);
       } catch (e) {
       }
-      
+
     } catch (e) {
       Cu.reportError("Exception during unload: "+ e);
     }
@@ -285,7 +285,7 @@ const OverlayManager = {
     }
 
     let targetDoc = aWindowEntry.window.document;
-    
+
     // load any stylesheets the overlay is defining into the xul document
     let elem = overlayDoc.firstChild;
     while (elem) {
@@ -395,13 +395,13 @@ const OverlayManager = {
         aWindowEntry.nodes.push(newElement);
       }
     }
-    
+
     // for a given overlay, load all the scripts into a single sandbox.
     // anything in the xul elements (commands, etc.) need to have some kind
     // of access into the sandbox, so the sandboxed scripts must set something
     // explicitly onto the window object.
     aWindowEntry.sandbox = loadSandbox(aWindowEntry.window, aDocData.overlay, scripts, aWindowEntry.window);
-    
+
     if ("OverlayListener" in aWindowEntry.sandbox && "load" in aWindowEntry.sandbox.OverlayListener) {
       try {
         aWindowEntry.sandbox.OverlayListener.load();
