@@ -71,6 +71,7 @@ SocialProvider.prototype = {
    * frameworker.
    */
   shutdown: function() {
+    closeWindowsForService(this);
     if (this._workerapi) {
       this._workerapi.shutdown();
       this._workerapi = null;
@@ -95,17 +96,6 @@ SocialProvider.prototype = {
       this._workerapi = new workerAPI(this.makeWorker(), this);
       this._active = true;
     }
-  },
-
-  /**
-   * called by the ProviderRegistry to close down this provider.
-   */
-  deactivate: function() {
-    if (!this._active) return;
-    closeWindowsForService(this);
-    this._active = false;
-    // XXX is deactivate the same as shutdown?
-    this.shutdown();
   },
 
   /**

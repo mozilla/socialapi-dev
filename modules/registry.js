@@ -608,7 +608,7 @@ ProviderRegistry.prototype = {
       Services.obs.notifyObservers(null, "social-browsing-current-service-changed", null);
     } else {
       for each(let provider in this._providers) {
-        provider.deactivate();
+        provider.shutdown();
       }
       this._currentProvider = null;
       Services.obs.notifyObservers(null, "social-browsing-disabled", null);
