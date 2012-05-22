@@ -14,7 +14,7 @@ function SocialRecommendButton() {
     onLocationChange: function(aWebProgress, aRequest, aLocation, aFlags) {
       let topLevel = aWebProgress.DOMWindow == gBrowser.contentWindow;
       if (topLevel) {
-        self.updatePrompt(aLocation.spec);
+        self.updatePrompt();
       }
     }
   });
@@ -30,8 +30,7 @@ SocialRecommendButton.prototype = {
       this.worker = null;
     }
   },
-  updatePrompt: function(url) {
-    // XXX Dont send the url until we deal with user control
+  updatePrompt: function() {
     this.worker.port.postMessage({topic: "social.user-recommend-prompt"});
   },
   setProvider: function(aProvider) {
@@ -55,7 +54,7 @@ SocialRecommendButton.prototype = {
         widget.setAttribute("src", data.img);
       };
     };
-    this.updatePrompt(gBrowser.currentLocation.spec);
+    this.updatePrompt();
   },
   oncommand: function(event) {
     let url = window.gBrowser.currentURI.cloneIgnoringRef().spec;
