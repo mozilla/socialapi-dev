@@ -267,7 +267,7 @@ const OverlayManager = {
 
   loadDocumentOverlay: function(aWindowEntry, aDocData) {
     let xulRuntime = Cc["@mozilla.org/xre/app-info;1"].getService(Ci.nsIXULRuntime);
-    if (aDocData.OS && aDocData.OS != xulRuntime.OS) {
+    if (aDocData.os && aDocData.os != xulRuntime.OS) {
       return;
     }
     Services.console.logStringMessage("Loading document overlay " + aDocData.overlay);
