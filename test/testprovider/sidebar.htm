@@ -1,0 +1,101 @@
+<style>
+.result {
+	font:10pt Arial;
+}
+.error {
+	color:#990000;
+}
+.failure {
+	color:#999900;
+}
+.ok {
+	color:black;
+}
+.msg {
+	font:8pt Arial;
+}
+#feedback {
+	font:8pt Arial;	
+}
+</style>
+This is the test provider sidebar.
+
+<div id="result">
+</div>
+
+<div id="feedback">
+</div>
+
+<button id="runTestsButton">Run Tests</button>
+<script>
+
+window.navigator.mozSocial.getWorker().port.onmessage = function(e) {
+  var topic = e.data.topic;
+  var data = e.data.data;
+
+  if (topic.indexOf("recommendClicked") == 0) {
+    document.getElementById("feedback").innerHTML = "Recommend clicked for " + data.url;
+  } 
+}
+
+function assert(val) {
+	if (!assert) throw {msg:"Assertion failed: " +val};
+}
+
+function assertDefined(val) {
+	if (typeof val == "undefined") throw {msg:"Assertion failed: " + val + " is not defined"};
+}
+
+var TESTS = [
+	function socialObjectExists() {
+		assertDefined(window.navigator.mozSocial)
+	},
+	function socialObjectHasWorker() {
+		assertDefined(window.navigator.mozSocial.getWorker)
+	}
+];
+
+function runTests()
+{
+	var testResults = [];
+	for each (var aTest in TESTS) 
+	{
+		try {
+			aTest();
+			testResults.push( {
+				status:"ok",
+				name: aTest.name
+			})
+		} catch (e) {
+			testResults.push( {
+				status:"error",
+				name: aTest.name,
+				msg: ""+e.msg,
+				stack: e.stack
+			})
+		}
+	}
+	var s = "";
+	for each (var result in testResults)
+	{
+		s += "<div class='result ";
+		if (result.status == "error") s+= "error";
+		else if (result.status == "failure") s+= "failure";
+		else if (result.status == "ok") s+= "ok";
+		s += "'>";
+		s += result.name;
+		
+		if (result.status == "error") s+= ": Error";
+		else if (result.status == "failure") s+= ": Fail";
+		else if (result.status == "ok") s+= ": OK";
+		
+		if (result.msg) s += "<div class='msg'>" + result.msg + "</div>";
+		s += "</div>";
+	}
+	document.getElementById("result").innerHTML = s;
+	// return the test results for the benefit of the mochitests
+	return testResults;
+}
+
+document.getElementById("runTestsButton").addEventListener("click", runTests, false);
+</script>
