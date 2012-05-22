@@ -227,7 +227,7 @@ ManifestRegistry.prototype = {
     return manifest;
   },
 
-  importManifest: function manifestRegistry_importManifest(aDocument, location, rawManifest, systemInstall) {
+  importManifest: function manifestRegistry_importManifest(aDocument, location, rawManifest, systemInstall, callback) {
     //Services.console.logStringMessage("got manifest "+JSON.stringify(manifest));
     let manifest = this.validateManifest(location, rawManifest);
 
@@ -246,6 +246,8 @@ ManifestRegistry.prototype = {
         manifest.enabled = true;
         ManifestDB.put(manifest.origin, manifest);
         registry().register(manifest);
+        if (callback) {
+          callback();
         }
       });
     }
