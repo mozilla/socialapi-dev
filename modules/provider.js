@@ -59,6 +59,28 @@ SocialProvider.prototype = {
     Services.console.logStringMessage(new Date().toISOString() + " [" + this.origin + " service]: " + msg);
   },
 
+  get notificationsPermitted() {
+    try {
+      var prefs = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
+      var val = prefs.getBoolPref("allow-notifications." + this.origin);
+      if (val) return val;
+      return false;
+    }
+    catch(e) {
+      return false;
+    }
+  },
+
+  set notificationsPermitted(permitted) {
+    try {
+      var prefs = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
+      var val = prefs.setBoolPref("allow-notifications." + this.origin, permitted);
+    }
+    catch(e) {
+      Cu.reportError(e);
+    }
+  },
+
   init: function(windowCreatorFn) {
     if (!this.enabled) return;
     this._log("init");

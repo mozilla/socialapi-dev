@@ -150,8 +150,10 @@ workerAPI.prototype = {
       let onhide = function() {
         n = null;
       }
-      n = notification.Notification(icon, title, body, id, onclick, onhide);
-      n.show();
+      if (this.service.notificationsPermitted) {
+        n = notification.Notification(icon, title, body, id, onclick, onhide);
+        n.show();
+      }
     },
     'social.ambient-notification-update': function(worker, data) {
       let ani = this.service.createAmbientNotificationIcon(data.name);
