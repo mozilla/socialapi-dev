@@ -105,7 +105,7 @@ function createServiceWindow(toURL, name, options, withService, title, readyCall
 
     onReady: function() {
       try {
-        if ((aWind.browser.contentWindow.location.href).indexOf(withService.URLPrefix) != 0) {
+        if ((aWind.browser.contentWindow.location.href).indexOf(withService.origin) != 0) {
           return;
         }
         aWind.browser.service = withService;

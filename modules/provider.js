@@ -39,7 +39,6 @@ function SocialProvider(input) {
   this.name = input.name;
   this.workerURL = input.workerURL;
   this.sidebarURL = input.sidebarURL;
-  this.URLPrefix = input.URLPrefix;
   this.iconURL = input.iconURL;
   this.origin = input.origin;
   this.enabled = input.enabled;  // disabled services cannot be used

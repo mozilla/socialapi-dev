@@ -175,10 +175,8 @@ ManifestRegistry.prototype = {
    *
    * Given the manifest data, create a clean version of the manifest.  Ensure
    * any URLs are same-origin (proto+host+port).  If the manifest is a builtin,
-   * URLs must either be resource or same-origin resolved against URLPrefix.
-   * We ignore any manifest entries that are not supported.  favicons are often
-   * at different locations than origin, eg. google has theirs on gstatic.com,
-   * so we do not enforce same-origin for the favicon.
+   * URLs must either be resource or same-origin resolved against the manifest
+   * origin. We ignore any manifest entries that are not supported.
    *
    * @param location   string      string version of manifest location
    * @param manifest   json-object raw manifest data
@@ -190,34 +188,40 @@ ManifestRegistry.prototype = {
     // only items in validEntries will move into our cleaned manifest
     let validEntries = ['iconURL', 'name'].concat(URLEntries);
     let builtin = location.indexOf("resource:") == 0;
+    let origin;
     if (builtin) {
       // builtin manifests may have a couple other entries
-      validEntries = validEntries.concat('URLPrefix', 'contentPatchPath');
+      validEntries = validEntries.push('contentPatchPath');
+      // and we trust a URLPrefix attribute as the "origin".
+      try {
+        origin = rawManifest.services.social.URLPrefix;
+      } catch (ex) {
+        pass; // we'll calculate it.
+      }
     }
-    // store the location we got the manifest from
+    if (!origin) {
+      origin = Services.io.newURI(location, null, null).prePath;
+    }
+    // store the location we got the manifest from and the origin.
     let manifest = {
-      location: location
+      location: location,
+      origin: origin
     };
     for (var k in rawManifest.services.social) {
       if (validEntries.indexOf(k) >= 0) manifest[k] = rawManifest.services.social[k];
     }
-    // we've saved original location in manifest above, switch our location
-    // temporarily so we can correctly resolve urls for our builtins
-    if (builtin && manifest.URLPrefix) {
-      location = manifest.URLPrefix;
-    }
-    // full proto+host+port origin for url resolving
-    manifest.origin = Services.io.newURI(location, null, null).prePath;
-    // make locationURI, and resolve all URLEntries against that.
-    let originURI = Services.io.newURI(manifest.origin, null, null);
+    // resolve all URLEntries against the origin.
+    let originURI = Services.io.newURI(origin, null, null);
     for each(let k in URLEntries) {
       if (!manifest[k]) continue;
+      // shortcut - resource:// URIs don't get same-origin checks.
       if (builtin && manifest[k].indexOf("resource:") == 0) continue;
-
       // the url MUST resolve to origin
       let url = originURI.resolve(manifest[k]);
-      if (url.indexOf(manifest.origin) < 0)
+      if (url.indexOf(manifest.origin) != 0) {
         throw new Error("manifest url origin mismatch " +manifest.origin+ " != " + manifest[k] +"\n")
+      }
+      manifest[k] = url; // store the resolved version
     }
     //dump("manifest "+JSON.stringify(manifest)+"\n");
     return manifest;
@@ -231,22 +235,17 @@ ManifestRegistry.prototype = {
     // builtin manifest files.   We also want to allow the "real" provider
     // to overwrite our builtin manifest, however we NEVER want a builtin
     // manifest to overwrite something installed from the "real" provider
-    //
-    // if the original manifest is a builtin resource, allow overwrite
-    // otherwise, if the manifest.location is same origin allow overwrite
     function installManifest() {
       ManifestDB.get(manifest.origin, function(key, item) {
-        if (!item || !item.location || /* older pre-release manifests did not store location */
-            item.location.indexOf("resource:") == 0 ||
-            manifest.location.indexOf(item.origin) == 0) {
-          // XXX temporary debug output
-          if (item)
-            dump("overwriting manifest entry for "+key+"\n");
-          else
-            dump("adding manifest entry for"+key+"\n");
-          manifest.enabled = true;
-          ManifestDB.put(manifest.origin, manifest);
-          registry().register(manifest);
+        // URLPrefix is the "magic" key in the manifest that says we are
+        // builtin as it is only valid from a resource:// location.
+        if (manifest.URLPrefix && item && !item.URLPrefix) {
+          // being passed a builtin and existing not builtin - ignore.
+          return;
+        }
+        manifest.enabled = true;
+        ManifestDB.put(manifest.origin, manifest);
+        registry().register(manifest);
         }
       });
     }
@@ -401,17 +400,9 @@ function ProviderRegistry() {
 
       if (sbrowser && sbrowser.contentDocument == doc) {
         let service = sbrowser.service? sbrowser.service : xulWindow.service;
-        if (service.workerURL)
+        if (service.workerURL) {
           service.attachToWindow(doc.defaultView);
-      // XXX dev code, allows us to load social panels into tabs and still
-      // call attachToWindow on them
-      //} else {
-      //  for each(let svc in this._providers) {
-      //    if ((doc.location+"").indexOf(svc.URLPrefix) == 0) {
-      //      svc.attachToWindow(doc.defaultView);
-      //      break;
-      //    }
-      //  };
+        }
       }
     }
     catch(e) {
