@@ -338,8 +338,9 @@ ClientPort.prototype = {
  * @param {String} url
  * @returns {Object} object containing a port and terminate function
  */
-function FrameWorker(url, clientWindow) {
-  log("creating worker for " + url);
+function FrameWorker(url, clientWindow, name) {
+  let workerName = (name ? name : url);
+  log("creating worker for " + workerName);
   // first create the client port we are going to use.  Laster we will
   // message the worker to create the worker port.
   let portid = _nextPortId++;
@@ -347,7 +348,7 @@ function FrameWorker(url, clientWindow) {
 
   let workerInfo = workerInfos[url];
   if (!workerInfo) {
-    log("creating a new worker for " + url);
+    log("creating a new worker for " + workerName);
     let appShell = Cc["@mozilla.org/appshell/appShellService;1"]
                     .getService(Ci.nsIAppShellService);
     let hiddenDOMWindow = appShell.hiddenDOMWindow;
@@ -449,7 +450,7 @@ function FrameWorker(url, clientWindow) {
         sandbox.importFunction(workerWindow.bufferToArrayHack, "bufferToArrayHack");
 
         workerWindow.addEventListener("load", function() {
-          log("got worker onload event for " + url);
+          log("got worker onload event for " + workerName);
           // the iframe has loaded the js file as text - first inject the magic
           // port-handling code into the sandbox.
           function getProtoSource(ob) {
@@ -483,7 +484,7 @@ function FrameWorker(url, clientWindow) {
             let scriptText = workerWindow.document.body.textContent;
             Cu.evalInSandbox(scriptText, sandbox, "1.8", workerWindow.location.href, 1);
           } catch (e) {
-            Cu.reportError("Error evaluating worker script for " + url + ": " + e + "; " +
+            Cu.reportError("Error evaluating worker script for " + workerName + ": " + e + "; " +
                 (e.lineNumber ? ("Line #" + e.lineNumber) : "") +
                 (e.stack ? ("\n" + e.stack) : ""));
             return;
@@ -493,7 +494,7 @@ function FrameWorker(url, clientWindow) {
           // save the sandbox somewhere convenient before we connect.
           frame.sandbox = sandbox;
           let pending = workerInfo.pendingPorts;
-          log("worker window " + url + " loaded - connecting " + pending.length + " ports");
+          log("worker window " + workerName + " loaded - connecting " + pending.length + " ports");
           while (pending.length) {
             let port = pending.shift();
             if (port._portid) { // may have already been closed!
@@ -538,7 +539,7 @@ function FrameWorker(url, clientWindow) {
   // a callback to be made in the worker when this happens - it all just dies.
   // TODO: work out a sane impl for 'terminate'.
   function terminate() {
-    log("worker at " + url + " terminating");
+    log("worker at " + workerName + " terminating");
     // closing the port also removes it from workerInfo.ports, so we don't
     // iterate over that directly, just over the port IDs.
     for each (let portid in Object.keys(workerInfo.ports)) {
