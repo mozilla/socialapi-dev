@@ -2,10 +2,10 @@
   "services": {
     "social": {
       "name": "Test Provider",
-      "iconURL": "browser/browser/features/socialdev/test/testprovider/icon.png",
-      "workerURL": "browser/browser/features/socialdev/test/testprovider/worker.js",
-      "sidebarURL": "browser/browser/features/socialdev/test/testprovider/sidebar.htm",
-      "URLPrefix": "browser/browser/features/socialdev/test/testprovider/"
+      "iconURL": "icon.png",
+      "workerURL": "worker.js",
+      "sidebarURL": "sidebar.htm",
+      "URLPrefix": "http://mochi.test:8888/browser/browser/features/socialdev/test/testprovider/"
     }
   }
 }
