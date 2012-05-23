@@ -139,7 +139,7 @@ function social_init() {
   };
 
   // watch for when browser disables chrome in tabs, and hide the social sidebar
-  if (MozMutationObserver) {
+  try {
     var observer = new MozMutationObserver(function(mutations) {
       mutations.forEach(function(mutation) {
         if (mutation.type === 'attributes') {
@@ -151,7 +151,8 @@ function social_init() {
     observer.observe(document.documentElement, {
       attributes: true, attributeFilter: ["disablechrome", "chromehidden"]
     });
-  } else {
+  } catch(e) {
+    Cu.reportError("MozMutationObserver not available, falling back to DOMAttrModified");
     // bug 756674 not sure what version MozMutationObserver became available, keep the fallback
     document.addEventListener('DOMAttrModified', function(e) {
       if (e.target == document.documentElement &&
