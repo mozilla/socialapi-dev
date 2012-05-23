@@ -183,42 +183,39 @@ ManifestRegistry.prototype = {
    * @returns manifest json-object a cleaned version of the manifest
    */
   validateManifest: function manifestRegistry_validateManifest(location, rawManifest) {
-    // anything in URLEntries will require same-origin policy
-    let URLEntries = ['workerURL', 'sidebarURL'];
+    // anything in URLEntries will require same-origin policy, though we
+    // special-case iconURL to allow icons from CDN
+    let URLEntries = ['iconURL', 'workerURL', 'sidebarURL'];
     // only items in validEntries will move into our cleaned manifest
-    let validEntries = ['iconURL', 'name'].concat(URLEntries);
+    let validEntries = ['name'].concat(URLEntries);
     let builtin = location.indexOf("resource:") == 0;
-    let origin;
     if (builtin) {
       // builtin manifests may have a couple other entries
-      validEntries = validEntries.push('contentPatchPath');
-      // and we trust a URLPrefix attribute as the "origin".
-      try {
-        origin = rawManifest.services.social.URLPrefix;
-      } catch (ex) {
-        pass; // we'll calculate it.
-      }
-    }
-    if (!origin) {
-      origin = Services.io.newURI(location, null, null).prePath;
+      validEntries = validEntries.concat('URLPrefix', 'contentPatchPath');
     }
     // store the location we got the manifest from and the origin.
     let manifest = {
-      location: location,
-      origin: origin
+      location: location
     };
     for (var k in rawManifest.services.social) {
       if (validEntries.indexOf(k) >= 0) manifest[k] = rawManifest.services.social[k];
     }
-    // resolve all URLEntries against the origin.
-    let originURI = Services.io.newURI(origin, null, null);
+    // we've saved original location in manifest above, switch our location
+    // temporarily so we can correctly resolve urls for our builtins
+    if (builtin && manifest.URLPrefix) {
+      location = manifest.URLPrefix;
+    }
+    // full proto+host+port origin for resolving same-origin urls
+    manifest.origin = Services.io.newURI(location, null, null).prePath;
+    // resolve all URLEntries against the manifest location.
+    let basePathURI = Services.io.newURI(location, null, null);
     for each(let k in URLEntries) {
       if (!manifest[k]) continue;
       // shortcut - resource:// URIs don't get same-origin checks.
       if (builtin && manifest[k].indexOf("resource:") == 0) continue;
-      // the url MUST resolve to origin
-      let url = originURI.resolve(manifest[k]);
-      if (url.indexOf(manifest.origin) != 0) {
+      // resolve the url to the basepath to handle relative urls, then verify same-origin, we'll let iconURL be on a different origin
+      let url = basePathURI.resolve(manifest[k]);
+      if (k != 'iconURL' && url.indexOf(manifest.origin) != 0) {
         throw new Error("manifest url origin mismatch " +manifest.origin+ " != " + manifest[k] +"\n")
       }
       manifest[k] = url; // store the resolved version
@@ -517,8 +514,8 @@ ProviderRegistry.prototype = {
 
     ManifestDB.get(origin, function(key, manifest) {
       manifest.enabled = true;
-      ManifestDB.put(key, manifest);
-      Services.obs.notifyObservers(null, "social-service-manifest-changed", key);
+      ManifestDB.put(origin, manifest);
+      Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
     });
     provider.enabled = true;
     // if browsing is disabled we can't activate it!
@@ -542,8 +539,8 @@ ProviderRegistry.prototype = {
     // a manifest being updated by a provider loses this state!
     ManifestDB.get(origin, function(key, manifest) {
       manifest.enabled = false;
-      ManifestDB.put(key, manifest);
-      Services.obs.notifyObservers(null, "social-service-manifest-changed", key);
+      ManifestDB.put(origin, manifest);
+      Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
     });
 
     if (this._currentProvider && this._currentProvider == provider) {

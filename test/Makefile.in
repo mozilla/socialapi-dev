@@ -1,0 +1,40 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
+
+DEPTH     = ../../../..
+topsrcdir = @top_srcdir@
+srcdir    = @srcdir@
+VPATH     = @srcdir@
+relativesrcdir  = browser/features/socialdev/test
+
+include $(DEPTH)/config/autoconf.mk
+include $(topsrcdir)/config/rules.mk
+
+_BROWSER_TEST_FILES = \
+  browser_registry.js \
+  browser_sidebar.js \
+  browser_frameworker.js \
+  browser_provider.js \
+  head.js \
+  $(NULL)
+
+_BROWSER_TEST_PROVIDER_FILES = \
+  testprovider/app.manifest \
+  testprovider/icon.png \
+  testprovider/notification1.htm \
+  testprovider/notification1.png \
+  testprovider/notification2.htm \
+  testprovider/notification2.png \
+  testprovider/portrait.png \
+  testprovider/recommend.png \
+  testprovider/sidebar.htm \
+  testprovider/window.htm \
+  testprovider/worker.js \
+  $(NULL)
+
+libs:: $(_BROWSER_TEST_FILES)
+	$(INSTALL) $(foreach f,$^,"$f") $(DEPTH)/_tests/testing/mochitest/browser/$(relativesrcdir) 
+
+libs:: $(_BROWSER_TEST_PROVIDER_FILES)
+	$(INSTALL) $(foreach f,$^,"$f") $(DEPTH)/_tests/testing/mochitest/browser/$(relativesrcdir)/testprovider
