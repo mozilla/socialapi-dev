@@ -12,6 +12,7 @@ include $(DEPTH)/config/autoconf.mk
 include $(topsrcdir)/config/rules.mk
 
 _BROWSER_TEST_FILES = \
+  browser_manifest.js \
   browser_registry.js \
   browser_sidebar.js \
   browser_frameworker.js \
@@ -34,7 +35,7 @@ _BROWSER_TEST_PROVIDER_FILES = \
   $(NULL)
 
 libs:: $(_BROWSER_TEST_FILES)
-	$(INSTALL) $(foreach f,$^,"$f") $(DEPTH)/_tests/testing/mochitest/browser/$(relativesrcdir) 
+	$(INSTALL) $(foreach f,$^,"$f") $(DEPTH)/_tests/testing/mochitest/browser/$(relativesrcdir)
 
 libs:: $(_BROWSER_TEST_PROVIDER_FILES)
 	$(INSTALL) $(foreach f,$^,"$f") $(DEPTH)/_tests/testing/mochitest/browser/$(relativesrcdir)/testprovider

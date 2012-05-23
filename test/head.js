@@ -5,7 +5,7 @@ Cu.import("resource://gre/modules/Services.jsm");
 // for other possibly origins we could use.
 // XXX - see bug 756021 - this origin is almost certainly wrong - it should
 // include the protocol and port.
-const TEST_PROVIDER_ORIGIN = "http://mochi.test:8888";
+const TEST_PROVIDER_ORIGIN = "https://example.com";
 var TEST_PROVIDER_MANIFEST = TEST_PROVIDER_ORIGIN + "/browser/browser/features/socialdev/test/testprovider/app.manifest";
 
 // Helpers for the sidebar.
@@ -73,7 +73,7 @@ function readManifestFromChrome(url) {
         break;
     }
     data = data + chunk;
-  }  
+  }
   return data;
 }
 
@@ -87,11 +87,15 @@ function installTestProvider(callback) {
 }
 
 function removeTestProvider() {
+  removeProvider(TEST_PROVIDER_ORIGIN);
+}
+
+function removeProvider(origin, cb) {
 // avoid test failure due to: leaked window property: ManifestDB
   let module = {}
   Cu.import("resource://socialdev/modules/manifestDB.jsm", module);
   let ManifestDB = module.ManifestDB;
-  ManifestDB.remove(TEST_PROVIDER_ORIGIN, function() {});
+  ManifestDB.remove(origin, cb);
 }
 
 // a helpers for checking observer notifications.
@@ -178,4 +182,3 @@ function runTests(tests, cbPreTest, cbPostTest) {
   }
   runNextTest();
 }
-

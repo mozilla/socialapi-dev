@@ -5,7 +5,7 @@
       "iconURL": "icon.png",
       "workerURL": "worker.js",
       "sidebarURL": "sidebar.htm",
-      "URLPrefix": "http://mochi.test:8888/browser/browser/features/socialdev/test/testprovider/"
+      "URLPrefix": "https://example.com/browser/browser/features/socialdev/test/testprovider/"
     }
   }
 }
