@@ -12,8 +12,6 @@ function test() {
 
   registerCleanupFunction(function() {
     oc.terminate();
-    r.enabled = false;
-    removeTestProvider();
   });
 
   is(window.social.enabled, false, "social should be disabled on first run");

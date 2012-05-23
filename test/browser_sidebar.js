@@ -11,8 +11,6 @@ function test() {
 
   registerCleanupFunction(function() {
     oc.terminate();
-    r.enabled = false;
-    removeTestProvider();
   });
 
   waitForExplicitFinish();

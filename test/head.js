@@ -36,6 +36,26 @@ function resetPrefs() {
   tmp.setDefaultPrefs();
 }
 
+function resetSocial() {
+  // ACK - this is most useful via registerCleanupFunction, but it doesn't
+  // have a concept of async - so no callback arg.
+  // reset the entire social world back to the state it is on a "clean" first
+  // startup - ie, all UI elements and prefs.
+  if (isSidebarVisible()) {
+    window.social_sidebar_toggle();
+  };
+  registry().enabled = false;
+  // all providers get nuked - we reach into the impl here...
+  let providers = registry()._providers;
+  for (let i=0; i<providers.length; i++) {
+      ManifestDB.remove(providers[i].origin, function() {});
+  }
+  resetPrefs();
+}
+
+// ALL tests here want a clean state.
+registerCleanupFunction(resetSocial);
+
 // Helpers for the "test provider"
 function readManifestFromChrome(url) {
   let ioService = Cc["@mozilla.org/network/io-service;1"]
@@ -102,7 +122,8 @@ observerChecker.prototype = {
     }
     is(this.observed.length, expected.length, "check expected number of observations");
     for (let i = 0; i < expected.length; i++) {
-      is(this.observed[i].topic, expected[i].topic, "check observation " + i);
+      let obtopic = this.observed[i] ? this.observed[i].topic : "<nothing observed>";
+      is(obtopic, expected[i].topic, "check observation " + i);
       // todo: add subject etc checks?
     }
     this.observed = [];
@@ -117,10 +138,17 @@ observerChecker.prototype = {
 // test = {
 //   foo: function(cbnext) {... cbnext();}
 // }
-function runTests(tests) {
-  resetPrefs(); // all tests want the default prefs
+function runTests(tests, cbPreTest, cbPostTest) {
+  resetPrefs(); // all tests want the default prefs to start.
   waitForExplicitFinish();
   let testIter = Iterator(tests);
+
+  if (cbPreTest === undefined) {
+    cbPreTest = function(cb) {cb()};
+  }
+  if (cbPostTest === undefined) {
+    cbPostTest = function(cb) {cb()};
+  }
 
   let runNextTest = function() {
     let name, func;
@@ -134,16 +162,18 @@ function runTests(tests) {
     // We run on a timeout as the frameworker also makes use of timeouts, so
     // this helps keep the debug messages sane.
     window.setTimeout(function() {
-      info("running test worker " + name);
-      try {
-        func(function() {
-          ok(true, "worker test " + name + " passed");
-          runNextTest();
-        });
-      } catch (ex) {
-        ok(false, "worker test " + name + " failed: " + ex.toString());
-        runNextTest();
+      function cleanupAndRunNextTest() {
+        cbPostTest(runNextTest);
       }
+      cbPreTest(function() {
+        info("running test worker " + name);
+        try {
+          func.call(tests, cleanupAndRunNextTest);
+        } catch (ex) {
+          ok(false, "worker test " + name + " failed: " + ex.toString());
+          cleanupAndRunNextTest();
+        }
+      })
     }, 0)
   }
   runNextTest();

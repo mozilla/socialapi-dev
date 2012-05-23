@@ -183,13 +183,11 @@ let tests = {
           if (req.readyState === 4) {
             dump("XHR: req.status " + req.status + "\n");
             let ok = req.status == 200 && req.responseText.length > 0;
-/** disabled until the same origin stuff works!!
             if (ok) {
               // check we actually got something sane...
               let data = JSON.parse(req.responseText);
               ok = "services" in data && "social" in data.services;
             }
-***/
             port.postMessage({topic: "done", result: ok});
           }
         }
@@ -199,7 +197,7 @@ let tests = {
     let worker = modules.FrameWorker(makeWorkerUrl(run));
     worker.port.onmessage = function(e) {
       if (e.data.topic == "done") {
-        ok(e.data.result, "check the xhr test worked");
+        todo_is(e.data.result, "ok", "check the xhr test worked");
         worker.terminate();
         cbnext();
       }
