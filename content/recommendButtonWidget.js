@@ -34,7 +34,10 @@ SocialRecommendButton.prototype = {
     this.worker.port.postMessage({topic: "social.user-recommend-prompt"});
   },
   setProvider: function(aProvider) {
-    let self = this;
+    // ensure the old service data isn't there while we wait...
+    let widget = document.getElementById("social-recommend-button");
+    widget.setAttribute("tooltiptext", "");
+    widget.setAttribute("src", "");
     // maybe just swapping providers; close old port.
     if (this.worker) {
       this.worker.port.close();
@@ -43,10 +46,6 @@ SocialRecommendButton.prototype = {
     if (!this.worker) {
       return;
     }
-    let widget = document.getElementById("social-recommend-button");
-    // ensure the old service data isn't there while we wait...
-    widget.setAttribute("tooltiptext", "");
-    widget.setAttribute("src", "");
     this.worker.port.onmessage = function(evt) {
       if (evt.data.topic === 'social.user-recommend-prompt-response') {
         let data = evt.data.data;
