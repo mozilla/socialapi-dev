@@ -283,7 +283,7 @@ ManifestRegistry.prototype = {
     }
   },
 
-  loadManifest: function manifestRegistry_loadManifest(aDocument, url, systemInstall) {
+  loadManifest: function manifestRegistry_loadManifest(aDocument, url, systemInstall, callback) {
     // BUG 732264 error and edge case handling
     let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance(Ci.nsIXMLHttpRequest);
     xhr.open('GET', url, true);
@@ -293,10 +293,11 @@ ManifestRegistry.prototype = {
         if (xhr.status == 200 || xhr.status == 0) {
           //Services.console.logStringMessage("got response "+xhr.responseText);
           try {
-            self.importManifest(aDocument, url, JSON.parse(xhr.responseText), systemInstall);
+            self.importManifest(aDocument, url, JSON.parse(xhr.responseText), systemInstall, callback);
           }
           catch(e) {
             Cu.reportError("importManifest "+url+": "+e);
+            callback();
           }
         }
         else {
