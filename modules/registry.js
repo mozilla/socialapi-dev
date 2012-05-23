@@ -509,6 +509,9 @@ ProviderRegistry.prototype = {
       return false;
     }
 
+    // Don't start up again if we're already enabled
+    if (provider.enabled) return true;
+
     ManifestDB.get(origin, function(key, manifest) {
       manifest.enabled = true;
       ManifestDB.put(origin, manifest);
