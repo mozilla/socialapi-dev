@@ -242,7 +242,7 @@ AbstractPort.prototype = {
     this._postControlMessage("port-close");
     // and clean myself up.
     this._handler = null;
-    this._pendingMessagesIncoming = null;
+    this._pendingMessagesIncoming = [];
     this._portid = null;
   }
 }
