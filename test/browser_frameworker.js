@@ -21,8 +21,8 @@ let tests = {
         }
       }
     }
-  
-    let worker = modules.FrameWorker(makeWorkerUrl(run));
+
+    let worker = modules.FrameWorker(makeWorkerUrl(run), undefined, "testSimple");
     worker.port.onmessage = function(e) {
       if (e.data.topic == "pong") {
         worker.terminate();
@@ -40,8 +40,8 @@ let tests = {
         port.postMessage({topic: "oh hai"});
       }
     }
-  
-    let worker = modules.FrameWorker(makeWorkerUrl(run));
+
+    let worker = modules.FrameWorker(makeWorkerUrl(run), undefined, "testEarlyClose");
     worker.port.close();
     worker.terminate();
     cbnext();
@@ -70,8 +70,8 @@ let tests = {
       }
     }
     let workerurl = makeWorkerUrl(run);
-    let worker1 = modules.FrameWorker(workerurl);
-    let worker2 = modules.FrameWorker(workerurl);
+    let worker1 = modules.FrameWorker(workerurl, undefined, "testPortClosingMessage worker1");
+    let worker2 = modules.FrameWorker(workerurl, undefined, "testPortClosingMessage worker2");
     worker2.port.onmessage = function(e) {
       if (e.data.topic == "connected") {
         // both ports connected, so close the first.
@@ -112,7 +112,7 @@ let tests = {
         }
       }
     }
-    let worker = modules.FrameWorker(makeWorkerUrl(run), fakeWindow);
+    let worker = modules.FrameWorker(makeWorkerUrl(run), fakeWindow, "testPrototypes");
     worker.port.onmessage = function(e) {
       if (e.data.topic == "hello" && e.data.data.somextrafunction) {
         worker.terminate();
@@ -152,7 +152,7 @@ let tests = {
         }
       }
     }
-    let worker = modules.FrameWorker(makeWorkerUrl(run));
+    let worker = modules.FrameWorker(makeWorkerUrl(run), undefined, "testArray");
     worker.port.onmessage = function(e) {
       if (e.data.topic == "result") {
         is(e.data.reason, "ok", "check the array worked");
@@ -167,8 +167,12 @@ let tests = {
     let run = function() {
       onconnect = function(e) {
         let port = e.ports[0];
-      
-        let req = new XMLHttpRequest();
+        let req;
+        try {
+          req = new XMLHttpRequest();
+        } catch(e) {
+          port.postMessage({topic: "done", result: "FAILED to create XHR object, " + e.toString() });
+        }
         if (req === undefined) { // until bug 756173 is fixed...
           port.postMessage({topic: "done", result: "FAILED to create XHR object"});
           return;
@@ -185,8 +189,12 @@ let tests = {
             let ok = req.status == 200 && req.responseText.length > 0;
             if (ok) {
               // check we actually got something sane...
-              let data = JSON.parse(req.responseText);
-              ok = "services" in data && "social" in data.services;
+              try {
+                let data = JSON.parse(req.responseText);
+                ok = "services" in data && "social" in data.services;
+              } catch(e) {
+                ok = e.toString();
+              }
             }
             port.postMessage({topic: "done", result: ok});
           }
@@ -194,7 +202,7 @@ let tests = {
         req.send(null);
       }
     }
-    let worker = modules.FrameWorker(makeWorkerUrl(run));
+    let worker = modules.FrameWorker(makeWorkerUrl(run), undefined, "testXHR");
     worker.port.onmessage = function(e) {
       if (e.data.topic == "done") {
         todo_is(e.data.result, "ok", "check the xhr test worked");
