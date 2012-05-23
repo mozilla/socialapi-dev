@@ -47,5 +47,17 @@ let tests = {
       is(manifest, undefined, "manifest validation with bad origin should fail");
       cbnext();
     });
+  },
+  testManifestLoad: function(cbnext) {
+    let url = TEST_PROVIDER_MANIFEST;
+    let r = registry();
+    r.manifestRegistry.loadManifest(null, url, true, function() {
+      let origin = Services.io.newURI(url, null, null).prePath;
+      let provider = r.get(origin);
+      isnot(provider, undefined, "manifest loading via XHR");
+      removeProvider(origin, function() {
+        cbnext();
+      });
+    });
   }
 };
