@@ -29,9 +29,13 @@ html {
 }
 
 #global-prefs {
+  background-image: -moz-linear-gradient(top, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.25) 50%, rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(50, 65, 92, 0.4);
+  border-radius: 5px;
+  margin-left:16px;
   margin-top:16px;
-  margin-left:8px;
-
+  padding:12px 16px 8px 16px;
+  width:400px;  
 }
 .service {  
   background-image: -moz-linear-gradient(top, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.25) 50%, rgba(255, 255, 255, 0.05));
@@ -94,6 +98,7 @@ colorpicker[type="button"][open="true"]:not([disabled="true"]) {
   background-image: -moz-linear-gradient(rgba(45,54,71,0.3), rgba(45,54,71,0.1));
   border-color: rgba(60,73,97,0.7);
 }
+
 </style>
 <script>
 
@@ -175,7 +180,7 @@ function addNewService(svc) {
   notificationCheck.setAttribute("type", "checkbox");
   notificationCheck.setAttribute("checked", "true");
   notificationRow.appendChild(notificationCheck);
-  notificationRow.appendChild(document.createTextNode("Enable popup notifications [not yet implemented!]"));
+  notificationRow.appendChild(document.createTextNode("Enable popup notifications"));
   notificationCheck.setAttribute("id", svc.origin + "-notif");
 
   serviceblock.appendChild(header);
@@ -223,6 +228,7 @@ function toggleSocialState() {
 </head>
 <h3>Social Browsing Preferences</h3>
 <div class="main-content">
+  
   <div id="global-prefs">
     <input id="social-enabled"
            type="checkbox"
@@ -231,7 +237,7 @@ function toggleSocialState() {
     Social browsing enabled
   </div>
 
-<div id="available-activities"></div>
+  <div id="available-activities"></div>
 
 </div>
 </body>
