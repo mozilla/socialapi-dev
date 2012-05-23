@@ -205,10 +205,10 @@ ManifestRegistry.prototype = {
     if (builtin && manifest.URLPrefix) {
       location = manifest.URLPrefix;
     }
-    // full proto+host+port origin for resolving same-origin urls
-    manifest.origin = Services.io.newURI(location, null, null).prePath;
     // resolve all URLEntries against the manifest location.
     let basePathURI = Services.io.newURI(location, null, null);
+    // full proto+host+port origin for resolving same-origin urls
+    manifest.origin = basePathURI.prePath;
     for each(let k in URLEntries) {
       if (!manifest[k]) continue;
       // shortcut - resource:// URIs don't get same-origin checks.
@@ -336,6 +336,9 @@ ManifestRegistry.prototype = {
         //Services.console.logStringMessage("found manifest url "+link.getAttribute('href'));
         let baseUrl = aDocument.defaultView.location.href;
         let url = Services.io.newURI(baseUrl, null, null).resolve(link.getAttribute('href'));
+        // we only allow remote manifest files loaded from https
+        if (url.scheme != "https")
+          return;
         //Services.console.logStringMessage("base "+baseUrl+" resolved to "+url);
         ManifestDB.get(url, function(key, item) {
           if (!item) {
