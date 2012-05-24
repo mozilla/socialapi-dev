@@ -118,7 +118,13 @@ window.addEventListener("message", function(event) {
     if (msg.topic == 'social-service-manifest-changed') {
       var svc = msg.data;
       if (!svc) {
-        dump("about:social - removing a service isn't implemented yet!");
+        // The elt with the id of the origin is actually the button; the
+        // parent of the button is the DIV we want to nuke.
+        var elt = document.getElementById(msg.origin);
+        // elt is the
+        if (elt && elt.parentNode) {
+          elt.parentNode.parentNode.removeChild(elt.parentNode);
+        }
         return;
       }
       // it might be a new service.

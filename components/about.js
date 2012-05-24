@@ -68,9 +68,8 @@ var aboutPage = {
       return;
     }
     if (aTopic == 'social-service-manifest-changed') {
-      registry().each(function(provider) {
-        this.postToAll({topic: aTopic, data: flattenService(provider)});
-      }.bind(this));
+      let svc = registry().get(aData); // will be undefined if service was deleted.
+      this.postToAll({topic: aTopic, origin: aData, data: svc ? flattenService(svc) : null});
     }
   },
 
@@ -95,6 +94,7 @@ var aboutPage = {
         var win = aDocument.defaultView;
         let data = JSON.stringify({
           topic: "social-service-manifest-changed",
+          origin: provider.origin,
           data: flattenService(provider)
         });
         win.postMessage(data, "*");
