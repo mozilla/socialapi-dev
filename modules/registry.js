@@ -239,6 +239,9 @@ ManifestRegistry.prototype = {
         // builtin as it is only valid from a resource:// location.
         if (manifest.URLPrefix && item && !item.URLPrefix) {
           // being passed a builtin and existing not builtin - ignore.
+          if (callback) {
+            callback(false);
+          }
           return;
         }
         // dont overwrite enabled, but first install is always enabled
@@ -246,7 +249,7 @@ ManifestRegistry.prototype = {
         ManifestDB.put(manifest.origin, manifest);
         registry().register(manifest);
         if (callback) {
-          callback();
+          callback(true);
         }
       });
     }
