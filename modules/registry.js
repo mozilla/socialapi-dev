@@ -191,7 +191,7 @@ ManifestRegistry.prototype = {
     let builtin = location.indexOf("resource:") == 0;
     if (builtin) {
       // builtin manifests may have a couple other entries
-      validEntries = validEntries.concat('URLPrefix', 'contentPatchPath');
+      validEntries = validEntries.concat('origin', 'contentPatchPath');
     }
     // store the location we got the manifest from and the origin.
     let manifest = {
@@ -201,9 +201,10 @@ ManifestRegistry.prototype = {
       if (validEntries.indexOf(k) >= 0) manifest[k] = rawManifest.services.social[k];
     }
     // we've saved original location in manifest above, switch our location
-    // temporarily so we can correctly resolve urls for our builtins
-    if (builtin && manifest.URLPrefix) {
-      location = manifest.URLPrefix;
+    // temporarily so we can correctly resolve urls for our builtins.  We
+    // still valide the origin defined in a builtin manifest below.
+    if (builtin && manifest.origin) {
+      location = manifest.origin;
     }
     // resolve all URLEntries against the manifest location.
     let basePathURI = Services.io.newURI(location, null, null);
@@ -235,9 +236,9 @@ ManifestRegistry.prototype = {
     // manifest to overwrite something installed from the "real" provider
     function installManifest() {
       ManifestDB.get(manifest.origin, function(key, item) {
-        // URLPrefix is the "magic" key in the manifest that says we are
-        // builtin as it is only valid from a resource:// location.
-        if (manifest.URLPrefix && item && !item.URLPrefix) {
+        // dont overwrite a non-resource entry with a resource entry.
+        if (item && manifest.location.indexOf('resource:') == 0 &&
+                    item.location.indexOf('resource:') != 0) {
           // being passed a builtin and existing not builtin - ignore.
           if (callback) {
             callback(false);

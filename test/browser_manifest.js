@@ -66,7 +66,7 @@ let tests = {
             "iconURL": "icon.png",
             "workerURL": "https://example.com/worker.js",
             "sidebarURL": "https://example.com/sidebar.htm",
-            "URLPrefix": "https://example.com"
+            "origin": "https://example.com"
           }
         }
       },
@@ -110,7 +110,7 @@ let tests = {
             "iconURL": "icon.png",
             "workerURL": "https://example.com/worker.js",
             "sidebarURL": "https://example.com/sidebar.htm",
-            "URLPrefix": "https://example.com"
+            "origin": "https://example.com"
           }
         }
       },
