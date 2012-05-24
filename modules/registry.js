@@ -213,7 +213,8 @@ ManifestRegistry.prototype = {
       if (!manifest[k]) continue;
       // shortcut - resource:// URIs don't get same-origin checks.
       if (builtin && manifest[k].indexOf("resource:") == 0) continue;
-      // resolve the url to the basepath to handle relative urls, then verify same-origin, we'll let iconURL be on a different origin
+      // resolve the url to the basepath to handle relative urls, then verify
+      // same-origin, we'll let iconURL be on a different origin
       let url = basePathURI.resolve(manifest[k]);
       if (k != 'iconURL' && url.indexOf(manifest.origin) != 0) {
         throw new Error("manifest url origin mismatch " +manifest.origin+ " != " + manifest[k] +"\n")
@@ -240,6 +241,8 @@ ManifestRegistry.prototype = {
           // being passed a builtin and existing not builtin - ignore.
           return;
         }
+        // dont overwrite enabled, but first install is always enabled
+        manifest.enabled = item ? item.enabled : true;
         ManifestDB.put(manifest.origin, manifest);
         registry().register(manifest);
         if (callback) {
@@ -327,6 +330,12 @@ ManifestRegistry.prototype = {
       }
     } catch(e) {}
 
+    // we need a way to test against local non-http servers on occasion
+    let allow_http = false;
+    try {
+      allow_http = this._prefBranch.getBoolPref("allow_http");
+    } catch(e) {}
+
     let self = this;
     let links = aDocument.getElementsByTagName('link');
     for (let index=0; index < links.length; index++) {
@@ -337,7 +346,7 @@ ManifestRegistry.prototype = {
         let baseUrl = aDocument.defaultView.location.href;
         let url = Services.io.newURI(baseUrl, null, null).resolve(link.getAttribute('href'));
         // we only allow remote manifest files loaded from https
-        if (url.scheme != "https")
+        if (!allow_http && url.scheme != "https")
           return;
         //Services.console.logStringMessage("base "+baseUrl+" resolved to "+url);
         ManifestDB.get(url, function(key, item) {
@@ -421,7 +430,7 @@ ProviderRegistry.prototype = {
                                          Ci.nsISupportsWeakReference,
                                          Ci.nsIObserver]),
 
-  _providers: {},
+  _providers: {}, // a list of installed social providers
   _currentProvider: null,
   _enabled: null,
   _enabledBeforePrivateBrowsing: false,
@@ -442,22 +451,39 @@ ProviderRegistry.prototype = {
     }
   },
 
+  /**
+   * register
+   *
+   * registers a provider manifest that is installed into the database.  These
+   * are available social providers, whether enabled or not.
+   *
+   * @param manifest jsonObject
+   */
   register: function(manifest) {
     // we are not pushing into manifestDB here, rather manifestDB is calling us
     try {
       let provider = new SocialProvider(manifest);
       this._providers[manifest.origin] = provider;
-      this.enableProvider(manifest.origin);
       // registration on startup could happen in any order, so we avoid
       // setting this as "current".
+      // notify manifest changed so listeners can pick up new providers (e.g.
+      // about:social)
+      Services.obs.notifyObservers(null, "social-service-manifest-changed", manifest.origin);
     }
     catch(e) {
       Cu.reportError(e);
     }
   },
 
+  /**
+   * remove
+   *
+   * remove a provider from the registry and the database
+   *
+   * @param origin string scheme+host+port
+   * @param callback function
+   */
   remove: function(origin, callback) {
-    // completely remove a provider.
     this.disableProvider(origin);
     try {
       delete this._providers[origin];
