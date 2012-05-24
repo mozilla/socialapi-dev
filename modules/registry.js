@@ -240,7 +240,6 @@ ManifestRegistry.prototype = {
           // being passed a builtin and existing not builtin - ignore.
           return;
         }
-        manifest.enabled = true;
         ManifestDB.put(manifest.origin, manifest);
         registry().register(manifest);
         if (callback) {
@@ -448,6 +447,7 @@ ProviderRegistry.prototype = {
     try {
       let provider = new SocialProvider(manifest);
       this._providers[manifest.origin] = provider;
+      this.enableProvider(manifest.origin);
       // registration on startup could happen in any order, so we avoid
       // setting this as "current".
     }
@@ -455,6 +455,21 @@ ProviderRegistry.prototype = {
       Cu.reportError(e);
     }
   },
+
+  remove: function(origin, callback) {
+    // completely remove a provider.
+    this.disableProvider(origin);
+    try {
+      delete this._providers[origin];
+    } catch (ex) {
+      Cu.reportError("attempting to remove a non-existing manifest origin: " + origin);
+    }
+    ManifestDB.remove(origin, function() {
+      Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
+      if (callback) callback();
+    });
+  },
+
   _findCurrentProvider: function() {
     // workout what provider should be current.
     if (!this.enabled) {
@@ -523,7 +538,9 @@ ProviderRegistry.prototype = {
     });
     provider.enabled = true;
     // if browsing is disabled we can't activate it!
-    if (this.enabled) {
+    // XXX - but checking "this.enabled" will have the side-effect of actually
+    // starting things up, which may be too early!  So use the private ._enabled.
+    if (this._enabled) {
       provider.activate();
     }
     // nothing else to do - it is now available to be the current provider
