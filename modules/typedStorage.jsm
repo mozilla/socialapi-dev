@@ -71,12 +71,7 @@ ObjectStore.prototype = {
         if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED)
           Cu.reportError("Get query canceled or aborted! " + reason);
         else {
-          try {
-            cb(key, value);
-          }
-          catch (e) {
-            Cu.reportError("Error in completion callback for ObjectStore.get(): " + e);
-          }
+          if (cb) cb(key, value);
         }
       }
     });
@@ -173,12 +168,7 @@ ObjectStore.prototype = {
         if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED)
           Cu.reportError("Query canceled or aborted! " + reason);
         else {
-          try {
-            if (cb) cb(true);
-          }
-          catch (e) {
-            Cu.reportError("Error while invoking callback for " + statement + ": " + e);
-          }
+          if (cb) cb(true);
         }
       }
     });

@@ -53,11 +53,11 @@ var ManifestDB = (function() {
     let originKey = normalizeKey(origin);
     storage.get(originKey, function(key, item) {
       if (!item) {
-        cb(false);
+        if (cb) cb(false);
       }
       else {
         storage.remove(key, function() {
-          cb(true);
+          if (cb) cb(true);
         });
       }
     });
