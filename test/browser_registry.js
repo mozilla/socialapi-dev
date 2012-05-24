@@ -30,27 +30,35 @@ function test() {
     r.enabled = true;
     is(window.social.enabled, true, "social should enable as there is now a provider");
     is(r.currentProvider.origin, TEST_PROVIDER_ORIGIN, "check current test provider");
-    oc.check([{topic: "social-browsing-enabled"},
+    oc.check([{topic: "social-service-manifest-changed"},
+              {topic: "social-browsing-enabled"},
               {topic: "social-browsing-current-service-changed"}
             ]);
     // disable our test provider - that should disable social.
     r.disableProvider(TEST_PROVIDER_ORIGIN);
-    is(r.enabled, false, "social should be disabled after disabling only provider");
-    oc.check([{topic: "social-browsing-disabled"}]);
-  
-    // re-enable it.
-    r.enableProvider(TEST_PROVIDER_ORIGIN);
-    // but social should still be disabled.
-    is(r.enabled, false, "social should remain disabled after enabling only provider");
-    r.enabled = true;
-    oc.check([{topic: "social-browsing-enabled"},
-              {topic: "social-browsing-current-service-changed"}
-             ]);
-  
-    // disable browsing.
-    r.enabled = false;
-    is(window.social.enabled, false, "social should be disabled");
-    oc.check([{topic: "social-browsing-disabled"}]);
-    finish();
+    // observers are called async, so wait for that to happen.
+    executeSoon(function() {
+      is(r.enabled, false, "social should be disabled after disabling only provider");
+      oc.check([{topic: "social-browsing-disabled"},
+                {topic: "social-service-manifest-changed"}]);
+
+      // re-enable it.
+      r.enableProvider(TEST_PROVIDER_ORIGIN);
+      executeSoon(function() {
+        // but social should still be disabled.
+        is(r.enabled, false, "social should remain disabled after enabling only provider");
+        r.enabled = true;
+        oc.check([{topic: "social-service-manifest-changed"},
+                  {topic: "social-browsing-enabled"},
+                  {topic: "social-browsing-current-service-changed"}
+                 ]);
+
+        // disable browsing.
+        r.enabled = false;
+        is(window.social.enabled, false, "social should be disabled");
+        oc.check([{topic: "social-browsing-disabled"}]);
+        finish();
+      })
+    })
   });
 }

@@ -22,6 +22,11 @@ function openSidebar(callback) {
   // attach a load listener to the browser
   let browser = document.getElementById("social-status-sidebar-browser");
   browser.addEventListener("DOMContentLoaded", function browserlistener(evt) {
+    // hmph - the timing of these events is hard to predict - if we are just
+    // being told about about:blank, wait until the real one comes.
+    if (browser.contentWindow.location.href == "about:blank") {
+      return;
+    };
     browser.removeEventListener("DOMContentLoaded", browserlistener, true);
     callback(browser.contentWindow);
   }, true);
@@ -83,19 +88,21 @@ function installTestProvider(callback) {
   // the registry grow callbacks to tell us when it has been done.
   let manifesturl = "chrome://mochitests/content/browser/browser/features/socialdev/test/testprovider/app.manifest";
   let manifest = JSON.parse(readManifestFromChrome(manifesturl));
-  registry().manifestRegistry.importManifest(window.document, TEST_PROVIDER_MANIFEST, manifest, true, callback);
+  // Note that due to how the storage stuff manages callbacks we don't callback
+  // directly from the registry callback, but instead schedule it to happen
+  // "soon"
+  registry().manifestRegistry.importManifest(window.document, TEST_PROVIDER_MANIFEST, manifest, true,
+                                             function() {if (callback) executeSoon(callback)});
 }
 
-function removeTestProvider() {
-  removeProvider(TEST_PROVIDER_ORIGIN);
+function removeTestProvider(cb) {
+  removeProvider(TEST_PROVIDER_ORIGIN, cb);
 }
 
 function removeProvider(origin, cb) {
-// avoid test failure due to: leaked window property: ManifestDB
-  let module = {}
-  Cu.import("resource://socialdev/modules/manifestDB.jsm", module);
-  let ManifestDB = module.ManifestDB;
-  ManifestDB.remove(origin, cb);
+  registry().remove(origin, function() {
+    if (cb) executeSoon(cb);
+  });
 }
 
 // a helpers for checking observer notifications.
