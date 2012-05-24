@@ -28,8 +28,6 @@ let tests = {
       let result = 0;
       while (windows.hasMoreElements()) {
         let w = windows.getNext();
-        // WTF?  Sometimes we have w.document == "XUL Document ..." but it has
-        // no getAttribute??  Must be an artifact of the test harness?
         if (w.document.documentElement.getAttribute("windowtype") == "socialdev:window" &&
             !w.closed) {
           result += 1;
@@ -57,7 +55,6 @@ let tests = {
         ok(!isSidebarVisible(), "check sidebar no longer visible");
         cbnext();
       }
-      dump("SIDEBAR: " + sidebarWindow + "\n");
       sidebarWindow.wrappedJSObject.navigator.mozSocial.openServiceWindow(sidebarWindow.location.href,
                                                           "test", {}, "test", onopen);
     });
