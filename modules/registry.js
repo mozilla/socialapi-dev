@@ -389,8 +389,9 @@ ManifestRegistry.prototype = {
         //Services.console.logStringMessage("found manifest url "+link.getAttribute('href'));
         let baseUrl = aDocument.defaultView.location.href;
         let url = Services.io.newURI(baseUrl, null, null).resolve(link.getAttribute('href'));
+        let resolved = Services.io.newURI(url, null, null);
         // we only allow remote manifest files loaded from https
-        if (!allow_http && url.scheme != "https")
+        if (!allow_http && resolved.scheme != "https")
           return;
         //Services.console.logStringMessage("base "+baseUrl+" resolved to "+url);
         ManifestDB.get(url, function(key, item) {
