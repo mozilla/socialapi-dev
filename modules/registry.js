@@ -436,6 +436,12 @@ function ProviderRegistry() {
     self.register(manifest);
   });
 
+  // developer?
+  let enable_dev = false;
+  try {
+    enable_dev = this._prefBranch.getBoolPref("devmode");
+  } catch(e) {}
+
   // we need to have our service injector running on startup of the
   // registry
   this.injectController = function(doc, topic, data) {
@@ -459,6 +465,16 @@ function ProviderRegistry() {
         if (service.workerURL) {
           service.attachToWindow(doc.defaultView);
         }
+      } else
+      if (enable_dev) {
+        // XXX dev code, allows us to load social panels into tabs and still
+        // call attachToWindow on them
+        for each(let svc in this._providers) {
+          if ((doc.location+"").indexOf(svc.origin) == 0) {
+            svc.attachToWindow(doc.defaultView);
+            break;
+          }
+        };
       }
     }
     catch(e) {
