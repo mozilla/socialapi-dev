@@ -37,6 +37,38 @@ function normalizeOriginPort(aURL) {
 
 
 /**
+ * testSafebrowsing
+ *
+ * given a url, see if it is in our malware/phishing lists.
+ * Callback gets one param, the result which will be non-zero
+ * if the url is a problem.
+ *
+ * @param url string
+ * @param callback function
+ */
+function testSafebrowsing(aUrl, aCallback) {
+  // callback gets zero if the url is not found
+  // pills.ind.in produces a positive hit for a bad site
+  // http://www.google.com/safebrowsing/diagnostic?site=pills.ind.in/
+  // result is non-zero if the url is in the malware or phising lists
+  let uri = Services.io.newURI(aUrl, null, null);
+  var dbservice = Cc["@mozilla.org/url-classifier/dbservice;1"]
+                      .getService(Ci.nsIUrlClassifierDBService);
+  var handler = {
+    onClassifyComplete: function(result) {
+      aCallback(result);
+    }
+  }
+  var classifier = dbservice.QueryInterface(Ci.nsIURIClassifier);
+  var result = classifier.classify(uri, handler);
+  if (!result) {
+    // the callback will not be called back, do it ourselves
+    aCallback(0);
+  }
+}
+
+
+/**
  * getDefaultProviders
  *
  * look into our addon/feature dir and see if we have any builtin providers to install
@@ -175,26 +207,25 @@ ManifestRegistry.prototype = {
    *
    * Given the manifest data, create a clean version of the manifest.  Ensure
    * any URLs are same-origin (proto+host+port).  If the manifest is a builtin,
-   * URLs must either be resource or same-origin resolved against URLPrefix.
-   * We ignore any manifest entries that are not supported.  favicons are often
-   * at different locations than origin, eg. google has theirs on gstatic.com,
-   * so we do not enforce same-origin for the favicon.
+   * URLs must either be resource or same-origin resolved against the manifest
+   * origin. We ignore any manifest entries that are not supported.
    *
    * @param location   string      string version of manifest location
    * @param manifest   json-object raw manifest data
    * @returns manifest json-object a cleaned version of the manifest
    */
   validateManifest: function manifestRegistry_validateManifest(location, rawManifest) {
-    // anything in URLEntries will require same-origin policy
-    let URLEntries = ['workerURL', 'sidebarURL'];
+    // anything in URLEntries will require same-origin policy, though we
+    // special-case iconURL to allow icons from CDN
+    let URLEntries = ['iconURL', 'workerURL', 'sidebarURL'];
     // only items in validEntries will move into our cleaned manifest
-    let validEntries = ['iconURL', 'name'].concat(URLEntries);
+    let validEntries = ['name'].concat(URLEntries);
     let builtin = location.indexOf("resource:") == 0;
     if (builtin) {
       // builtin manifests may have a couple other entries
-      validEntries = validEntries.concat('URLPrefix', 'contentPatchPath');
+      validEntries = validEntries.concat('origin', 'contentPatchPath');
     }
-    // store the location we got the manifest from
+    // store the location we got the manifest from and the origin.
     let manifest = {
       location: location
     };
@@ -202,28 +233,32 @@ ManifestRegistry.prototype = {
       if (validEntries.indexOf(k) >= 0) manifest[k] = rawManifest.services.social[k];
     }
     // we've saved original location in manifest above, switch our location
-    // temporarily so we can correctly resolve urls for our builtins
-    if (builtin && manifest.URLPrefix) {
-      location = manifest.URLPrefix;
+    // temporarily so we can correctly resolve urls for our builtins.  We
+    // still valide the origin defined in a builtin manifest below.
+    if (builtin && manifest.origin) {
+      location = manifest.origin;
     }
-    // full proto+host+port origin for url resolving
-    manifest.origin = Services.io.newURI(location, null, null).prePath;
-    // make locationURI, and resolve all URLEntries against that.
-    let originURI = Services.io.newURI(manifest.origin, null, null);
+    // resolve all URLEntries against the manifest location.
+    let basePathURI = Services.io.newURI(location, null, null);
+    // full proto+host+port origin for resolving same-origin urls
+    manifest.origin = basePathURI.prePath;
     for each(let k in URLEntries) {
       if (!manifest[k]) continue;
+      // shortcut - resource:// URIs don't get same-origin checks.
       if (builtin && manifest[k].indexOf("resource:") == 0) continue;
-
-      // the url MUST resolve to origin
-      let url = originURI.resolve(manifest[k]);
-      if (url.indexOf(manifest.origin) < 0)
+      // resolve the url to the basepath to handle relative urls, then verify
+      // same-origin, we'll let iconURL be on a different origin
+      let url = basePathURI.resolve(manifest[k]);
+      if (k != 'iconURL' && url.indexOf(manifest.origin) != 0) {
         throw new Error("manifest url origin mismatch " +manifest.origin+ " != " + manifest[k] +"\n")
+      }
+      manifest[k] = url; // store the resolved version
     }
     //dump("manifest "+JSON.stringify(manifest)+"\n");
     return manifest;
   },
 
-  importManifest: function manifestRegistry_importManifest(aDocument, location, rawManifest, systemInstall) {
+  importManifest: function manifestRegistry_importManifest(aDocument, location, rawManifest, systemInstall, callback) {
     //Services.console.logStringMessage("got manifest "+JSON.stringify(manifest));
     let manifest = this.validateManifest(location, rawManifest);
 
@@ -231,22 +266,23 @@ ManifestRegistry.prototype = {
     // builtin manifest files.   We also want to allow the "real" provider
     // to overwrite our builtin manifest, however we NEVER want a builtin
     // manifest to overwrite something installed from the "real" provider
-    //
-    // if the original manifest is a builtin resource, allow overwrite
-    // otherwise, if the manifest.location is same origin allow overwrite
     function installManifest() {
       ManifestDB.get(manifest.origin, function(key, item) {
-        if (!item || !item.location || /* older pre-release manifests did not store location */
-            item.location.indexOf("resource:") == 0 ||
-            manifest.location.indexOf(item.origin) == 0) {
-          // XXX temporary debug output
-          if (item)
-            dump("overwriting manifest entry for "+key+"\n");
-          else
-            dump("adding manifest entry for"+key+"\n");
-          manifest.enabled = true;
-          ManifestDB.put(manifest.origin, manifest);
-          registry().register(manifest);
+        // dont overwrite a non-resource entry with a resource entry.
+        if (item && manifest.location.indexOf('resource:') == 0 &&
+                    item.location.indexOf('resource:') != 0) {
+          // being passed a builtin and existing not builtin - ignore.
+          if (callback) {
+            callback(false);
+          }
+          return;
+        }
+        // dont overwrite enabled, but first install is always enabled
+        manifest.enabled = item ? item.enabled : true;
+        ManifestDB.put(manifest.origin, manifest);
+        registry().register(manifest);
+        if (callback) {
+          callback(true);
         }
       });
     }
@@ -285,29 +321,38 @@ ManifestRegistry.prototype = {
     }
   },
 
-  loadManifest: function manifestRegistry_loadManifest(aDocument, url, systemInstall) {
-    // BUG 732264 error and edge case handling
-    let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance(Ci.nsIXMLHttpRequest);
-    xhr.open('GET', url, true);
+  loadManifest: function manifestRegistry_loadManifest(aDocument, url, systemInstall, callback) {
+    // test any manifest against safebrowsing
     let self = this;
-    xhr.onreadystatechange = function(aEvt) {
-      if (xhr.readyState == 4) {
-        if (xhr.status == 200 || xhr.status == 0) {
-          //Services.console.logStringMessage("got response "+xhr.responseText);
-          try {
-            self.importManifest(aDocument, url, JSON.parse(xhr.responseText), systemInstall);
-          }
-          catch(e) {
-            Cu.reportError("importManifest "+url+": "+e);
-          }
-        }
-        else {
-          Services.console.logStringMessage("got status "+xhr.status);
-        }
+    testSafebrowsing(url, function(result) {
+      if (result != 0) {
+        Cu.reportError("unable to load manifest due to safebrowsing result: ["+result+"] "+url);
+        return;
       }
-    };
-    //Services.console.logStringMessage("fetch "+url);
-    xhr.send(null);
+
+      // BUG 732264 error and edge case handling
+      let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance(Ci.nsIXMLHttpRequest);
+      xhr.open('GET', url, true);
+      xhr.onreadystatechange = function(aEvt) {
+        if (xhr.readyState == 4) {
+          if (xhr.status == 200 || xhr.status == 0) {
+            //Services.console.logStringMessage("got response "+xhr.responseText);
+            try {
+              self.importManifest(aDocument, url, JSON.parse(xhr.responseText), systemInstall, callback);
+            }
+            catch(e) {
+              Cu.reportError("importManifest "+url+": "+e);
+              callback();
+            }
+          }
+          else {
+            Services.console.logStringMessage("got status "+xhr.status);
+          }
+        }
+      };
+      //Services.console.logStringMessage("fetch "+url);
+      xhr.send(null);
+    });
   },
 
   discoverManifest: function manifestRegistry_discoverManifest(aDocument, aData) {
@@ -329,6 +374,12 @@ ManifestRegistry.prototype = {
       }
     } catch(e) {}
 
+    // we need a way to test against local non-http servers on occasion
+    let allow_http = false;
+    try {
+      allow_http = this._prefBranch.getBoolPref("allow_http");
+    } catch(e) {}
+
     let self = this;
     let links = aDocument.getElementsByTagName('link');
     for (let index=0; index < links.length; index++) {
@@ -338,6 +389,10 @@ ManifestRegistry.prototype = {
         //Services.console.logStringMessage("found manifest url "+link.getAttribute('href'));
         let baseUrl = aDocument.defaultView.location.href;
         let url = Services.io.newURI(baseUrl, null, null).resolve(link.getAttribute('href'));
+        let resolved = Services.io.newURI(url, null, null);
+        // we only allow remote manifest files loaded from https
+        if (!allow_http && resolved.scheme != "https")
+          return;
         //Services.console.logStringMessage("base "+baseUrl+" resolved to "+url);
         ManifestDB.get(url, function(key, item) {
           if (!item) {
@@ -401,17 +456,9 @@ function ProviderRegistry() {
 
       if (sbrowser && sbrowser.contentDocument == doc) {
         let service = sbrowser.service? sbrowser.service : xulWindow.service;
-        if (service.workerURL)
+        if (service.workerURL) {
           service.attachToWindow(doc.defaultView);
-      // XXX dev code, allows us to load social panels into tabs and still
-      // call attachToWindow on them
-      //} else {
-      //  for each(let svc in this._providers) {
-      //    if ((doc.location+"").indexOf(svc.URLPrefix) == 0) {
-      //      svc.attachToWindow(doc.defaultView);
-      //      break;
-      //    }
-      //  };
+        }
       }
     }
     catch(e) {
@@ -428,7 +475,7 @@ ProviderRegistry.prototype = {
                                          Ci.nsISupportsWeakReference,
                                          Ci.nsIObserver]),
 
-  _providers: {},
+  _providers: {}, // a list of installed social providers
   _currentProvider: null,
   _enabled: null,
   _enabledBeforePrivateBrowsing: false,
@@ -449,6 +496,14 @@ ProviderRegistry.prototype = {
     }
   },
 
+  /**
+   * register
+   *
+   * registers a provider manifest that is installed into the database.  These
+   * are available social providers, whether enabled or not.
+   *
+   * @param manifest jsonObject
+   */
   register: function(manifest) {
     // we are not pushing into manifestDB here, rather manifestDB is calling us
     try {
@@ -456,11 +511,36 @@ ProviderRegistry.prototype = {
       this._providers[manifest.origin] = provider;
       // registration on startup could happen in any order, so we avoid
       // setting this as "current".
+      // notify manifest changed so listeners can pick up new providers (e.g.
+      // about:social)
+      Services.obs.notifyObservers(null, "social-service-manifest-changed", manifest.origin);
     }
     catch(e) {
       Cu.reportError(e);
     }
   },
+
+  /**
+   * remove
+   *
+   * remove a provider from the registry and the database
+   *
+   * @param origin string scheme+host+port
+   * @param callback function
+   */
+  remove: function(origin, callback) {
+    this.disableProvider(origin);
+    try {
+      delete this._providers[origin];
+    } catch (ex) {
+      Cu.reportError("attempting to remove a non-existing manifest origin: " + origin);
+    }
+    ManifestDB.remove(origin, function() {
+      Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
+      if (callback) callback();
+    });
+  },
+
   _findCurrentProvider: function() {
     // workout what provider should be current.
     if (!this.enabled) {
@@ -519,14 +599,19 @@ ProviderRegistry.prototype = {
       return false;
     }
 
+    // Don't start up again if we're already enabled
+    if (provider.enabled) return true;
+
     ManifestDB.get(origin, function(key, manifest) {
       manifest.enabled = true;
-      ManifestDB.put(key, manifest);
-      Services.obs.notifyObservers(null, "social-service-manifest-changed", key);
+      ManifestDB.put(origin, manifest);
+      Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
     });
     provider.enabled = true;
     // if browsing is disabled we can't activate it!
-    if (this.enabled) {
+    // XXX - but checking "this.enabled" will have the side-effect of actually
+    // starting things up, which may be too early!  So use the private ._enabled.
+    if (this._enabled) {
       provider.activate();
     }
     // nothing else to do - it is now available to be the current provider
@@ -546,8 +631,8 @@ ProviderRegistry.prototype = {
     // a manifest being updated by a provider loses this state!
     ManifestDB.get(origin, function(key, manifest) {
       manifest.enabled = false;
-      ManifestDB.put(key, manifest);
-      Services.obs.notifyObservers(null, "social-service-manifest-changed", key);
+      ManifestDB.put(origin, manifest);
+      Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
     });
 
     if (this._currentProvider && this._currentProvider == provider) {
@@ -615,7 +700,7 @@ ProviderRegistry.prototype = {
       Services.obs.notifyObservers(null, "social-browsing-current-service-changed", null);
     } else {
       for each(let provider in this._providers) {
-        provider.deactivate();
+        provider.shutdown();
       }
       this._currentProvider = null;
       Services.obs.notifyObservers(null, "social-browsing-disabled", null);

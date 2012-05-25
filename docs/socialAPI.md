@@ -400,11 +400,13 @@ The manifest file should be serviced with a content-type text/json.  The format 
       "iconURL": "https://site.com/site.png",
       "workerURL": "https://site.com/socialapi/worker.js",
       "sidebarURL": "https://site.com/socialapi/sidebar.html",
-      "URLPrefix": "https://site.com/socialapi/",
     }
   }
 }
 ```
+All URLs in the manifest can be relative or absolute.  If relative, they will
+be resolved against the origin of the manifest location and if absolute they
+must all be in the same origin as the manifest.
 
 ### `name`
 
@@ -421,11 +423,6 @@ Location of the JavaScript file to be loaded in the background worker.
 ### `sidebarURL`
 
 Location of the content to be loaded into the sidebar.
-
-### `URLPrefix`
-
-Used to determin if a link should be opened in a browser tab, or in the sidebar.
-
 
 Example interactions / expected implementation flow
 ===================================================

@@ -39,7 +39,6 @@ function SocialProvider(input) {
   this.name = input.name;
   this.workerURL = input.workerURL;
   this.sidebarURL = input.sidebarURL;
-  this.URLPrefix = input.URLPrefix;
   this.iconURL = input.iconURL;
   this.origin = input.origin;
   this.enabled = input.enabled;  // disabled services cannot be used
@@ -59,6 +58,28 @@ SocialProvider.prototype = {
     Services.console.logStringMessage(new Date().toISOString() + " [" + this.origin + " service]: " + msg);
   },
 
+  get notificationsPermitted() {
+    try {
+      var prefs = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
+      var val = prefs.getBoolPref("allow-notifications." + this.origin);
+      if (val) return val;
+      return false;
+    }
+    catch(e) {
+      return false;
+    }
+  },
+
+  set notificationsPermitted(permitted) {
+    try {
+      var prefs = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
+      var val = prefs.setBoolPref("allow-notifications." + this.origin, permitted);
+    }
+    catch(e) {
+      Cu.reportError(e);
+    }
+  },
+
   init: function(windowCreatorFn) {
     if (!this.enabled) return;
     this._log("init");
@@ -72,6 +93,7 @@ SocialProvider.prototype = {
    * frameworker.
    */
   shutdown: function() {
+    closeWindowsForService(this);
     if (this._workerapi) {
       this._workerapi.shutdown();
       this._workerapi = null;
@@ -96,17 +118,6 @@ SocialProvider.prototype = {
       this._workerapi = new workerAPI(this.makeWorker(), this);
       this._active = true;
     }
-  },
-
-  /**
-   * called by the ProviderRegistry to close down this provider.
-   */
-  deactivate: function() {
-    if (!this._active) return;
-    closeWindowsForService(this);
-    this._active = false;
-    // XXX is deactivate the same as shutdown?
-    this.shutdown();
   },
 
   /**

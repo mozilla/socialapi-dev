@@ -98,10 +98,12 @@ function set_window_social_enabled(val) {
     sideBarVisible = false;
   }
   let broadcaster = document.getElementById("socialSidebarVisible");
-  broadcaster.setAttribute("checked", sideBarVisible ? "true" : "false");
-  broadcaster.setAttribute("hidden", sideBarVisible ? "false" : "true");
-  let topic = sideBarVisible ? "social-sidebar-visible" : "social-sidebar-hidden";
-  Services.obs.notifyObservers(window, topic, null);
+  if ((broadcaster.getAttribute("checked") == "true") != sideBarVisible) {
+    broadcaster.setAttribute("checked", sideBarVisible ? "true" : "false");
+    broadcaster.setAttribute("hidden", sideBarVisible ? "false" : "true");
+    let topic = sideBarVisible ? "social-sidebar-visible" : "social-sidebar-hidden";
+    Services.obs.notifyObservers(window, topic, null);
+  }
 }
 
 // used by chrome to toggle the enabled state.
@@ -139,7 +141,7 @@ function social_init() {
   };
 
   // watch for when browser disables chrome in tabs, and hide the social sidebar
-  if (MozMutationObserver) {
+  try {
     var observer = new MozMutationObserver(function(mutations) {
       mutations.forEach(function(mutation) {
         if (mutation.type === 'attributes') {
@@ -151,7 +153,8 @@ function social_init() {
     observer.observe(document.documentElement, {
       attributes: true, attributeFilter: ["disablechrome", "chromehidden"]
     });
-  } else {
+  } catch(e) {
+    Cu.reportError("MozMutationObserver not available, falling back to DOMAttrModified");
     // bug 756674 not sure what version MozMutationObserver became available, keep the fallback
     document.addEventListener('DOMAttrModified', function(e) {
       if (e.target == document.documentElement &&

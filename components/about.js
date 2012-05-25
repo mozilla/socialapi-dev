@@ -31,6 +31,17 @@ AboutSocial.prototype = {
 };
 //----- end about:social (but see ComponentRegistrar call in startup())
 
+function flattenService(svc) {
+  var data = {
+        name:                   svc.name,
+        iconURL:                svc.iconURL,
+        origin:                 svc.origin,
+        notificationsPermitted: svc.notificationsPermitted,
+        enabled:                svc.enabled
+  };
+  return data;
+}
+
 
 var aboutPage = {
   observe: function(aDocument, aTopic, aData) {
@@ -57,11 +68,11 @@ var aboutPage = {
       return;
     }
     if (aTopic == 'social-service-manifest-changed') {
-      ManifestDB.get(aData, function(key, manifest) {
-        this.postToAll({topic: aTopic, data: manifest});
-      }.bind(this));
+      let svc = registry().get(aData); // will be undefined if service was deleted.
+      this.postToAll({topic: aTopic, origin: aData, data: svc ? flattenService(svc) : null});
     }
   },
+
 
   postToAll: function(data) {
     // enumerate all about:social windows and post 'em the data.
@@ -78,12 +89,13 @@ var aboutPage = {
   },
 
   hookupPrefs: function(aDocument) {
-    ManifestDB.iterate(function(key, manifest) {
+    registry().each(function(provider) {
       try {
         var win = aDocument.defaultView;
         let data = JSON.stringify({
           topic: "social-service-manifest-changed",
-          data: manifest
+          origin: provider.origin,
+          data: flattenService(provider)
         });
         win.postMessage(data, "*");
       } catch(e) {
@@ -99,6 +111,7 @@ var aboutPage = {
     // change from the html.
     let msg = JSON.parse(event.data);
 
+    // Change one service provider:
     if (msg.topic === "preference-service-change") {
       let data = msg.data;
       if (data.enabled) {
@@ -106,8 +119,11 @@ var aboutPage = {
       } else {
         registry().disableProvider(data.origin);
       }
+      registry().get(data.origin).notificationsPermitted = (data.notificationsPermitted == true);
       return;
     }
+
+    // Enable-disable the whole thing:
     if (msg.topic === "preference-social-change") {
       registry().enabled = msg.data.enabled;
       return;

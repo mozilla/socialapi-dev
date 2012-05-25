@@ -24,11 +24,9 @@ workerAPI.prototype = {
     if (!worker)
       return;
     // get the host of the service for simple cookie matching.
-    // Note we use "URLPrefix" for dev, but should probably use the worker
-    // URL once that is actually hosted on real sites...
     this.serviceHost = Components.classes["@mozilla.org/network/io-service;1"]
                        .getService(Components.interfaces.nsIIOService)
-                       .newURI(service.URLPrefix, null, null)
+                       .newURI(service.origin, null, null)
                        .host;
 
     Services.obs.addObserver(this, 'cookie-changed', false);
@@ -150,8 +148,10 @@ workerAPI.prototype = {
       let onhide = function() {
         n = null;
       }
-      n = notification.Notification(icon, title, body, id, onclick, onhide);
-      n.show();
+      if (this.service.notificationsPermitted) {
+        n = notification.Notification(icon, title, body, id, onclick, onhide);
+        n.show();
+      }
     },
     'social.ambient-notification-update': function(worker, data) {
       let ani = this.service.createAmbientNotificationIcon(data.name);

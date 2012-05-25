@@ -42,4 +42,4 @@ function setDefaultPrefs() {
 // Always set the default prefs as they disappear on restart
 setDefaultPrefs();
 
-EXPORTED_SYMBOLS=[];
+EXPORTED_SYMBOLS=['setDefaultPrefs'];
