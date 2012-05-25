@@ -37,6 +37,38 @@ function normalizeOriginPort(aURL) {
 
 
 /**
+ * testSafebrowsing
+ *
+ * given a url, see if it is in our malware/phishing lists.
+ * Callback gets one param, the result which will be non-zero
+ * if the url is a problem.
+ *
+ * @param url string
+ * @param callback function
+ */
+function testSafebrowsing(aUrl, aCallback) {
+  // callback gets zero if the url is not found
+  // pills.ind.in produces a positive hit for a bad site
+  // http://www.google.com/safebrowsing/diagnostic?site=pills.ind.in/
+  // result is non-zero if the url is in the malware or phising lists
+  let uri = Services.io.newURI(aUrl, null, null);
+  var dbservice = Cc["@mozilla.org/url-classifier/dbservice;1"]
+                      .getService(Ci.nsIUrlClassifierDBService);
+  var handler = {
+    onClassifyComplete: function(result) {
+      aCallback(result);
+    }
+  }
+  var classifier = dbservice.QueryInterface(Ci.nsIURIClassifier);
+  var result = classifier.classify(uri, handler);
+  if (!result) {
+    // the callback will not be called back, do it ourselves
+    aCallback(0);
+  }
+}
+
+
+/**
  * getDefaultProviders
  *
  * look into our addon/feature dir and see if we have any builtin providers to install
@@ -290,29 +322,37 @@ ManifestRegistry.prototype = {
   },
 
   loadManifest: function manifestRegistry_loadManifest(aDocument, url, systemInstall, callback) {
-    // BUG 732264 error and edge case handling
-    let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance(Ci.nsIXMLHttpRequest);
-    xhr.open('GET', url, true);
+    // test any manifest against safebrowsing
     let self = this;
-    xhr.onreadystatechange = function(aEvt) {
-      if (xhr.readyState == 4) {
-        if (xhr.status == 200 || xhr.status == 0) {
-          //Services.console.logStringMessage("got response "+xhr.responseText);
-          try {
-            self.importManifest(aDocument, url, JSON.parse(xhr.responseText), systemInstall, callback);
-          }
-          catch(e) {
-            Cu.reportError("importManifest "+url+": "+e);
-            callback();
-          }
-        }
-        else {
-          Services.console.logStringMessage("got status "+xhr.status);
-        }
+    testSafebrowsing(url, function(result) {
+      if (result != 0) {
+        Cu.reportError("unable to load manifest due to safebrowsing result: ["+result+"] "+url);
+        return;
       }
-    };
-    //Services.console.logStringMessage("fetch "+url);
-    xhr.send(null);
+
+      // BUG 732264 error and edge case handling
+      let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance(Ci.nsIXMLHttpRequest);
+      xhr.open('GET', url, true);
+      xhr.onreadystatechange = function(aEvt) {
+        if (xhr.readyState == 4) {
+          if (xhr.status == 200 || xhr.status == 0) {
+            //Services.console.logStringMessage("got response "+xhr.responseText);
+            try {
+              self.importManifest(aDocument, url, JSON.parse(xhr.responseText), systemInstall, callback);
+            }
+            catch(e) {
+              Cu.reportError("importManifest "+url+": "+e);
+              callback();
+            }
+          }
+          else {
+            Services.console.logStringMessage("got status "+xhr.status);
+          }
+        }
+      };
+      //Services.console.logStringMessage("fetch "+url);
+      xhr.send(null);
+    });
   },
 
   discoverManifest: function manifestRegistry_discoverManifest(aDocument, aData) {
