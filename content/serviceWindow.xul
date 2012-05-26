@@ -36,7 +36,7 @@
     <menubar id="main-menubar"/>
   </toolbar>
 
-  <browser id="browser" src="about:blank" enablehistory="true" type="content-primary" flex="1" height="100%"/>
+  <browser id="browser" src="about:blank" disableglobalhistory="true" type="content-primary" flex="1" height="100%"/>
     
   <statusbar>
     <statusbarpanel id="security-display" crop="end" flex="1"/>
