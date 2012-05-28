@@ -210,5 +210,34 @@ let tests = {
         cbnext();
       }
     }
+  },
+
+  testSameOriginImport: function(cbnext) {
+    let run = function() {
+      onconnect = function(e) {
+        let port = e.ports[0];
+        port.onmessage = function(e) {
+          if (e.data.topic == "ping") {
+            try {
+              importScripts("http://foo.bar/error");
+            } catch(ex) {
+              port.postMessage({topic: "pong", data: ex});
+              return;
+            }
+            port.postMessage({topic: "pong", data: null});
+          }
+        }
+      }
+    }
+
+    let worker = modules.FrameWorker(makeWorkerUrl(run), undefined, "testSameOriginImport");
+    worker.port.onmessage = function(e) {
+      if (e.data.topic == "pong") {
+        isnot(e.data.data, null, "check same-origin applied to importScripts");
+        worker.terminate();
+        cbnext();
+      }
+    }
+    worker.port.postMessage({topic: "ping"})
   }
 }

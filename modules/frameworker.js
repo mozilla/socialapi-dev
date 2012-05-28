@@ -408,6 +408,9 @@ function FrameWorker(url, clientWindow, name) {
           for each(let uri in arguments) {
             // resolve the uri against the loaded worker
             let scriptURL = workerURI.resolve(uri);
+            if (scriptURL.indexOf(workerURI.prePath) != 0) {
+              throw new Error("importScripts same-origin violation with "+uri);
+            }
             log("importScripts loading "+scriptURL);
             // load the url *synchronously*
             let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"]
