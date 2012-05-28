@@ -138,7 +138,7 @@
 
 <popupset id="mainPopupSet">
   <panel id="social-notification-panel" class="social-panel" type="arrow">
-    <browser id="social-notification-browser" type="content" style="width:300px;height:300px" />
+    <browser id="social-notification-browser" type="content" flex="1"/>
   </panel>
 </popupset>
 

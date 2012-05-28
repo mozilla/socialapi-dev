@@ -25,7 +25,7 @@
 
   padding: 1px 5px;
   background: rgba(151,152,153,.05)
-              -moz-linear-gradient(rgba(251,252,253,.95), rgba(246,247,248,.47) 49%, 
+              -moz-linear-gradient(rgba(251,252,253,.95), rgba(246,247,248,.47) 49%,
                                    rgba(231,232,233,.45) 51%, rgba(225,226,229,.3));
   background-clip: padding-box;
   border-radius: 2.5px;
@@ -194,3 +194,9 @@ toolbar[mode="icons"] .social-status-area-container > menupopup {
 /*#navigator-toolbox > toolbar {
   counter-reset: smallicons;
 }*/
+
+/* fix the arrow-panel for notifications */
+.social-panel .panel-inner-arrowcontent, .social-panel .panel-arrowcontent
+{
+  padding: 0;
+}
