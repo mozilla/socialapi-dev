@@ -1,12 +1,18 @@
 Cu.import("resource://socialdev/modules/registry.js");
 Cu.import("resource://gre/modules/Services.jsm");
 
+// This is the path to the test provider relative to its origin.
+const TEST_PROVIDER_PATH = "/browser/browser/features/socialdev/test/testprovider"
+
 // See http://mxr.mozilla.org/mozilla-central/source/build/pgo/server-locations.txt
 // for other possibly origins we could use.
-// XXX - see bug 756021 - this origin is almost certainly wrong - it should
-// include the protocol and port.
 const TEST_PROVIDER_ORIGIN = "https://example.com";
-var TEST_PROVIDER_MANIFEST = TEST_PROVIDER_ORIGIN + "/browser/browser/features/socialdev/test/testprovider/app.manifest";
+const TEST_PROVIDER_MANIFEST = TEST_PROVIDER_ORIGIN + TEST_PROVIDER_PATH + "/app.manifest";
+
+// Some tests use 2 providers - it really is the same provider but served from
+// a different origin.
+const TEST_PROVIDER2_ORIGIN = "https://test1.example.com"
+const TEST_PROVIDER2_MANIFEST = TEST_PROVIDER2_ORIGIN + TEST_PROVIDER_PATH + "/app.manifest";
 
 // Helpers for the sidebar.
 function isSidebarVisible() {
@@ -52,10 +58,12 @@ function resetSocial() {
   registry().enabled = false;
   // all providers get nuked - we reach into the impl here...
   let providers = registry()._providers;
-  for (let i=0; i<providers.length; i++) {
-      ManifestDB.remove(providers[i].origin, function() {});
+  let origins = Object.keys(providers); // take a copy as we are mutating it
+  for each (let origin in origins) {
+    registry().remove(origin);
   }
   resetPrefs();
+  info("social was reset to the default state"); // well, in theory anyway :)
 }
 
 // ALL tests here want a clean state.
@@ -82,16 +90,19 @@ function readManifestFromChrome(url) {
   return data;
 }
 
-function installTestProvider(callback) {
+function installTestProvider(callback, manifestUrl) {
+  if (!manifestUrl) {
+    manifestUrl = TEST_PROVIDER_MANIFEST;
+  }
   // for now we just load the manifest directly from a chrome:// URL then
   // insert it into the manifest DB.  This is done mainly to avoid having
   // the registry grow callbacks to tell us when it has been done.
-  let manifesturl = "chrome://mochitests/content/browser/browser/features/socialdev/test/testprovider/app.manifest";
-  let manifest = JSON.parse(readManifestFromChrome(manifesturl));
+  let chromemanifesturl = "chrome://mochitests/content/browser/browser/features/socialdev/test/testprovider/app.manifest";
+  let manifest = JSON.parse(readManifestFromChrome(chromemanifesturl));
   // Note that due to how the storage stuff manages callbacks we don't callback
   // directly from the registry callback, but instead schedule it to happen
   // "soon"
-  registry().manifestRegistry.importManifest(window.document, TEST_PROVIDER_MANIFEST, manifest, true,
+  registry().manifestRegistry.importManifest(window.document, manifestUrl, manifest, true,
                                              function() {if (callback) executeSoon(callback)});
 }
 
