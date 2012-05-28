@@ -16,17 +16,17 @@ let tests = {
     registerCleanupFunction(function() {
       oc.terminate();
     });
-  
+
     is(window.social.enabled, false, "social should be disabled on first run");
     is(r.enabled, false, "registry should indicate disabled");
     is(r.currentProvider, null, "must be no current provider when disabled.");
-  
+
     // attempt to enable it - it should fail as we have no providers.
     r.enabled = true;
     is(window.social.enabled, false, "social should fail to become enabled when no providers");
     // and no notifications should have been sent above.
     oc.check([]);
-  
+
     // we need a provider to use for further testing...
     installTestProvider(function() {
       // now we can enable it.
@@ -44,7 +44,7 @@ let tests = {
         is(r.enabled, false, "social should be disabled after disabling only provider");
         oc.check([{topic: "social-browsing-disabled"},
                   {topic: "social-service-manifest-changed"}]);
-  
+
         // re-enable it.
         r.enableProvider(TEST_PROVIDER_ORIGIN);
         executeSoon(function() {
@@ -55,7 +55,7 @@ let tests = {
                     {topic: "social-browsing-enabled"},
                     {topic: "social-browsing-current-service-changed"}
                    ]);
-  
+
           // disable browsing.
           r.enabled = false;
           is(window.social.enabled, false, "social should be disabled");
@@ -86,7 +86,7 @@ let tests = {
         // now delete the first provider - second should be current.
         removeProvider(TEST_PROVIDER_ORIGIN, function() {
           is(r.currentProvider.origin, TEST_PROVIDER2_ORIGIN, "check new provider made current");
-          cbnext();          
+          cbnext();
         })
       }, TEST_PROVIDER2_MANIFEST);
     });
@@ -98,6 +98,7 @@ let tests = {
     // it again with the port specified - the second should be ignored.
     const originWithPort = TEST_PROVIDER_ORIGIN + ":443";
     const manifestWithPort = originWithPort + TEST_PROVIDER_PATH + "/app.manifest";
+    dump("START HAVE: " + Object.keys(r._providers) + "\n")
     is(Object.keys(r._providers).length, 0, "should be zero installed at the start");
     installTestProvider(function() {
       is(Object.keys(r._providers).length, 1, "should be one installed now");
@@ -108,7 +109,7 @@ let tests = {
       }, manifestWithPort);
     });
   },
-  
+
   testProviderCert: function(cbnext, origin) {
     // with no args this is testing the "no cert" case.
     if (!origin) origin = "https://nocert.example.com";
