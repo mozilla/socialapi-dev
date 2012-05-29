@@ -327,6 +327,7 @@ ManifestRegistry.prototype = {
     testSafebrowsing(url, function(result) {
       if (result != 0) {
         Cu.reportError("unable to load manifest due to safebrowsing result: ["+result+"] "+url);
+        if (callback) callback(false);
         return;
       }
 
@@ -342,7 +343,7 @@ ManifestRegistry.prototype = {
             }
             catch(e) {
               Cu.reportError("importManifest "+url+": "+e);
-              callback();
+              if (callback) callback(false);
             }
           }
           else {
