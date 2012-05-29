@@ -98,7 +98,6 @@ let tests = {
     // it again with the port specified - the second should be ignored.
     const originWithPort = TEST_PROVIDER_ORIGIN + ":443";
     const manifestWithPort = originWithPort + TEST_PROVIDER_PATH + "/app.manifest";
-    dump("START HAVE: " + Object.keys(r._providers) + "\n")
     is(Object.keys(r._providers).length, 0, "should be zero installed at the start");
     installTestProvider(function() {
       is(Object.keys(r._providers).length, 1, "should be one installed now");
