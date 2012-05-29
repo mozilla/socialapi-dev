@@ -115,7 +115,7 @@ let tests = {
     let r = registry();
     const manifestUrl = origin + TEST_PROVIDER_PATH + "/app.manifest";;
     installTestProvider(function() {
-      todo_is(r.get(origin), null, "ensure provider didn't get installed");
+      is(r.get(origin), undefined, "ensure provider didn't get installed");
       cbnext();
     }, manifestUrl);
   },

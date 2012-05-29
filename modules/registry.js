@@ -35,6 +35,14 @@ function normalizeOriginPort(aURL) {
   return aURL;
 }
 
+function isDevMode() {
+  prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
+  let enable_dev = false;
+  try {
+    enable_dev = prefBranch.getBoolPref("devmode");
+  } catch(e) {}
+  return enable_dev;
+}
 
 /**
  * testSafebrowsing
@@ -321,6 +329,28 @@ ManifestRegistry.prototype = {
     }
   },
 
+  _checkManifestSecurity: function(channel) {
+    // this comes from https://developer.mozilla.org/En/How_to_check_the_security_state_of_an_XMLHTTPRequest_over_SSL
+    // although we are more anal about things (ie, secInfo MUST be a nsITransportSecurityInfo and a nsISSLStatusProvider)
+    let secInfo = channel.securityInfo;
+    if (!(secInfo instanceof Ci.nsITransportSecurityInfo) || ((secInfo.securityState & Ci.nsIWebProgressListener.STATE_IS_SECURE) != Ci.nsIWebProgressListener.STATE_IS_SECURE)) {
+      Cu.reportError("The social manifest securityState is not secure");
+      return false;
+    }
+    if (!(secInfo instanceof Ci.nsISSLStatusProvider)) {
+      Cu.reportError("The social manifest host has no SSLStatusProvider");
+      return false;
+    }
+    let cert = secInfo.QueryInterface(Ci.nsISSLStatusProvider)
+               .SSLStatus.QueryInterface(Ci.nsISSLStatus).serverCert;
+    let verificationResult = cert.verifyForUsage(Ci.nsIX509Cert.CERT_USAGE_SSLServer);
+    if (verificationResult != Ci.nsIX509Cert.VERIFIED_OK) {
+      Cu.reportError("The SSL status of the manifest host is invalid");
+      return false;
+    }
+    return true;
+  },
+
   loadManifest: function manifestRegistry_loadManifest(aDocument, url, systemInstall, callback) {
     // test any manifest against safebrowsing
     let self = this;
@@ -338,6 +368,12 @@ ManifestRegistry.prototype = {
         if (xhr.readyState == 4) {
           if (xhr.status == 200 || xhr.status == 0) {
             //Services.console.logStringMessage("got response "+xhr.responseText);
+            // We implicitly trust resource:// manifest origins.
+            let needSecureManifest = !isDevMode() && url.indexOf("resource://") != 0;
+            if (needSecureManifest && !self._checkManifestSecurity(xhr.channel)) {
+              if (callback) callback(false);
+              return;
+            }
             try {
               self.importManifest(aDocument, url, JSON.parse(xhr.responseText), systemInstall, callback);
             }
@@ -438,10 +474,7 @@ function ProviderRegistry() {
   });
 
   // developer?
-  let enable_dev = false;
-  try {
-    enable_dev = this._prefBranch.getBoolPref("devmode");
-  } catch(e) {}
+  let enable_dev = isDevMode();
 
   // we need to have our service injector running on startup of the
   // registry
