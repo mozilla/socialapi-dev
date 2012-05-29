@@ -69,40 +69,11 @@ function resetSocial() {
 // ALL tests here want a clean state.
 registerCleanupFunction(resetSocial);
 
-// Helpers for the "test provider"
-function readManifestFromChrome(url) {
-  let ioService = Cc["@mozilla.org/network/io-service;1"]
-                  .getService(Ci.nsIIOService);
-  let uri = ioService.newURI(url, null, null);
-  let channel = ioService.newChannelFromURI(uri);
-  let stream = channel.open();
-  let sis = Cc["@mozilla.org/scriptableinputstream;1"]
-            .createInstance(Ci.nsIScriptableInputStream);
-  sis.init(stream);
-  let data = "";
-  while (true) {
-    let chunk = sis.read(512);
-    if (chunk.length == 0) {
-        break;
-    }
-    data = data + chunk;
-  }
-  return data;
-}
-
 function installTestProvider(callback, manifestUrl) {
   if (!manifestUrl) {
     manifestUrl = TEST_PROVIDER_MANIFEST;
   }
-  // for now we just load the manifest directly from a chrome:// URL then
-  // insert it into the manifest DB.  This is done mainly to avoid having
-  // the registry grow callbacks to tell us when it has been done.
-  let chromemanifesturl = "chrome://mochitests/content/browser/browser/features/socialdev/test/testprovider/app.manifest";
-  let manifest = JSON.parse(readManifestFromChrome(chromemanifesturl));
-  // Note that due to how the storage stuff manages callbacks we don't callback
-  // directly from the registry callback, but instead schedule it to happen
-  // "soon"
-  registry().manifestRegistry.importManifest(window.document, manifestUrl, manifest, true,
+  registry().manifestRegistry.loadManifest(window.document, manifestUrl, true,
                                              function() {if (callback) executeSoon(callback)});
 }
 
