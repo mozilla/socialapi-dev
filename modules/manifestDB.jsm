@@ -71,12 +71,25 @@ var ManifestDB = (function() {
     storage.iterate(cb);
   }
 
+  function close() {
+    storage.close();
+  }
+
+  // an observer to ensure we shutdown the database, else debug builds assert.
+  Services.obs.addObserver({
+    observe: function(aSubject, aTopic, aData) {
+      Services.obs.removeObserver(this, "quit-application-granted");
+      close();
+    }
+  }, "quit-application-granted", false);
+
   return {
     insert: insert,
     iterate: iterate,
     put: put,
     remove: remove,
-    get: get
+    get: get,
+    close: close
   };
 })();
 

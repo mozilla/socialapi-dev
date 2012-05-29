@@ -137,7 +137,7 @@ const OverlayManager = {
     OverlayManager.addOverlays(this.overlays);
   },
 
-  unload: function() {
+  unload: function(aParams) {
     Services.console.logStringMessage("unload");
     try {
       // Close any of our UI windows
@@ -570,12 +570,18 @@ function startup(aParams, aReason) {
 }
 
 function shutdown(aParams, aReason) {
-  // Don't need to clean anything up if the application is shutting down
+  // We need to shutdown the typedstorage database else we assert in
+  // debug builds at shutdown.
+  let tmp = {};
+  Cu.import("resource://socialdev/modules/manifestDB.jsm", tmp);
+  tmp.ManifestDB.close();
+
+  // Don't need to clean anything else up if the application is shutting down
   if (aReason == APP_SHUTDOWN) {
     return;
   }
   // Unload and remove the overlay manager
-  OverlayManager.unload();
+  OverlayManager.unload(aParams);
 }
 
 function uninstall(aParams, aReason) {

@@ -172,6 +172,13 @@ ObjectStore.prototype = {
         }
       }
     });
+  },
+
+  close: function() {
+    if (this._dbConn) {
+      this._dbConn.asyncClose();
+      this._dbConn = null;
+    }
   }
 };
 
