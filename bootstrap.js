@@ -572,12 +572,12 @@ function startup(aParams, aReason) {
       let createCallback = function(manifest) {
         return new tmp.SocialProvider(manifest);
       }
-      Cu.import("resource://socialapi-core/modules/registry.js", tmp);
+      Cu.import("resource://socialapi/modules/registry.js", tmp);
       tmp.initialize(createCallback);
     });
   };
   let res = Services.io.getProtocolHandler("resource").QueryInterface(Ci.nsIResProtocolHandler);
-  if (res.hasSubstitution("socialapi-core")) {
+  if (res.hasSubstitution("socialapi")) {
     // the core has already initialized...
     realStartup();
   } else {

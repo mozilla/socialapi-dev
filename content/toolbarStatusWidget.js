@@ -3,7 +3,7 @@
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://socialdev/modules/baseWidget.js");
 
-Cu.import("resource://socialapi-core/modules/registry.js");
+Cu.import("resource://socialapi/modules/registry.js");
 
 function SocialToolbarStatusArea() {
   baseWidget.call(this, window);
