@@ -76,15 +76,16 @@ function installBuiltinProviders() {
 installBuiltinProviders();
 
 var DocumentObserver = {
+  QueryInterface: XPCOMUtils.generateQI([Ci.nsISupportsWeakReference, Ci.nsIObserver]),
   init: function() {
-    this._prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
-    Services.obs.addObserver(this, "document-element-inserted", true);
+    Services.obs.addObserver(DocumentObserver, "document-element-inserted", true);
   },
-  discoverManifest: function manifestRegistry_discoverManifest(aDocument, aData) {
+  discoverManifest: function DocumentObserver_discoverManifest(aDocument, aData) {
     // BUG 732266 this is probably heavy weight, is there a better way to watch for
     // links in documents?
     // https://developer.mozilla.org/En/Listening_to_events_in_Firefox_extensions
     // DOMLinkAdded event
+    let _prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);;
 
     // TODO determine whether or not we actually want to load this
     // manifest.
@@ -94,7 +95,7 @@ var DocumentObserver = {
     // 3. does the fecency for the site warrent loading the manifest and
     //    offering to the user?
     try {
-      if (this._prefBranch.getBoolPref(aDocument.defaultView.location.host+".ignore")) {
+      if (_prefBranch.getBoolPref(aDocument.defaultView.location.host+".ignore")) {
         return;
       }
     } catch(e) {}
@@ -102,7 +103,7 @@ var DocumentObserver = {
     // we need a way to test against local non-http servers on occasion
     let allow_http = false;
     try {
-      allow_http = this._prefBranch.getBoolPref("allow_http");
+      allow_http = _prefBranch.getBoolPref("allow_http");
     } catch(e) {}
 
     let links = aDocument.getElementsByTagName('link');
@@ -132,15 +133,17 @@ var DocumentObserver = {
    *
    * reset our mediators if an app is installed or uninstalled
    */
-  observe: function manifestRegistry_observe(aSubject, aTopic, aData) {
+  observe: function DocumentObserver_observe(aSubject, aTopic, aData) {
     if (aTopic == "document-element-inserted") {
       if (!aSubject.defaultView)
         return;
       //Services.console.logStringMessage("new document "+aSubject.defaultView.location);
-      this.discoverManifest(aSubject, aData);
+      DocumentObserver.discoverManifest(aSubject, aData);
       return;
     }
   }
 }
 
 DocumentObserver.init();
+
+const EXPORTED_SYMBOLS = ["DocumentObserver"];
