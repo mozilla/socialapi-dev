@@ -574,6 +574,8 @@ function startup(aParams, aReason) {
       }
       Cu.import("resource://socialapi/modules/registry.js", tmp);
       tmp.initialize(createCallback);
+
+      Cu.import("resource://socialdev/modules/Discovery.jsm", tmp);
     });
   };
   let res = Services.io.getProtocolHandler("resource").QueryInterface(Ci.nsIResProtocolHandler);
