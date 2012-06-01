@@ -29,7 +29,6 @@ var workerInfos = {}; // keyed by URL.
 
 function log(msg) {
   Services.console.logStringMessage(new Date().toISOString() + " [frameworker]: " + msg);
-  dump(new Date().toISOString() + " [frameworker]: " + msg + "\n");
 };
 
 var _nextPortId = 1;
@@ -40,7 +39,7 @@ function __initWorkerMessageHandler() {
 
   let ports = {}; // all "worker" ports currently alive, keyed by ID.
 
-  function _messageHandler(event) {
+  function messageHandler(event) {
     // We will ignore all messages destined for otherType.
     let data = event.data;
     let portid = data.portId;
@@ -77,27 +76,17 @@ function __initWorkerMessageHandler() {
         port = ports[portid];
         if (!port) {
           // port must be closed - this shouldn't happen!
-          dump("port-message but port is closed\n");
           return;
         }
         port._onmessage(data.data);
         break;
 
       default:
-        dump("unexpected worker message: " + event.data + "\n");
         break;
     }
   }
-  // this can probably go once debugged and working correctly!
-  function messageHandler(event) {
-    try {
-      _messageHandler(event);
-    } catch (ex) {
-      dump("ERROR handling worker port control message: " + ex + "\n" + ex.stack);
-    }
-  }
-  // _addEventListener is injected into the sandbox.
-  _addEventListener('message', messageHandler);
+  // addEventListener is injected into the sandbox.
+  addEventListener('message', messageHandler);
 }
 
 // And this is the message listener for the *client* (ie, chrome) side of the world.
@@ -124,7 +113,6 @@ function initClientMessageHandler(workerInfo, workerWindow) {
           return;
         }
         delete workerInfo.ports[portid];
-//        dump(port + " being closed - now " + Object.keys(workerInfo.ports).length + " client ports alive\n");
         port.close();
         break;
 
@@ -132,15 +120,12 @@ function initClientMessageHandler(workerInfo, workerWindow) {
         // the client posted a message to this worker port.
         port = workerInfo.ports[portid];
         if (!port) {
-          // port must be closed - this shouldn't happen!
-          dump("port-message but port is closed\n");
           return;
         }
         port._onmessage(data.data);
         break;
 
       default:
-        dump("unexpected worker message: " + JSON.stringify(event.data) + "\n");
         break;
     }
   }
@@ -238,7 +223,6 @@ AbstractPort.prototype = {
     if (!this._portid) {
       return; // already closed.
     }
-//    dump(this + " is being closed\n");
     this._postControlMessage("port-close");
     // and clean myself up.
     this._handler = null;
@@ -259,12 +243,14 @@ WorkerPort.prototype = {
   _portType: "worker",
 
   _dopost: function(data) {
-    // _postMessage is injected into the sandbox.
-    _postMessage(data, "*");
+    // postMessage is injected into the sandbox.
+    postMessage(data, "*");
   },
 
   _onerror: function(err) {
-    // hrmph - probably want to send a message back to the chrome code?
+    // dump() is the only thing available in the worker context to report
+    // errors.  We could possibly send a message back to the chrome code so
+    // it can be logged more appropriately - later..
     dump("Port " + this + " handler failed: " + err + "\n" + err.stack);
   }
 }
@@ -395,7 +381,7 @@ function FrameWorker(url, clientWindow, name) {
         for each(let fn in workerAPI) {
           try {
             if (workerWindow[fn]) {
-              sandbox.importFunction(workerWindow[fn], fn);
+              sandbox[fn] = workerWindow[fn];
             }
           }
           catch(e) {
@@ -407,7 +393,7 @@ function FrameWorker(url, clientWindow, name) {
           set: function(val) { workerWindow.document.cookie = val },
           enumerable: true
         });
-        sandbox.importFunction(function importScripts() {
+        sandbox.importScripts = function importScripts() {
           if (arguments.length < 1) return;
           let workerURI = Services.io.newURI(url, null, null);
           for each(let uri in arguments) {
@@ -438,7 +424,7 @@ function FrameWorker(url, clientWindow, name) {
             };
             xhr.send(null);
           }
-        }, 'importScripts');
+        };
         // and we delegate ononline and onoffline events to the worker.
         // See http://www.whatwg.org/specs/web-apps/current-work/multipage/workers.html#workerglobalscope
         frame.addEventListener('offline', function(event) {
@@ -448,14 +434,13 @@ function FrameWorker(url, clientWindow, name) {
           Cu.evalInSandbox("ononline();", sandbox);
         }, false);
 
-        sandbox.importFunction(workerWindow.postMessage, "_postMessage");
-        sandbox.importFunction(workerWindow.addEventListener, "_addEventListener");
+        sandbox.postMessage = function(d, o) { workerWindow.postMessage(d, o) };
+        sandbox.addEventListener = function(t, l, c) { workerWindow.addEventListener(t, l, c) };
 
         // And a very hacky work-around for bug 734215
-        workerWindow.bufferToArrayHack = function(a) {
+        sandbox.bufferToArrayHack = function(a) {
             return new workerWindow.Uint8Array(a);
         };
-        sandbox.importFunction(workerWindow.bufferToArrayHack, "bufferToArrayHack");
 
         workerWindow.addEventListener("load", function() {
           log("got worker onload event for " + workerName);
