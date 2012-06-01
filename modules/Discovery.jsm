@@ -103,7 +103,7 @@ var DocumentObserver = {
     // we need a way to test against local non-http servers on occasion
     let allow_http = false;
     try {
-      allow_http = _prefBranch.getBoolPref("allow_http");
+      allow_http = _prefBranch.getBoolPref("devmode");
     } catch(e) {}
 
     let links = aDocument.getElementsByTagName('link');
