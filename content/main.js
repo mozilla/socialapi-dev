@@ -142,19 +142,16 @@ function social_init() {
   };
 
   // watch for when browser disables chrome in tabs, and hide the social sidebar
-  try {
-    var observer = new MozMutationObserver(function(mutations) {
+  if ('MozMutationObserver' in window || 'MutationObserver' in window) {
+    Cu.reportError("Found mutation observer!\n");
+    var observer = new (window.MutationObserver || window.MozMutationObserver)(function(mutations) {
       mutations.forEach(function(mutation) {
         if (mutation.type === 'attributes') {
           set_window_social_enabled_from_doc_state();
         }
       });
     });
-
-    observer.observe(document.documentElement, {
-      attributes: true, attributeFilter: ["disablechrome", "chromehidden"]
-    });
-  } catch(e) {
+  } else {
     Cu.reportError("MozMutationObserver not available, falling back to DOMAttrModified");
     // bug 756674 not sure what version MozMutationObserver became available, keep the fallback
     document.addEventListener('DOMAttrModified', function(e) {
