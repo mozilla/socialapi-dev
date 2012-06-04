@@ -160,6 +160,8 @@ workerAPI.prototype = {
       }
       if (data.counter) {
         ani.setCounter(data.counter);
+      } else {
+        ani.setCounter(0);
       }
       if (data.contentPanel) {
         ani.setContentPanel(data.contentPanel);
