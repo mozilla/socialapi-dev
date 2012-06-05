@@ -562,31 +562,9 @@ function install(aParams, aReason) {
 }
 
 function startup(aParams, aReason) {
-  // We can't know the order these things will initialize in...
-  let realStartup = function() {
-    OverlayManager.init(aParams, function() {
-      // addon specific stuff we need to start before
-      // applying our overlays
-      let tmp = {}
-      Cu.import("resource://socialapi/modules/provider.js", tmp);
-      let createCallback = function(manifest) {
-        return new tmp.SocialProvider(manifest);
-      }
-      Cu.import("resource://socialapi/modules/registry.js", tmp);
-      tmp.initialize(createCallback);
-    });
-  };
   let res = Services.io.getProtocolHandler("resource").QueryInterface(Ci.nsIResProtocolHandler);
-  if (res.hasSubstitution("socialapi")) {
-    // the core has already initialized...
-    realStartup();
-  } else {
-    Services.obs.addObserver({
-      observe: function(aSubject, aTopic, aData) {
-        realStartup();
-      }
-    }, "socialapi-core-startup", false);
-  }
+  res.setSubstitution("socialapi", aParams.resourceURI);
+  OverlayManager.init(aParams, function() {});
 }
 
 function shutdown(aParams, aReason) {

@@ -1,0 +1,3 @@
+locale    socialapi en-US           locale/en-US/
+
+resource socialapi ./
