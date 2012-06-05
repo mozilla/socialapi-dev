@@ -17,7 +17,7 @@ function getBuiltinProviders() {
   try {
     // figure out our installPath
     let res = Services.io.getProtocolHandler("resource").QueryInterface(Ci.nsIResProtocolHandler);
-    let installURI = Services.io.newURI("resource://socialdev/", null, null);
+    let installURI = Services.io.newURI("resource://socialapi/", null, null);
     let installPath = res.resolveURI(installURI);
     let installFile = Services.io.newURI(installPath, null, null);
     try {
@@ -26,7 +26,7 @@ function getBuiltinProviders() {
 
     // load all prefs in defaults/preferences into a sandbox that has
     // a pref function
-    let resURI = Services.io.newURI("resource://socialdev/providers", null, null);
+    let resURI = Services.io.newURI("resource://socialapi/providers", null, null);
     // If we're a XPI, load from the jar file
     if (installFile.JARFile) {
       let fileHandler = Components.classes["@mozilla.org/network/protocol;1?name=file"].

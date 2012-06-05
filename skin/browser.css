@@ -40,8 +40,8 @@
   background-image:none !important;
 }
 
-#socialdev-button {
-  list-style-image: url("chrome://socialdev/skin/social.png");
+#socialapi-button {
+  list-style-image: url("chrome://socialapi/skin/social.png");
 }
 
 .social-notification-icon-container {

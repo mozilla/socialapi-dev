@@ -5,7 +5,7 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 Cu.import("resource://socialapi/modules/registry.js");
 
-const ABOUTURL = "chrome://socialdev/content/about.html";
+const ABOUTURL = "chrome://socialapi/content/about.html";
 const EXPORTED_SYMBOLS = [];
 
 //----- about:social implementation

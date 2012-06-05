@@ -1,14 +1,14 @@
-content   socialdev                 content/
-skin      socialdev classic/1.0     skin/
-skin      socialdev-plat classic/1.0     skin/gnomestripe/ os=Linux
-skin      socialdev-plat classic/1.0     skin/winstripe/   os=WINNT
-skin	  socialdev-plat classic/1.0     skin/pinstripe/   os=Darwin
-locale    socialdev en-US           locale/en-US/
+content   socialapi                 content/
+skin      socialapi classic/1.0     skin/
+skin      socialapi-plat classic/1.0     skin/gnomestripe/ os=Linux
+skin      socialapi-plat classic/1.0     skin/winstripe/   os=WINNT
+skin	  socialapi-plat classic/1.0     skin/pinstripe/   os=Darwin
+locale    socialapi en-US           locale/en-US/
 
-overlay	chrome://browser/content/browser.xul   chrome://socialdev/content/overlay.xul
-overlay	chrome://socialdev/content/serviceWindow.xul chrome://socialdev/content/winSocial.xul       os=WINNT
-overlay	chrome://socialdev/content/serviceWindow.xul chrome://browser/content/macBrowserOverlay.xul os=Darwin
-resource socialdev ./
+overlay	chrome://browser/content/browser.xul   chrome://socialapi/content/overlay.xul
+overlay	chrome://socialapi/content/serviceWindow.xul chrome://socialapi/content/winSocial.xul       os=WINNT
+overlay	chrome://socialapi/content/serviceWindow.xul chrome://browser/content/macBrowserOverlay.xul os=Darwin
+resource socialapi ./
 
 component {ddf3f2e0-c819-b843-b32c-c8834d98ef49} components/about.js
 contract @mozilla.org/network/protocol/about;1?what=social {ddf3f2e0-c819-b843-b32c-c8834d98ef49}

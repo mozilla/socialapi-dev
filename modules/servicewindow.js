@@ -26,7 +26,7 @@ const isWin = Services.appinfo.OS == "WINNT";
 var xulNs = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 var xhtmlNs = "http://www.w3.org/1999/xhtml";
 
-const SOCIAL_WINDOWTYPE = "socialdev:window";
+const SOCIAL_WINDOWTYPE = "socialapi:window";
 
 
 function serviceWindowMaker(options) {
@@ -37,7 +37,7 @@ function serviceWindowMaker(options) {
 
   let ww = Cc["@mozilla.org/embedcomp/window-watcher;1"]
     .getService(Ci.nsIWindowWatcher);
-  var window = ww.openWindow(null, 'chrome://socialdev/content/serviceWindow.xul',
+  var window = ww.openWindow(null, 'chrome://socialapi/content/serviceWindow.xul',
                              options.name, options.features, options);
 
   // We catch the first DOMContentLoaded, which means the XUL

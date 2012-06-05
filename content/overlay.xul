@@ -1,19 +1,19 @@
 <?xml version="1.0"?>
 <!DOCTYPE overlay [
-<!ENTITY % socialDTD SYSTEM "chrome://socialdev/locale/social.dtd">
+<!ENTITY % socialDTD SYSTEM "chrome://socialapi/locale/social.dtd">
 %socialDTD;
 ]>
 
-<?xml-stylesheet href="chrome://socialdev/skin/browser.css" type="text/css"?>
-<?xml-stylesheet href="chrome://socialdev-plat/skin/socialstatus.css" type="text/css"?>
+<?xml-stylesheet href="chrome://socialapi/skin/browser.css" type="text/css"?>
+<?xml-stylesheet href="chrome://socialapi-plat/skin/socialstatus.css" type="text/css"?>
 
-<overlay id="socialdev-overlay"
+<overlay id="socialapi-overlay"
          xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 
-  <script type="application/x-javascript" src="chrome://socialdev/content/recommendButtonWidget.js"/>
-  <script type="application/x-javascript" src="chrome://socialdev/content/toolbarStatusWidget.js"/>
-  <script type="application/x-javascript" src="chrome://socialdev/content/sidebarWidget.js"/>
-  <script type="application/x-javascript" src="chrome://socialdev/content/main.js"/>
+  <script type="application/x-javascript" src="chrome://socialapi/content/recommendButtonWidget.js"/>
+  <script type="application/x-javascript" src="chrome://socialapi/content/toolbarStatusWidget.js"/>
+  <script type="application/x-javascript" src="chrome://socialapi/content/sidebarWidget.js"/>
+  <script type="application/x-javascript" src="chrome://socialapi/content/main.js"/>
 
   <broadcasterset>
     <broadcaster id="socialInstalled" checked="false" hidden="true"/>
@@ -24,7 +24,7 @@
   <commandset id="mainCommandSet">
     <command id="cmd_socialRecommend" oncommand="social.recommendButton.oncommand(event);"/>
     <command id="cmd_socialPreferences"
-             label="&socialdev.prefslabel;"
+             label="&socialapi.prefslabel;"
              oncommand="openUILink('about:social')"/>
     <command id="cmd_socialBrowsingToggle"
              label="&socialenable.label;"
@@ -85,7 +85,7 @@
           <image
               id="social-statusarea-service-image"
               class="social-statusarea-service-image"
-              src="chrome://socialdev/skin/social.png"/>
+              src="chrome://socialapi/skin/social.png"/>
 
             <image class="social-statusarea-dropmarker-image"/>
             <menupopup

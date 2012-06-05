@@ -1,4 +1,4 @@
-Cu.import("resource://socialdev/modules/registry.js");
+Cu.import("resource://socialapi/modules/registry.js");
 
 // test about:social.
 function test() {
@@ -48,7 +48,7 @@ function test() {
                 is(enableBut1.checked, false, "enable button 1 should not be checked");
                 is(enableBut2.checked, false, "enable button 2 should not be checked");
                 // Now remove the provider and ensure the HTML responds.
-                removeTestProvider(function() {
+                removeProvider(TEST_PROVIDER_ORIGIN, function() {
                   is(providersDiv1.hasChildNodes(), false, "should be nothing in the first activities div");
                   is(providersDiv2.hasChildNodes(), false, "should be nothing in the second activities div");
                   finish();

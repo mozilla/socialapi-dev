@@ -1,8 +1,7 @@
-Cu.import("resource://socialdev/modules/registry.js");
 Cu.import("resource://gre/modules/Services.jsm");
 
 // This is the path to the test provider relative to its origin.
-const TEST_PROVIDER_PATH = "/browser/browser/features/socialdev/test/testprovider"
+const TEST_PROVIDER_PATH = "/browser/browser/features/socialapi/test/testprovider"
 
 // See http://mxr.mozilla.org/mozilla-central/source/build/pgo/server-locations.txt
 // for other possibly origins we could use.
@@ -14,36 +13,41 @@ const TEST_PROVIDER_MANIFEST = TEST_PROVIDER_ORIGIN + TEST_PROVIDER_PATH + "/app
 const TEST_PROVIDER2_ORIGIN = "https://test1.example.com"
 const TEST_PROVIDER2_MANIFEST = TEST_PROVIDER2_ORIGIN + TEST_PROVIDER_PATH + "/app.manifest";
 
-// Helpers for the sidebar.
-function isSidebarVisible() {
-  return document.getElementById("social-vbox").getAttribute("hidden") != "true";
+
+let headModules = {}
+Cu.import("resource://socialapi/modules/registry.js", headModules);
+Cu.import("resource://socialapi/modules/manifest.jsm", headModules);
+Cu.import("resource://socialapi/modules/provider.js", headModules);
+try {
+  headModules.initialize(function(manifest) {return new headModules.SocialProvider(manifest);});
+} catch (ex) {
+  if (ex.toString() != "Error: already initialized") {
+    info("Unexpected failure to initialize the registry: " + ex)
+    throw ex;
+  }
+  // it's already been done...
 }
 
-function openSidebar(callback) {
-  // Opens the sidebar and after it loads calls the callback.
-  // It is the caller's job to ensure a provider is installed etc.
-  if (isSidebarVisible()) {
-    throw new Error("sidebar is already visible");
+function installTestProvider(callback, manifestUrl) {
+  if (!manifestUrl) {
+    manifestUrl = TEST_PROVIDER_MANIFEST;
   }
-  // attach a load listener to the browser
-  let browser = document.getElementById("social-status-sidebar-browser");
-  browser.addEventListener("DOMContentLoaded", function browserlistener(evt) {
-    // hmph - the timing of these events is hard to predict - if we are just
-    // being told about about:blank, wait until the real one comes.
-    if (browser.contentWindow.location.href == "about:blank") {
-      return;
-    };
-    browser.removeEventListener("DOMContentLoaded", browserlistener, true);
-    callback(browser.contentWindow);
-  }, true);
-  window.social_sidebar_toggle();
+  let ms = headModules.manifestSvc;
+  ms.loadManifest(window.document, manifestUrl, true,
+                  function() {if (callback) executeSoon(callback)});
+}
+
+function removeProvider(origin, cb) {
+  headModules.registry().remove(origin, function() {
+    if (cb) executeSoon(cb);
+  });
 }
 
 function resetPrefs() {
   let prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
   prefBranch.deleteBranch('');
   let tmp = {};
-  Cu.import("resource://socialdev/modules/defaultprefs.js", tmp);
+  Cu.import("resource://socialapi/modules/defaultprefs.js", tmp);
   tmp.setDefaultPrefs();
 }
 
@@ -52,15 +56,16 @@ function resetSocial() {
   // have a concept of async - so no callback arg.
   // reset the entire social world back to the state it is on a "clean" first
   // startup - ie, all UI elements and prefs.
+  let r = headModules.registry();
   if (isSidebarVisible()) {
     window.social_sidebar_toggle();
   };
-  registry().enabled = false;
-  // all providers get nuked - we reach into the impl here...
-  let providers = registry()._providers;
+  r.enabled = false;
+  // all providers get nuked. - we reach into the impl here...
+  let providers = r._providers;
   let origins = Object.keys(providers); // take a copy as we are mutating it
   for each (let origin in origins) {
-    registry().remove(origin);
+    r.remove(origin);
   }
   resetPrefs();
   info("social was reset to the default state"); // well, in theory anyway :)
@@ -69,25 +74,8 @@ function resetSocial() {
 // ALL tests here want a clean state.
 registerCleanupFunction(resetSocial);
 
-function installTestProvider(callback, manifestUrl) {
-  if (!manifestUrl) {
-    manifestUrl = TEST_PROVIDER_MANIFEST;
-  }
-  registry().manifestRegistry.loadManifest(window.document, manifestUrl, true,
-                                             function() {if (callback) executeSoon(callback)});
-}
 
-function removeTestProvider(cb) {
-  removeProvider(TEST_PROVIDER_ORIGIN, cb);
-}
-
-function removeProvider(origin, cb) {
-  registry().remove(origin, function() {
-    if (cb) executeSoon(cb);
-  });
-}
-
-// a helpers for checking observer notifications.
+// a helper for checking observer notifications.
 function observerChecker(topics) {
   this.topics = topics;
   for each (let topic in topics) {
@@ -156,18 +144,44 @@ function runTests(tests, cbPreTest, cbPostTest) {
     // this helps keep the debug messages sane.
     window.setTimeout(function() {
       function cleanupAndRunNextTest() {
+        info("sub-test " + name + " complete");
         cbPostTest(runNextTest);
       }
       cbPreTest(function() {
-        info("running test worker " + name);
+        info("sub-test " + name + " starting");
         try {
           func.call(tests, cleanupAndRunNextTest);
         } catch (ex) {
-          ok(false, "worker test " + name + " failed: " + ex.toString());
+          ok(false, "sub-test " + name + " failed: " + ex.toString());
           cleanupAndRunNextTest();
         }
       })
     }, 0)
   }
   runNextTest();
+}
+
+// Helpers for the sidebar.
+function isSidebarVisible() {
+  return document.getElementById("social-vbox").getAttribute("hidden") != "true";
+}
+
+function openSidebar(callback) {
+  // Opens the sidebar and after it loads calls the callback.
+  // It is the caller's job to ensure a provider is installed etc.
+  if (isSidebarVisible()) {
+    throw new Error("sidebar is already visible");
+  }
+  // attach a load listener to the browser
+  let browser = document.getElementById("social-status-sidebar-browser");
+  browser.addEventListener("DOMContentLoaded", function browserlistener(evt) {
+    // hmph - the timing of these events is hard to predict - if we are just
+    // being told about about:blank, wait until the real one comes.
+    if (browser.contentWindow.location.href == "about:blank") {
+      return;
+    };
+    browser.removeEventListener("DOMContentLoaded", browserlistener, true);
+    callback(browser.contentWindow);
+  }, true);
+  window.social_sidebar_toggle();
 }

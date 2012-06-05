@@ -11,7 +11,7 @@
 <?xml-stylesheet href="chrome://browser/skin/" type="text/css"?>
 
 <window id="main-window"
-        windowtype="socialdev:window"
+        windowtype="socialapi:window"
         title="YourApplication"
         xmlns:html="http://www.w3.org/1999/xhtml"
         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
@@ -22,7 +22,7 @@
         persist="screenX screenY width height"
         chromemargin="0,-1,-1,-1"
         >
-  <script type="application/x-javascript" src="chrome://socialdev/content/serviceWindow.js"/>
+  <script type="application/x-javascript" src="chrome://socialapi/content/serviceWindow.js"/>
 
   <stringbundleset id="stringbundleset"/>
   <commandset id="mainCommandSet"/>

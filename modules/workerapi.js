@@ -9,7 +9,7 @@ EXPORTED_SYMBOLS = ["workerAPI"];
 const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 var notification = {};
-Cu.import("resource://socialdev/modules/notification.js", notification);
+Cu.import("resource://socialapi/modules/notification.js", notification);
 Cu.import("resource://gre/modules/Services.jsm");
 
 function workerAPI(worker, service) {

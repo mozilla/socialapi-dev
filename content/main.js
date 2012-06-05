@@ -1,7 +1,12 @@
 "use strict";
 
 Cu.import("resource://socialapi/modules/registry.js");
-Cu.import("resource://socialdev/modules/Discovery.jsm");
+Cu.import("resource://socialapi/modules/provider.js");
+Cu.import("resource://socialapi/modules/Discovery.jsm");
+
+// initialize the registry - we should be able to drop this explicit
+// initialization once we move to landing provider as part of the "core"
+initialize(function(manifest) {return new SocialProvider(manifest);});
 
 function isAvailable() {
   // This will probably go away based on UX - it exists so the social toolbar
