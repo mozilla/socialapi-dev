@@ -67,8 +67,18 @@ var ManifestDB = (function() {
     storage.get(normalizeKey(origin), cb);
   }
 
-  function iterate(cb) {
-    storage.iterate(cb);
+  function iterate(cb, finalize) {
+    storage.keys(function(allKeys) {
+      let count = allKeys.length;
+      for each(let key in allKeys) {
+        storage.get(key, function(k, values) {
+          cb(k, values);
+          count--;
+          if (finalize && count == 0)
+            finalize(allKeys.length);
+        });
+      }
+    });
   }
 
   function close() {
