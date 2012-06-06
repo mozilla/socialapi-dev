@@ -68,6 +68,9 @@ function wrapServiceWindowForContent(aWindow)
     close: function() {
       aWindow.browser.contentWindow.close();
     },
+    get closed() {
+      return aWindow.closed;
+    },
     focus: function() {
       aWindow.browser.contentWindow.focus();
     },
@@ -105,7 +108,7 @@ function createServiceWindow(toURL, name, options, withService, title, readyCall
 
     onReady: function() {
       try {
-        if ((aWind.browser.contentWindow.location.href).indexOf(withService.origin) != 0) {
+        if (aWind.browser.contentWindow.location.href != toURL) {
           return;
         }
         aWind.browser.service = withService;
