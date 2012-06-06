@@ -206,11 +206,12 @@ ManifestRegistry.prototype = {
         }
         // dont overwrite enabled, but first install is always enabled
         manifest.enabled = item ? item.enabled : true;
-        ManifestDB.put(manifest.origin, manifest);
-        registry().register(manifest);
-        if (callback) {
-          callback(true);
-        }
+        ManifestDB.put(manifest.origin, manifest, function() {
+          registry().register(manifest);
+          if (callback) {
+            callback(true);
+          }
+        });
       });
     }
 
