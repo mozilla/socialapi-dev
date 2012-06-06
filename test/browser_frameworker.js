@@ -164,48 +164,12 @@ let tests = {
   },
 
   testXHR: function(cbnext) {
-    let run = function() {
-      onconnect = function(e) {
-        let port = e.ports[0];
-        let req;
-        try {
-          req = new XMLHttpRequest();
-        } catch(e) {
-          port.postMessage({topic: "done", result: "FAILED to create XHR object, " + e.toString() });
-        }
-        if (req === undefined) { // until bug 756173 is fixed...
-          port.postMessage({topic: "done", result: "FAILED to create XHR object"});
-          return;
-        }
-        // read a URL from our test provider so it is in the same origin as the worker.
-        // might as well just read the manifest!
-        // XXX - THIS IS WRONG!  it should work with this URL as it is in our origin!!!
-        // but we get a .status of 0, which implies CORS is killing us.
-        // req.open("GET", "http://mochi.test:8888/browser/browser/features/socialapi/test/testprovider/app.manifest", true);
-        req.open("GET", "http://enable-cors.org/", true);
-        req.onreadystatechange = function() {
-          if (req.readyState === 4) {
-            dump("XHR: req.status " + req.status + "\n");
-            let ok = req.status == 200 && req.responseText.length > 0;
-            if (ok) {
-              // check we actually got something sane...
-              try {
-                let data = JSON.parse(req.responseText);
-                ok = "services" in data && "social" in data.services;
-              } catch(e) {
-                ok = e.toString();
-              }
-            }
-            port.postMessage({topic: "done", result: ok});
-          }
-        }
-        req.send(null);
-      }
-    }
-    let worker = modules.FrameWorker(makeWorkerUrl(run), undefined, "testXHR");
+    // NOTE: this url MUST be in the same origin as worker_xhr.js fetches from!
+    let url = "https://example.com/browser/browser/features/socialapi/test/worker_xhr.js";
+    let worker = modules.FrameWorker(url, undefined, "testXHR");
     worker.port.onmessage = function(e) {
       if (e.data.topic == "done") {
-        todo_is(e.data.result, "ok", "check the xhr test worked");
+        is(e.data.result, "ok", "check the xhr test worked");
         worker.terminate();
         cbnext();
       }

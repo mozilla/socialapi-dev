@@ -17,6 +17,7 @@ _BROWSER_TEST_FILES = \
   browser_frameworker.js \
   browser_manifest.js \
   browser_registry.js \
+  worker_xhr.js \
 
   $(NULL)
 

@@ -366,7 +366,8 @@ function FrameWorker(url, clientWindow, name) {
         }
         Services.obs.removeObserver(injectController, 'document-element-inserted', false);
 
-        let workerWindow = frame.contentWindow;
+        // using wrappedJSObject makes XHR and other classes work properly
+        let workerWindow = frame.contentWindow.wrappedJSObject;
 
         let sandbox = new Cu.Sandbox(workerWindow);
         // copy the window apis onto the sandbox namespace only functions or
