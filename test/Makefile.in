@@ -18,7 +18,9 @@ _BROWSER_TEST_FILES = \
   browser_sidebar.js \
   browser_frameworker.js \
   browser_provider.js \
+  browser_servicewindow.js \
   head.js \
+  worker_xhr.js \
   $(NULL)
 
 _BROWSER_TEST_PROVIDER_FILES = \
