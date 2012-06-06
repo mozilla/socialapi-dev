@@ -205,12 +205,16 @@ SocialProvider.prototype = {
     }
 
     targetWindow.addEventListener("unload", function() {
-      try {
-        worker.port.close();
+      // We want to close the port, but also want the target window to be
+      // able to use the port during an unload event they setup - so we
+      // set a timer which will fire after the unload events have all fired.
+      let event = {
+        notify: function(timer) {
+          worker.port.close();
+        }
       }
-      catch(e) {
-        self._log("Exception while closing worker: " + e);
-      }
+      let timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
+      timer.initWithCallback(event, 0, Ci.nsITimer.TYPE_ONE_SHOT);
     }, false);
 
   },
