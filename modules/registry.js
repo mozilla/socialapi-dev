@@ -38,7 +38,7 @@ function isDevMode() {
 }
 
 function log(msg) {
-  // dump(msg);
+  //dump(msg);
 }
 
 const providerRegistryClassID = Components.ID("{1a60fb78-b2d2-104b-b16a-7f497be5626d}");
@@ -55,6 +55,9 @@ function ProviderRegistry(createCallback) {
   let self = this;
   ManifestDB.iterate(function(key, manifest) {
     self.register(manifest);
+  }, function(count) {
+    self._ready = true;
+    Services.obs.notifyObservers(null, "social-service-ready", null)
   });
 
   // developer?
@@ -112,6 +115,10 @@ ProviderRegistry.prototype = {
   _currentProvider: null,
   _enabled: null,
   _enabledBeforePrivateBrowsing: false,
+  _ready: false, // true after initialization has loaded our manifests
+  get ready() {
+    return this._ready;
+  },
 
   observe: function(aSubject, aTopic, aData) {
     if (aTopic == "private-browsing") {

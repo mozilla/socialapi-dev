@@ -4,10 +4,6 @@ Cu.import("resource://socialapi/modules/registry.js");
 Cu.import("resource://socialapi/modules/provider.js");
 Cu.import("resource://socialapi/modules/Discovery.jsm");
 
-// initialize the registry - we should be able to drop this explicit
-// initialization once we move to landing provider as part of the "core"
-initialize(function(manifest) {return new SocialProvider(manifest);});
-
 function isAvailable() {
   // This will probably go away based on UX - it exists so the social toolbar
   // is removed entirely when things are not available.
@@ -57,6 +53,7 @@ let stateObserver = {
     if (aTopic == 'social-service-manifest-changed') {
       // this is just to help the isAvailable() check - if a service was
       // enabled/disabled it may be that the toolbar needs to be shown/hidden
+      dump("got social-service-manifest-changed "+aData+"\n");
       set_window_social_enabled_from_doc_state();
       return;
     }
@@ -75,6 +72,7 @@ function set_window_social_enabled_from_doc_state() {
 }
 
 function set_window_social_enabled(val) {
+  dump("set_window_social_enabled "+val+"\n");
   window.social.enabled = val;
   // let the UI know.
   let broadcaster = document.getElementById("socialEnabled");
@@ -200,17 +198,34 @@ function social_unload() {
 
 // support for OverlayManager
 var OverlayListener = {
-  load: social_init,
   unload: social_unload
 }
 
 function social_main() {
   // due to what we are doing in the sidebar, we have to wait for the
   // chromeWindow to load before we do our magic
+  Services.obs.addObserver({
+    observe: function(aSubject, aTopic, aData) {
+      Services.obs.removeObserver(this, "social-service-ready", false);
+      // this will only happen if the registry is initialized after load,
+      // which typically will only happen if the addon is enabled after
+      // startup
+      if (document.readyState == "complete") {
+        social_init();
+      }
+  }}, "social-service-ready", false);
   window.addEventListener('load', function loadHandler(e) {
     window.removeEventListener('load', loadHandler);
-    social_init();
+    // ensure that the registry is ready to do stuff, if not
+    // then the observer above will handle the init
+    if (registry().ready) {
+      social_init();
+    }
   });
+  // initialize the registry - we should be able to drop this explicit
+  // initialization once we move to landing provider as part of the "core"
+  initialize(function(manifest) {return new SocialProvider(manifest);});
+
   window.addEventListener('unload', function loadHandler(e) {
     window.removeEventListener('unload', loadHandler);
     social_unload();
