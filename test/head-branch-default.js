@@ -13,13 +13,24 @@ const TEST_PROVIDER_MANIFEST = TEST_PROVIDER_ORIGIN + TEST_PROVIDER_PATH + "/app
 const TEST_PROVIDER2_ORIGIN = "https://test1.example.com"
 const TEST_PROVIDER2_MANIFEST = TEST_PROVIDER2_ORIGIN + TEST_PROVIDER_PATH + "/app.manifest";
 
+function makeTestProvider(input) {
+  return {
+    name: input.name,
+    workerURL: input.workerURL,
+    sidebarURL: input.sidebarURL,
+    iconURL: input.iconURL,
+    origin: input.origin,
+    enabled: input.enabled,
+    activate: function() {},
+    shutdown: function() {}
+  }
+}
 
 let headModules = {}
 Cu.import("resource://socialapi/modules/registry.js", headModules);
 Cu.import("resource://socialapi/modules/manifest.jsm", headModules);
-Cu.import("resource://socialapi/modules/provider.js", headModules);
 try {
-  headModules.initialize(function(manifest) {return new headModules.SocialProvider(manifest);});
+  headModules.initialize(makeTestProvider);
 } catch (ex) {
   if (ex.toString() != "Error: already initialized") {
     info("Unexpected failure to initialize the registry: " + ex)
@@ -57,9 +68,6 @@ function resetSocial() {
   // reset the entire social world back to the state it is on a "clean" first
   // startup - ie, all UI elements and prefs.
   let r = headModules.registry();
-  if (isSidebarVisible()) {
-    window.social_sidebar_toggle();
-  };
   r.enabled = false;
   // all providers get nuked. - we reach into the impl here...
   let providers = r._providers;
@@ -159,29 +167,4 @@ function runTests(tests, cbPreTest, cbPostTest) {
     }, 0)
   }
   runNextTest();
-}
-
-// Helpers for the sidebar.
-function isSidebarVisible() {
-  return document.getElementById("social-vbox").getAttribute("hidden") != "true";
-}
-
-function openSidebar(callback) {
-  // Opens the sidebar and after it loads calls the callback.
-  // It is the caller's job to ensure a provider is installed etc.
-  if (isSidebarVisible()) {
-    throw new Error("sidebar is already visible");
-  }
-  // attach a load listener to the browser
-  let browser = document.getElementById("social-status-sidebar-browser");
-  browser.addEventListener("DOMContentLoaded", function browserlistener(evt) {
-    // hmph - the timing of these events is hard to predict - if we are just
-    // being told about about:blank, wait until the real one comes.
-    if (browser.contentWindow.location.href == "about:blank") {
-      return;
-    };
-    browser.removeEventListener("DOMContentLoaded", browserlistener, true);
-    callback(browser.contentWindow);
-  }, true);
-  window.social_sidebar_toggle();
 }

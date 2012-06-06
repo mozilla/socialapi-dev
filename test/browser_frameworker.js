@@ -1,5 +1,5 @@
 let modules = {};
-Cu.import("resource://socialdev/modules/frameworker.js", modules);
+Cu.import("resource://socialapi/modules/frameworker.js", modules);
 
 function makeWorkerUrl(runner) {
   return "data:application/javascript," + encodeURI("let run=" + runner.toSource()) + ";run();"
@@ -181,7 +181,7 @@ let tests = {
         // might as well just read the manifest!
         // XXX - THIS IS WRONG!  it should work with this URL as it is in our origin!!!
         // but we get a .status of 0, which implies CORS is killing us.
-        // req.open("GET", "http://mochi.test:8888/browser/browser/features/socialdev/test/testprovider/app.manifest", true);
+        // req.open("GET", "http://mochi.test:8888/browser/browser/features/socialapi/test/testprovider/app.manifest", true);
         req.open("GET", "http://enable-cors.org/", true);
         req.onreadystatechange = function() {
           if (req.readyState === 4) {

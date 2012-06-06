@@ -1,5 +1,8 @@
-Cu.import("resource://socialdev/modules/registry.js");
+let registryModule = {} // work around the test framework complaining of leaks
+Cu.import("resource://socialapi/modules/registry.js", registryModule);
 Cu.import("resource://gre/modules/Services.jsm");
+
+function registry() registryModule.registry();
 
 function test() {
   runTests(tests, function(cb) {resetSocial(); executeSoon(cb);});
@@ -8,6 +11,7 @@ function test() {
 let tests = {
   testSingleProvider: function(cbnext) {
     let r = registry();
+    
     let oc = new observerChecker(["social-browsing-current-service-changed",
                                   "social-service-manifest-changed",
                                   "social-browsing-enabled",
@@ -17,13 +21,12 @@ let tests = {
       oc.terminate();
     });
 
-    is(window.social.enabled, false, "social should be disabled on first run");
     is(r.enabled, false, "registry should indicate disabled");
     is(r.currentProvider, null, "must be no current provider when disabled.");
 
     // attempt to enable it - it should fail as we have no providers.
     r.enabled = true;
-    is(window.social.enabled, false, "social should fail to become enabled when no providers");
+    is(r.enabled, false, "social should fail to become enabled when no providers");
     // and no notifications should have been sent above.
     oc.check([]);
 
@@ -31,23 +34,20 @@ let tests = {
     installTestProvider(function() {
       // now we can enable it.
       r.enabled = true;
-      is(window.social.enabled, true, "social should enable as there is now a provider");
+      is(r.enabled, true, "social should enable as there is now a provider");
       is(r.currentProvider.origin, TEST_PROVIDER_ORIGIN, "check current test provider");
       oc.check([{topic: "social-service-manifest-changed"},
                 {topic: "social-browsing-enabled"},
                 {topic: "social-browsing-current-service-changed"}
               ]);
       // disable our test provider - that should disable social.
-      r.disableProvider(TEST_PROVIDER_ORIGIN);
-      // observers are called async, so wait for that to happen.
-      executeSoon(function() {
+      ok(r.disableProvider(TEST_PROVIDER_ORIGIN, function() {
         is(r.enabled, false, "social should be disabled after disabling only provider");
         oc.check([{topic: "social-browsing-disabled"},
                   {topic: "social-service-manifest-changed"}]);
 
         // re-enable it.
-        r.enableProvider(TEST_PROVIDER_ORIGIN);
-        executeSoon(function() {
+        ok(r.enableProvider(TEST_PROVIDER_ORIGIN, function() {
           // but social should still be disabled.
           is(r.enabled, false, "social should remain disabled after enabling only provider");
           r.enabled = true;
@@ -58,11 +58,11 @@ let tests = {
 
           // disable browsing.
           r.enabled = false;
-          is(window.social.enabled, false, "social should be disabled");
+          is(r.enabled, false, "social should be disabled");
           oc.check([{topic: "social-browsing-disabled"}]);
           cbnext();
-        })
-      })
+        }), "check provider was enabled");
+      }), "check provider was disabled");
     });
   },
 
@@ -77,17 +77,18 @@ let tests = {
       installTestProvider(function() {
         is(r.currentProvider.origin, TEST_PROVIDER_ORIGIN, "check existing still current");
         // disable the first - second should go current.
-        r.disableProvider(TEST_PROVIDER_ORIGIN);
+        ok(r.disableProvider(TEST_PROVIDER_ORIGIN), "provider disabled ok");
         is(r.currentProvider.origin, TEST_PROVIDER2_ORIGIN, "check new provider made current");
         // re-enable the first and make it current.
-        r.enableProvider(TEST_PROVIDER_ORIGIN);
-        r.currentProvider = r.get(TEST_PROVIDER_ORIGIN);
-        is(r.currentProvider.origin, TEST_PROVIDER_ORIGIN, "check old provider made current");
-        // now delete the first provider - second should be current.
-        removeProvider(TEST_PROVIDER_ORIGIN, function() {
-          is(r.currentProvider.origin, TEST_PROVIDER2_ORIGIN, "check new provider made current");
-          cbnext();
-        })
+        ok(r.enableProvider(TEST_PROVIDER_ORIGIN, function() {
+          r.currentProvider = r.get(TEST_PROVIDER_ORIGIN);
+          is(r.currentProvider.origin, TEST_PROVIDER_ORIGIN, "check old provider made current");
+          // now delete the first provider - second should be current.
+          removeProvider(TEST_PROVIDER_ORIGIN, function() {
+            is(r.currentProvider.origin, TEST_PROVIDER2_ORIGIN, "check new provider made current");
+            cbnext();
+          })
+        }), "check provider was enabled");
       }, TEST_PROVIDER2_MANIFEST);
     });
   },

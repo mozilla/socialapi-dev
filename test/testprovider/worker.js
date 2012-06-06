@@ -48,7 +48,7 @@ onconnect = function(e) {
             topic: 'social.user-recommend-prompt-response',
             data:
               {
-                img: "resource://socialdev/testprovider/testprovider/recommend.png",
+                img: "resource://socialapi/testprovider/testprovider/recommend.png",
                 message: "Test Recommend!"
               }}
         );
@@ -85,15 +85,15 @@ function initializeAmbientNotifications() {
 
   postAPIMessage('social.ambient-notification-area',
   {
-    portrait: "resource://socialdev/testprovider/testprovider/portrait.png"
+    portrait: "resource://socialapi/testprovider/testprovider/portrait.png"
   });
 
 	postAPIMessage('social.ambient-notification-update',
 		{
 		  name: "ambient-notification-1", 
 		  counter: 1,
-		  background: 'url("resource://socialdev/testprovider/testprovider/notification1.png") transparent no-repeat',
-		  contentPanel: "resource://socialdev/testprovider/testprovider/notification1.htm"
+		  background: 'url("resource://socialapi/testprovider/testprovider/notification1.png") transparent no-repeat',
+		  contentPanel: "resource://socialapi/testprovider/testprovider/notification1.htm"
 	 });
 
 
@@ -101,7 +101,7 @@ function initializeAmbientNotifications() {
 		{
 		  name: "ambient-notification-2", 
       counter: 1,
-      background: 'url("resource://socialdev/testprovider/testprovider/notification2.png") transparent no-repeat',
-      contentPanel: "resource://socialdev/testprovider/testprovider/notification2.htm"
+      background: 'url("resource://socialapi/testprovider/testprovider/notification2.png") transparent no-repeat',
+      contentPanel: "resource://socialapi/testprovider/testprovider/notification2.htm"
 	 });
 }

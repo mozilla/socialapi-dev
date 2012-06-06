@@ -1,9 +1,9 @@
 "use strict";
 
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://socialdev/modules/baseWidget.js");
+Cu.import("resource://socialapi/modules/baseWidget.js");
 
-Cu.import("resource://socialdev/modules/registry.js");
+Cu.import("resource://socialapi/modules/registry.js");
 
 function SocialToolbarStatusArea() {
   baseWidget.call(this, window);
@@ -95,7 +95,7 @@ SocialToolbarStatusArea.prototype = {
         this.debugLog("no service is enabled, so not rendering status area");
         return;
       } else {
-        this.debugLog("Rending toolbar status are; current provider is " + currentProvider);
+        this.debugLog("Rendering toolbar status are; current provider is " + currentProvider.origin);
       }
 
       if (window.social.enabled) {
@@ -171,7 +171,7 @@ SocialToolbarStatusArea.prototype = {
   disable: function() {
     // reset the image to the default.
     var image = window.document.getElementById("social-statusarea-service-image");
-    image.setAttribute("src", "chrome://socialdev/skin/social.png");
+    image.setAttribute("src", "chrome://socialapi/skin/social.png");
   },
 
   ambientNotificationChanged: function() {

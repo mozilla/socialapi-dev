@@ -1,5 +1,9 @@
-Cu.import("resource://socialdev/modules/registry.js");
 Cu.import("resource://gre/modules/Services.jsm");
+let modules = {} // work around the test framework complaining of leaks
+Cu.import("resource://socialapi/modules/registry.js", modules);
+Cu.import("resource://socialapi/modules/manifest.jsm", modules);
+
+function registry() modules.registry();
 
 function test() {
   runTests(tests);
@@ -9,7 +13,7 @@ function doValidationTest(location, rawManifest, cb) {
   let r = registry();
   let origin = Services.io.newURI(location, null, null).prePath;
   try {
-    let manifest = r.manifestRegistry.validateManifest(location, rawManifest);
+    let manifest = modules.manifestSvc.validateManifest(location, rawManifest);
     cb(manifest);
   } catch(e) {
     info("validation exception "+e.toString());
@@ -18,9 +22,8 @@ function doValidationTest(location, rawManifest, cb) {
 }
 
 function doInstallTest(location, rawManifest, cb) {
-  let r = registry();
   try {
-    r.manifestRegistry.importManifest(null, location, rawManifest, true, cb);
+    modules.manifestSvc.importManifest(null, location, rawManifest, true, cb);
   } catch(e) {
     info("install exception "+e.toString());
     cb(undefined);
@@ -59,7 +62,7 @@ let tests = {
     });
   },
   testManifestBuiltinOverwriteOK: function (cbnext) {
-    doInstallTest("resource://socialdev/app.manifest",{
+    doInstallTest("resource://socialapi/app.manifest",{
         "services": {
           "social": {
             "name": "Test Overwrite Provider",
@@ -103,7 +106,7 @@ let tests = {
     },
     function callback(success) {
       // now try to overwrite it with a builtin
-      doInstallTest("resource://socialdev/app.manifest",{
+      doInstallTest("resource://socialapi/app.manifest",{
         "services": {
           "social": {
             "name": "Test Overwrite Provider",
@@ -123,9 +126,14 @@ let tests = {
     });
   },
   testManifestLoad: function(cbnext) {
+    //// XXX - disabled for now.
+    //todo(false, "need a test provider manifest!");
+    //cbnext();
+    //return;
+    // XXX
     let url = TEST_PROVIDER_MANIFEST;
-    let r = registry();
-    r.manifestRegistry.loadManifest(null, url, true, function() {
+    let r = modules.registry();
+    modules.manifestSvc.loadManifest(null, url, true, function() {
       let origin = Services.io.newURI(url, null, null).prePath;
       let provider = r.get(origin);
       isnot(provider, undefined, "manifest loading via XHR");

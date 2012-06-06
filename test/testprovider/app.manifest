@@ -2,9 +2,9 @@
   "services": {
     "social": {
       "name": "Test Provider",
-      "iconURL": "/browser/browser/features/socialdev/test/testprovider/icon.png",
-      "workerURL": "/browser/browser/features/socialdev/test/testprovider/worker.js",
-      "sidebarURL": "/browser/browser/features/socialdev/test/testprovider/sidebar.htm",
+      "iconURL": "/browser/browser/features/socialapi/test/testprovider/icon.png",
+      "workerURL": "/browser/browser/features/socialapi/test/testprovider/worker.js",
+      "sidebarURL": "/browser/browser/features/socialapi/test/testprovider/sidebar.htm",
       "origin": "https://example.com"
     }
   }

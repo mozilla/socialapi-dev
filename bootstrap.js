@@ -290,7 +290,7 @@ const OverlayManager = {
     let elem = overlayDoc.firstChild;
     while (elem) {
       if (elem.nodeName == "xml-stylesheet") {
-        // href="chrome://socialdev/skin/browser.css" type="text/css"
+        // href="chrome://socialapi/skin/browser.css" type="text/css"
         let t = elem.nodeValue.match(/\s+type=\"(.*)\"/);
         if (t[1] != "text/css") {
           continue;
@@ -562,18 +562,16 @@ function install(aParams, aReason) {
 }
 
 function startup(aParams, aReason) {
-  OverlayManager.init(aParams, function() {
-    // addon specific stuff we need to start before
-    // applying our overlays
-    Cu.import("resource://socialdev/modules/registry.js");
-  });
+  let res = Services.io.getProtocolHandler("resource").QueryInterface(Ci.nsIResProtocolHandler);
+  res.setSubstitution("socialapi", aParams.resourceURI);
+  OverlayManager.init(aParams, function() {});
 }
 
 function shutdown(aParams, aReason) {
   // We need to shutdown the typedstorage database else we assert in
   // debug builds at shutdown.
   let tmp = {};
-  Cu.import("resource://socialdev/modules/manifestDB.jsm", tmp);
+  Cu.import("resource://socialapi/modules/manifestDB.jsm", tmp);
   tmp.ManifestDB.close();
 
   // Don't need to clean anything else up if the application is shutting down
