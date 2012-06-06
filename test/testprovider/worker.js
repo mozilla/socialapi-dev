@@ -15,6 +15,9 @@ function postAPIMessage(topic, data) {
   }
 }
 
+var topicsToRecord = {};
+var topicsRecorded = [];
+
 var allPorts = [];
 
 onconnect = function(e) {
@@ -24,7 +27,18 @@ onconnect = function(e) {
   port.onmessage = function(e) {
     testLog("TestProvider's port.onmessage", e.data.topic + " " + e.data.data)
     var msg = e.data;
-    if (msg.topic == "social.port-closing") {
+    // Some special support for automated tests - we can "record" some
+    // topics and return them when requested so the test suite can confirm
+    // whatever it needs to confirm.
+    if (topicsToRecord[msg.topic]) {
+      topicsRecorded.push(msg.topic);
+    }
+
+    if (msg.topic == "testing.record-topic") {
+      topicsToRecord[msg.data] = true;
+    } else if (msg.topic == "testing.get-recorded") {
+      port.postMessage({topic: "testing.recorded", data: topicsRecorded});
+    } else if (msg.topic == "social.port-closing") {
       var index = allPorts.indexOf(port);
       if (index != -1) {
         allPorts.splice(index, 1);
