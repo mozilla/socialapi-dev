@@ -209,6 +209,9 @@ AbstractPort.prototype = {
    * @param {jsobj} data
    */
   postMessage: function(data) {
+    if (this._portid === null) {
+      throw new Error("port is closed");
+    }
     // There seems to be an issue with passing objects directly and letting
     // the structured clone thing work - we sometimes get:
     // [Exception... "The object could not be cloned."  code: "25" nsresult: "0x80530019 (DataCloneError)"]
