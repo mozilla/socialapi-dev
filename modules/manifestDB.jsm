@@ -70,6 +70,10 @@ var ManifestDB = (function() {
   function iterate(cb, finalize) {
     storage.keys(function(allKeys) {
       let count = allKeys.length;
+      if (count == 0) {
+        if (finalize) finalize(0);
+        return;
+      }
       for each(let key in allKeys) {
         storage.get(key, function(k, values) {
           cb(k, values);
