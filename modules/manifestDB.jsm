@@ -13,13 +13,10 @@
 const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://socialapi/modules/typedStorage.jsm");
 
-// a lightweight wrapper around TypedStorage to handle simple validation
-// of origin keys and manifest data
+// a lightweight wrapper around prefs for manifest storage
 var ManifestDB = (function() {
-  var typedStorage = TypedStorage();
-  var storage = typedStorage.open("manifest", "destiny");
+  var _prefBranch = Services.prefs.getBranch("social.manifest.").QueryInterface(Ci.nsIPrefBranch2);;
 
   // get the host+port of the url to use as a db key
   function normalizeKey(aURL) {
@@ -39,63 +36,58 @@ var ManifestDB = (function() {
   function put(origin, manifest, cb) {
     // TODO validate the manifest now?  what do we validate?
     manifest.last_modified = new Date().getTime();
-    storage.put(normalizeKey(origin), manifest, cb);
+    _prefBranch.setCharPref(normalizeKey(origin), JSON.stringify(manifest));
+    cb(true);
   }
 
   function insert(origin, manifest, cb) {
     // TODO validate the manifest now?  what do we validate?
     manifest.last_modified = new Date().getTime();
-    storage.insert(normalizeKey(origin), manifest, cb);
+    let key = normalizeKey(origin);
+    try {
+      _prefBranch.getCharPref(key);
+      cb(false);
+    } catch(e) {
+      _prefBranch.setCharPref(key, JSON.stringify(manifest));
+      cb(true);
+    }
   }
 
   function remove(origin, cb) {
     var self = this;
     let originKey = normalizeKey(origin);
-    storage.get(originKey, function(key, item) {
-      if (!item) {
-        if (cb) cb(false);
-      }
-      else {
-        storage.remove(key, function() {
-          if (cb) cb(true);
-        });
-      }
-    });
+    try {
+      _prefBranch.clearUserPref(originKey);
+      cb(true);
+    } catch(e) {
+      cb(false);
+    }
   }
 
   function get(origin, cb) {
-    storage.get(normalizeKey(origin), cb);
+    try {
+      let key = normalizeKey(origin);
+      let manifest = JSON.parse(_prefBranch.getCharPref(key));
+      cb(key, manifest);
+    } catch(e) {
+      cb(key, null);
+    }
   }
 
   function iterate(cb, finalize) {
-    storage.keys(function(allKeys) {
-      let count = allKeys.length;
-      if (count == 0) {
-        if (finalize) finalize(0);
-        return;
+    let manifests;
+    try {
+      manifests = _prefBranch.getChildList("",{});
+      for each(let key in manifests) {
+        this.get(key, cb);
       }
-      for each(let key in allKeys) {
-        storage.get(key, function(k, values) {
-          cb(k, values);
-          count--;
-          if (finalize && count == 0)
-            finalize(allKeys.length);
-        });
-      }
-    });
-  }
-
-  function close() {
-    storage.close();
-  }
-
-  // an observer to ensure we shutdown the database, else debug builds assert.
-  Services.obs.addObserver({
-    observe: function(aSubject, aTopic, aData) {
-      Services.obs.removeObserver(this, "quit-application-granted");
-      close();
+    } catch(e) {
+      Cu.reportError(e);
     }
-  }, "quit-application-granted", false);
+    finalize(manifests.length);
+  }
+
+  function close() {}
 
   return {
     insert: insert,
