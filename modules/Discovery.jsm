@@ -199,7 +199,7 @@ var SocialProviderDiscovery = (function() {
         if (!allow_http && resolved.scheme != "https")
           return;
         //Services.console.logStringMessage("base "+baseUrl+" resolved to "+url);
-        ManifestRegistry.get(url, function(key, item) {
+        ManifestRegistry.repo.get(url, function(key, item) {
           if (!item) {
             loadManifest(aDocument, url);
           }

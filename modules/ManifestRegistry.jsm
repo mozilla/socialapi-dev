@@ -237,10 +237,12 @@ var ManifestRegistry = (function() {
   return {
     validate: validateManifest,
     install: installManifest,
-    iterate: iterate,
-    put: put,
-    remove: remove,
-    get: get
+    repo: {
+      iterate: iterate,
+      put: put,
+      remove: remove,
+      get: get
+    }
   };
 })();
 

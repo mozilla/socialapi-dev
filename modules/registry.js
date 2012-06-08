@@ -51,7 +51,7 @@ function ProviderRegistry(createCallback) {
   Services.obs.addObserver(this, 'quit-application', true);
 
   let self = this;
-  ManifestRegistry.iterate(function(key, manifest) {
+  ManifestRegistry.repo.iterate(function(key, manifest) {
     self.register(manifest);
   }, function(count) {
     self._ready = true;
@@ -173,7 +173,7 @@ ProviderRegistry.prototype = {
     } catch (ex) {
       Cu.reportError("attempting to remove a non-existing manifest origin: " + origin);
     }
-    ManifestRegistry.remove(origin, function() {
+    ManifestRegistry.repo.remove(origin, function() {
       Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
       if (callback) callback();
     });
@@ -240,9 +240,9 @@ ProviderRegistry.prototype = {
     // Don't start up again if we're already enabled
     if (provider.enabled) return true;
 
-    ManifestRegistry.get(origin, function(key, manifest) {
+    ManifestRegistry.repo.get(origin, function(key, manifest) {
       manifest.enabled = true;
-      ManifestRegistry.put(origin, manifest);
+      ManifestRegistry.repo.put(origin, manifest);
       Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
       if (callback) callback();
     });
@@ -268,9 +268,9 @@ ProviderRegistry.prototype = {
     // and update the manifest.
     // XXX - this is wrong!  We should track that state elsewhere, otherwise
     // a manifest being updated by a provider loses this state!
-    ManifestRegistry.get(origin, function(key, manifest) {
+    ManifestRegistry.repo.get(origin, function(key, manifest) {
       manifest.enabled = false;
-      ManifestRegistry.put(origin, manifest);
+      ManifestRegistry.repo.put(origin, manifest);
       Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
       if (callback) callback();
     });
