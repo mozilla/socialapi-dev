@@ -19,7 +19,6 @@ Cu.import("resource://socialapi/modules/defaultprefs.js");
 Cu.import("resource://socialapi/modules/ManifestRegistry.jsm");
 
 const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
-const FRECENCY = 100;
 
 /** Helper function to detect "development mode",
  * which is set with the social.provider.devmode pref.
