@@ -1,7 +1,8 @@
 Cu.import("resource://gre/modules/Services.jsm");
 let modules = {} // work around the test framework complaining of leaks
 Cu.import("resource://socialapi/modules/registry.js", modules);
-Cu.import("resource://socialapi/modules/manifest.jsm", modules);
+Cu.import("resource://socialapi/modules/manifestDB.jsm", modules);
+Cu.import("resource://socialapi/modules/Discovery.jsm", modules);
 
 function registry() modules.registry();
 
@@ -13,7 +14,7 @@ function doValidationTest(location, rawManifest, cb) {
   let r = registry();
   let origin = Services.io.newURI(location, null, null).prePath;
   try {
-    let manifest = modules.manifestSvc.validateManifest(location, rawManifest);
+    let manifest = modules.ManifestDB.validate(location, rawManifest);
     cb(manifest);
   } catch(e) {
     info("validation exception "+e.toString());
@@ -23,7 +24,7 @@ function doValidationTest(location, rawManifest, cb) {
 
 function doInstallTest(location, rawManifest, cb) {
   try {
-    modules.manifestSvc.importManifest(null, location, rawManifest, true, cb);
+    modules.SocialProviderDiscovery.importManifest(null, location, rawManifest, true, cb);
   } catch(e) {
     info("install exception "+e.toString());
     cb(undefined);
@@ -133,7 +134,7 @@ let tests = {
     // XXX
     let url = TEST_PROVIDER_MANIFEST;
     let r = modules.registry();
-    modules.manifestSvc.loadManifest(null, url, true, function() {
+    modules.SocialProviderDiscovery.loadManifest(null, url, true, function() {
       let origin = Services.io.newURI(url, null, null).prePath;
       let provider = r.get(origin);
       isnot(provider, undefined, "manifest loading via XHR");
