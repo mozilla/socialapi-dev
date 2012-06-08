@@ -1,19 +1,128 @@
+/* -*- Mode: JavaScript; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Contributor(s):
+ *  Michael Hanson <mhanson@mozilla.com>
+ *  Shane Caraveo <scaraveo@mozilla.com>
+ *  Mark Hammond <mhammond@mozilla.com>
+ *
+ *
+ *
+ *  Discovery contains all UI/UX and utility functionality around installing
+ *  social service providers from remote websites.
+ */
 
 
 const {classes: Cc, interfaces: Ci, utils: Cu, manager: Cm} = Components;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
+Cu.import("resource://socialapi/modules/registry.js");
 Cu.import("resource://socialapi/modules/manifestDB.jsm");
-Cu.import("resource://socialapi/modules/manifest.jsm");
+Cu.import("resource://socialapi/modules/SafeXHR.jsm");
 
 
-var DocumentObserver = {
-  QueryInterface: XPCOMUtils.generateQI([Ci.nsISupportsWeakReference, Ci.nsIObserver]),
-  init: function() {
-    Services.obs.addObserver(DocumentObserver, "document-element-inserted", true);
-  },
-  discoverManifest: function DocumentObserver_discoverManifest(aDocument, aData) {
+/* Utility function: returns the host:port of
+ * of a URI, or simply the host, if no port
+ * is provided.  If the URI cannot be parsed,
+ * or is a resource: URI, returns the input
+ * URI text. */
+function normalizeOriginPort(aURL) {
+  try {
+    let uri = Services.io.newURI(aURL, null, null);
+    if (uri.scheme == 'resource') return aURL;
+    return uri.hostPort;
+  }
+  catch(e) {
+    Cu.reportError(e);
+  }
+  return aURL;
+}
+
+var SocialProviderDiscovery = (function() {
+  let _prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
+
+  function askUserInstall(aWindow, aCallback, location) {
+    let origin = normalizeOriginPort(location);
+    // BUG 732263 remember if the user says no, use that as a check in
+    // discoverActivity so we bypass a lot of work.
+    let nId = "manifest-ask-install";
+    let nBox = aWindow.gBrowser.getNotificationBox();
+    let notification = nBox.getNotificationWithValue(nId);
+    let strings = Services.strings.createBundle("chrome://socialapi/locale/strings.properties");
+
+    // Check that we aren't already displaying our notification
+    if (!notification) {
+      let message = strings.GetStringFromName("installoffer.notificationbar");
+
+      buttons = [{
+        label: strings.GetStringFromName("yes.label"),
+        accessKey: null,
+        callback: function () {
+          aWindow.setTimeout(function () {
+            aCallback();
+          }, 0);
+        }
+      },
+      {
+        label: strings.GetStringFromName("dontask.label"),
+        accessKey: strings.GetStringFromName("dontask.accesskey"),
+        callback: function() {
+          _prefBranch.setBoolPref(origin+".ignore", true);
+        }
+      }];
+      nBox.appendNotification(message, nId, null,
+                nBox.PRIORITY_INFO_MEDIUM,
+                buttons);
+    }
+  }
+
+  function importManifest(aDocument, location, rawManifest, systemInstall, callback) {
+    //Services.console.logStringMessage("got manifest "+JSON.stringify(manifest));
+    let manifest = ManifestDB.validate(location, rawManifest);
+
+    if (systemInstall) {
+      // user approval has already been granted, or this is an automatic operation
+      ManifestDB.install(manifest);
+    }
+    else {
+      // we need to ask the user for confirmation:
+      var xulWindow = aDocument.defaultView.QueryInterface(Ci.nsIInterfaceRequestor)
+                     .getInterface(Ci.nsIWebNavigation)
+                     .QueryInterface(Ci.nsIDocShellTreeItem)
+                     .rootTreeItem
+                     .QueryInterface(Ci.nsIInterfaceRequestor)
+                     .getInterface(Ci.nsIDOMWindow);
+      askUserInstall(xulWindow, function() {
+        ManifestDB.install(manifest);
+
+        // user requested install, lets make sure we enable after the install.
+        // This is especially important on first time install.
+
+        registry().enabled = true;
+        let prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
+        prefBranch.setBoolPref("visible", true);
+        Services.obs.notifyObservers(null,
+                                 "social-browsing-enabled",
+                                 registry().currentProvider.origin);
+      }, location)
+      return;
+    }
+  }
+
+  function loadManifest(aDocument, url, systemInstall, callback) {
+    // test any manifest against safebrowsing
+    SafeXHR.get(uri, true, function(data) {
+      if (data) {
+        importManifest(aDocument, url, JSON.parse(data), systemInstall, callback);
+      }
+    });
+  }
+
+  function discoverManifest(aDocument, aData) {
     // BUG 732266 this is probably heavy weight, is there a better way to watch for
     // links in documents?
     // https://developer.mozilla.org/En/Listening_to_events_in_Firefox_extensions
@@ -54,29 +163,37 @@ var DocumentObserver = {
         //Services.console.logStringMessage("base "+baseUrl+" resolved to "+url);
         ManifestDB.get(url, function(key, item) {
           if (!item) {
-            manifestSvc.loadManifest(aDocument, url);
+            loadManifest(aDocument, url);
           }
         });
       }
     }
-  },
+  }
 
   /**
    * observer
    *
    * reset our mediators if an app is installed or uninstalled
    */
-  observe: function DocumentObserver_observe(aSubject, aTopic, aData) {
-    if (aTopic == "document-element-inserted") {
-      if (!aSubject.defaultView)
+  var DocumentObserver = {
+    QueryInterface: XPCOMUtils.generateQI([Ci.nsISupportsWeakReference, Ci.nsIObserver]),
+    observe: function DocumentObserver_observe(aSubject, aTopic, aData) {
+      if (aTopic == "document-element-inserted") {
+        if (!aSubject.defaultView)
+          return;
+        //Services.console.logStringMessage("new document "+aSubject.defaultView.location);
+        discoverManifest(aSubject, aData);
         return;
-      //Services.console.logStringMessage("new document "+aSubject.defaultView.location);
-      DocumentObserver.discoverManifest(aSubject, aData);
-      return;
+      }
     }
   }
-}
 
-DocumentObserver.init();
+  Services.obs.addObserver(DocumentObserver, "document-element-inserted", true);
 
-const EXPORTED_SYMBOLS = ["DocumentObserver"];
+  return {
+    loadManifest: loadManifest,
+    importManifest: importManifest
+  }
+})();
+
+const EXPORTED_SYMBOLS = ["SocialProviderDiscovery"];
