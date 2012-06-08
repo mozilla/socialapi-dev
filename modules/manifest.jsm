@@ -15,39 +15,7 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://socialapi/modules/manifestDB.jsm");
 Cu.import("resource://socialapi/modules/registry.js");
-
-
-/**
- * testSafebrowsing
- *
- * given a url, see if it is in our malware/phishing lists.
- * Returns immediately, calling the callback when a result is known.
- * Callback gets one param, the result which will be non-zero
- * if the url is a problem.
- *
- * @param url string
- * @param callback function
- */
-function testSafebrowsing(aUrl, aCallback) {
-  // callback gets zero if the url is not found
-  // pills.ind.in produces a positive hit for a bad site
-  // http://www.google.com/safebrowsing/diagnostic?site=pills.ind.in/
-  // result is non-zero if the url is in the malware or phising lists
-  let uri = Services.io.newURI(aUrl, null, null);
-  var dbservice = Cc["@mozilla.org/url-classifier/dbservice;1"]
-                      .getService(Ci.nsIUrlClassifierDBService);
-  var handler = {
-    onClassifyComplete: function(result) {
-      aCallback(result);
-    }
-  }
-  var classifier = dbservice.QueryInterface(Ci.nsIURIClassifier);
-  var result = classifier.classify(uri, handler);
-  if (!result) {
-    // the callback will not be called back, do it ourselves
-    aCallback(0);
-  }
-}
+Cu.import("resource://socialapi/modules/SafeXHR.jsm");
 
 
 /* Utility function: returns the host:port of
@@ -121,103 +89,13 @@ ManifestRegistry.prototype = {
     }
   },
 
-  /**
-   * validateManifest
-   *
-   * Given the manifest data, create a clean version of the manifest.  Ensure
-   * any URLs are same-origin (proto+host+port).  If the manifest is a builtin,
-   * URLs must either be resource or same-origin resolved against the manifest
-   * origin. We ignore any manifest entries that are not supported.
-   *
-   * @param location   string      string version of manifest location
-   * @param manifest   json-object raw manifest data
-   * @returns manifest json-object a cleaned version of the manifest
-   */
-  validateManifest: function manifestRegistry_validateManifest(location, rawManifest) {
-    // anything in URLEntries will require same-origin policy, though we
-    // special-case iconURL to allow icons from CDN
-    let URLEntries = ['iconURL', 'workerURL', 'sidebarURL'];
-
-    // only items in validEntries will move into our cleaned manifest
-    let validEntries = ['name'].concat(URLEntries);
-
-    // Is this a "built-in" service?
-    let builtin = location.indexOf("resource:") == 0;
-    if (builtin) {
-      // builtin manifests may have a couple other entries
-      validEntries = validEntries.concat('origin', 'contentPatchPath');
-    }
-
-    // store the location we got the manifest from and the origin.
-    let manifest = {
-      location: location
-    };
-    for (var k in rawManifest.services.social) {
-      if (validEntries.indexOf(k) >= 0) manifest[k] = rawManifest.services.social[k];
-    }
-    // we've saved original location in manifest above, switch our location
-    // temporarily so we can correctly resolve urls for our builtins.  We
-    // still validate the origin defined in a builtin manifest below.
-    if (builtin && manifest.origin) {
-      location = manifest.origin;
-    }
-
-    // resolve all URLEntries against the manifest location.
-    let basePathURI = Services.io.newURI(location, null, null);
-    // full proto+host+port origin for resolving same-origin urls
-    manifest.origin = basePathURI.prePath;
-    for each(let k in URLEntries) {
-
-      if (!manifest[k]) continue;
-
-      // shortcut - resource:// URIs don't get same-origin checks.
-      if (builtin && manifest[k].indexOf("resource:") == 0) continue;
-
-      // resolve the url to the basepath to handle relative urls, then verify
-      // same-origin, we'll let iconURL be on a different origin
-      let url = basePathURI.resolve(manifest[k]);
-
-      if (k != 'iconURL' && url.indexOf(manifest.origin) != 0) {
-        throw new Error("manifest URL origin mismatch " +manifest.origin+ " != " + manifest[k] +"\n")
-      }
-      manifest[k] = url; // store the resolved version
-    }
-    return manifest;
-  },
-
   importManifest: function manifestRegistry_importManifest(aDocument, location, rawManifest, systemInstall, callback) {
     //Services.console.logStringMessage("got manifest "+JSON.stringify(manifest));
-    let manifest = this.validateManifest(location, rawManifest);
-
-    // we want automatic updates to the manifest entry if we change our
-    // builtin manifest files.   We also want to allow the "real" provider
-    // to overwrite our builtin manifest, however we NEVER want a builtin
-    // manifest to overwrite something installed from the "real" provider
-    function installManifest() {
-      ManifestDB.get(manifest.origin, function(key, item) {
-        // dont overwrite a non-resource entry with a resource entry.
-        if (item && manifest.location.indexOf('resource:') == 0 &&
-                    item.location.indexOf('resource:') != 0) {
-          // being passed a builtin and existing not builtin - ignore.
-          if (callback) {
-            callback(false);
-          }
-          return;
-        }
-        // dont overwrite enabled, but first install is always enabled
-        manifest.enabled = item ? item.enabled : true;
-        ManifestDB.put(manifest.origin, manifest, function() {
-          registry().register(manifest);
-          if (callback) {
-            callback(true);
-          }
-        });
-      });
-    }
+    let manifest = ManifestDB.validate(location, rawManifest);
 
     if (systemInstall) {
       // user approval has already been granted, or this is an automatic operation
-      installManifest();
+      ManifestDB.install(manifest);
     }
     else {
       // we need to ask the user for confirmation:
@@ -228,7 +106,7 @@ ManifestRegistry.prototype = {
                      .QueryInterface(Ci.nsIInterfaceRequestor)
                      .getInterface(Ci.nsIDOMWindow);
       this.askUserInstall(xulWindow, function() {
-        installManifest();
+        ManifestDB.install(manifest);
 
         // user requested install, lets make sure we enable after the install.
         // This is especially important on first time install.
@@ -244,65 +122,13 @@ ManifestRegistry.prototype = {
     }
   },
 
-  _checkManifestSecurity: function(channel) {
-    // this comes from https://developer.mozilla.org/En/How_to_check_the_security_state_of_an_XMLHTTPRequest_over_SSL
-    // although we are more picky about things (ie, secInfo MUST be a nsITransportSecurityInfo and a nsISSLStatusProvider)
-    let secInfo = channel.securityInfo;
-    if (!(secInfo instanceof Ci.nsITransportSecurityInfo) || ((secInfo.securityState & Ci.nsIWebProgressListener.STATE_IS_SECURE) != Ci.nsIWebProgressListener.STATE_IS_SECURE)) {
-      Cu.reportError("Attempt to load social service from insecure location (manifest securityState is not secure)");
-      return false;
-    }
-    if (!(secInfo instanceof Ci.nsISSLStatusProvider)) {
-      Cu.reportError("Attempt to load social service from insecure location (manifest host has no SSLStatusProvider)");
-      return false;
-    }
-    let cert = secInfo.QueryInterface(Ci.nsISSLStatusProvider)
-               .SSLStatus.QueryInterface(Ci.nsISSLStatus).serverCert;
-    let verificationResult = cert.verifyForUsage(Ci.nsIX509Cert.CERT_USAGE_SSLServer);
-    if (verificationResult != Ci.nsIX509Cert.VERIFIED_OK) {
-      Cu.reportError("Attempt to load social service from insecure location (SSL status of the manifest host is invalid)");
-      return false;
-    }
-    return true;
-  },
-
   loadManifest: function manifestRegistry_loadManifest(aDocument, url, systemInstall, callback) {
     // test any manifest against safebrowsing
     let self = this;
-    testSafebrowsing(url, function(result) {
-      if (result != 0) {
-        Cu.reportError("Attempt to load social service from unsafe location (safebrowsing result: ["+result+"] "+url + ")");
-        if (callback) callback(false);
-        return;
+    SafeXHR.get(uri, true, function(data) {
+      if (data) {
+        self.importManifest(aDocument, url, JSON.parse(data), systemInstall, callback);
       }
-
-      // BUG 732264 error and edge case handling
-      let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance(Ci.nsIXMLHttpRequest);
-      xhr.open('GET', url, true);
-      xhr.onreadystatechange = function(aEvt) {
-        if (xhr.readyState == 4) {
-          if (xhr.status == 200 || xhr.status == 0) {
-
-            // We implicitly trust resource:// manifest origins.
-            let needSecureManifest = !isDevMode() && url.indexOf("resource://") != 0;
-            if (needSecureManifest && !self._checkManifestSecurity(xhr.channel)) {
-              if (callback) callback(false);
-              return;
-            }
-            try {
-              self.importManifest(aDocument, url, JSON.parse(xhr.responseText), systemInstall, callback);
-            }
-            catch(e) {
-              Cu.reportError("Error while loading social service manifest from "+url+": "+e);
-              if (callback) callback(false);
-            }
-          }
-          else {
-            Cu.reportError("Error while loading social service manifest from " + url + ": status "+xhr.status);
-          }
-        }
-      };
-      xhr.send(null);
     });
   }
 };
