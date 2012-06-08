@@ -30,7 +30,7 @@ let headModules = {}
 Cu.import("resource://socialapi/modules/registry.js", headModules);
 Cu.import("resource://socialapi/modules/Discovery.jsm", headModules);
 try {
-  headModules.initialize(makeTestProvider);
+  headModules.SetProviderFactory(makeTestProvider);
 } catch (ex) {
   if (ex.toString() != "Error: already initialized") {
     info("Unexpected failure to initialize the registry: " + ex)

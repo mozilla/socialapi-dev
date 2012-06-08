@@ -224,7 +224,7 @@ function social_main() {
   });
   // initialize the registry - we should be able to drop this explicit
   // initialization once we move to landing provider as part of the "core"
-  initialize(function(manifest) {return new SocialProvider(manifest);});
+  SetProviderFactory(function(manifest) {return new SocialProvider(manifest);});
 
   window.addEventListener('unload', function loadHandler(e) {
     window.removeEventListener('unload', loadHandler);

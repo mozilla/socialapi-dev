@@ -354,7 +354,7 @@ ProviderRegistry.prototype = {
 //const NSGetFactory = XPCOMUtils.generateNSGetFactory(components);
 let providerRegistrySingleton;
 
-function initialize(createCallback) {
+function SetProviderFactory(createCallback) {
   if (providerRegistrySingleton) {
     throw new Error("already initialized");
   }
@@ -362,4 +362,4 @@ function initialize(createCallback) {
 }
 
 function registry() providerRegistrySingleton;
-const EXPORTED_SYMBOLS = ["registry", "initialize", "isDevMode"];
+const EXPORTED_SYMBOLS = ["registry", "SetProviderFactory", "isDevMode"];

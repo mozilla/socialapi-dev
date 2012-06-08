@@ -19,7 +19,7 @@ Cu.import("resource://socialapi/modules/registry.js", headModules);
 Cu.import("resource://socialapi/modules/manifest.jsm", headModules);
 Cu.import("resource://socialapi/modules/provider.js", headModules);
 try {
-  headModules.initialize(function(manifest) {return new headModules.SocialProvider(manifest);});
+  headModules.SetProviderFactory(function(manifest) {return new headModules.SocialProvider(manifest);});
 } catch (ex) {
   if (ex.toString() != "Error: already initialized") {
     info("Unexpected failure to initialize the registry: " + ex)
