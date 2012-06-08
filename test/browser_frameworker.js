@@ -122,10 +122,8 @@ let tests = {
     worker.port.postMessage({topic: "hello", data: [1,2,3]});
   },
 
-  testArray: function(cbnext) {
+  testArrayUsingBuffer: function(cbnext) {
     let run = function() {
-      // Modify the Array prototype...
-      Array.prototype.customfunction = function() {};
       onconnect = function(e) {
         let port = e.ports[0];
         port.onmessage = function(e) {
@@ -156,6 +154,44 @@ let tests = {
     worker.port.onmessage = function(e) {
       if (e.data.topic == "result") {
         is(e.data.reason, "ok", "check the array worked");
+        worker.terminate();
+        cbnext();
+      }
+    }
+    worker.port.postMessage({topic: "go"});
+  },
+
+  testArrayUsingReader: function(cbnext) {
+    let run = function() {
+      onconnect = function(e) {
+        let port = e.ports[0];
+        port.onmessage = function(e) {
+          // Check the data we get via the port has the prototype modification
+          if (e.data.topic == "go") {
+            let buffer = new ArrayBuffer(10);
+            let reader = new FileReader();
+            reader.onload = function(event) {
+              try {
+                if (new Uint8Array(reader.result).length != 10) {
+                  port.postMessage({topic: "result", reason: "length in onload handler was not 10"});
+                  return;
+                }
+                // all seems good!
+                port.postMessage({topic: "result", reason: "ok"});
+              } catch (ex) {
+                port.postMessage({topic: "result", reason: ex.toString()});
+              }
+            }
+            let blob = new Blob([buffer], {type: "binary"});
+            reader.readAsArrayBuffer(blob);
+          }
+        }
+      }
+    }
+    let worker = modules.FrameWorker(makeWorkerUrl(run), undefined, "testArray");
+    worker.port.onmessage = function(e) {
+      if (e.data.topic == "result") {
+        todo_is(e.data.reason, "ok", "check the array worked");
         worker.terminate();
         cbnext();
       }
