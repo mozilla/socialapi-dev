@@ -35,7 +35,6 @@ const EXPORTED_SYMBOLS = ["SocialProvider"];
  * The 'active' provider is the currently selected provider in the UI.
  */
 function SocialProvider(input) {
-  this._log("creating social provider for "+input.origin);
   this.name = input.name;
   this.workerURL = input.workerURL;
   this.sidebarURL = input.sidebarURL;
@@ -47,6 +46,7 @@ function SocialProvider(input) {
   // we only patch content for builtins
   if (input.contentPatchPath && input.contentPatchPath.indexOf('resource:')==0)
     this.contentPatchPath = input.contentPatchPath;
+  this._log("creating social provider for "+input.origin);
   this.init();
 
   return this;
