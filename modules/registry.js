@@ -17,7 +17,6 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://socialapi/modules/defaultprefs.js");
 Cu.import("resource://socialapi/modules/ManifestRegistry.jsm");
-//Cu.import("resource://socialapi/modules/defaultServices.jsm");
 
 const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const FRECENCY = 100;
