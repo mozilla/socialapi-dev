@@ -16,7 +16,7 @@ const {classes: Cc, interfaces: Ci, utils: Cu, manager: Cm} = Components;
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://socialapi/modules/defaultprefs.js");
-Cu.import("resource://socialapi/modules/manifestDB.jsm");
+Cu.import("resource://socialapi/modules/ManifestRegistry.jsm");
 //Cu.import("resource://socialapi/modules/defaultServices.jsm");
 
 const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
@@ -53,7 +53,7 @@ function ProviderRegistry(createCallback) {
   Services.obs.addObserver(this, 'quit-application', true);
 
   let self = this;
-  ManifestDB.iterate(function(key, manifest) {
+  ManifestRegistry.iterate(function(key, manifest) {
     self.register(manifest);
   }, function(count) {
     self._ready = true;
@@ -145,7 +145,7 @@ ProviderRegistry.prototype = {
    * @param manifest jsonObject
    */
   register: function(manifest) {
-    // we are not pushing into manifestDB here, rather manifestDB is calling us
+    // we are not pushing into ManifestRegistry here, rather ManifestRegistry is calling us
     try {
       let provider = this.createProviderCallback(manifest);
       this._providers[manifest.origin] = provider;
@@ -175,7 +175,7 @@ ProviderRegistry.prototype = {
     } catch (ex) {
       Cu.reportError("attempting to remove a non-existing manifest origin: " + origin);
     }
-    ManifestDB.remove(origin, function() {
+    ManifestRegistry.remove(origin, function() {
       Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
       if (callback) callback();
     });
@@ -242,9 +242,9 @@ ProviderRegistry.prototype = {
     // Don't start up again if we're already enabled
     if (provider.enabled) return true;
 
-    ManifestDB.get(origin, function(key, manifest) {
+    ManifestRegistry.get(origin, function(key, manifest) {
       manifest.enabled = true;
-      ManifestDB.put(origin, manifest);
+      ManifestRegistry.put(origin, manifest);
       Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
       if (callback) callback();
     });
@@ -270,9 +270,9 @@ ProviderRegistry.prototype = {
     // and update the manifest.
     // XXX - this is wrong!  We should track that state elsewhere, otherwise
     // a manifest being updated by a provider loses this state!
-    ManifestDB.get(origin, function(key, manifest) {
+    ManifestRegistry.get(origin, function(key, manifest) {
       manifest.enabled = false;
-      ManifestDB.put(origin, manifest);
+      ManifestRegistry.put(origin, manifest);
       Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
       if (callback) callback();
     });

@@ -77,7 +77,7 @@ function getBuiltinProviders() {
 
 
 // a lightweight wrapper around prefs for manifest storage
-var ManifestDB = (function() {
+var ManifestRegistry = (function() {
   var _prefBranch = Services.prefs.getBranch("social.manifest.").QueryInterface(Ci.nsIPrefBranch2);;
 
   // get the host+port of the url to use as a db key
@@ -244,4 +244,4 @@ var ManifestDB = (function() {
   };
 })();
 
-var EXPORTED_SYMBOLS = ["ManifestDB"];
+var EXPORTED_SYMBOLS = ["ManifestRegistry"];

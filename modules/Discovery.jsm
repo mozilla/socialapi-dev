@@ -21,7 +21,7 @@ const {classes: Cc, interfaces: Ci, utils: Cu, manager: Cm} = Components;
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://socialapi/modules/registry.js");
-Cu.import("resource://socialapi/modules/manifestDB.jsm");
+Cu.import("resource://socialapi/modules/ManifestRegistry.jsm");
 Cu.import("resource://socialapi/modules/SafeXHR.jsm");
 
 
@@ -82,11 +82,11 @@ var SocialProviderDiscovery = (function() {
 
   function importManifest(aDocument, location, rawManifest, systemInstall, callback) {
     //Services.console.logStringMessage("got manifest "+JSON.stringify(manifest));
-    let manifest = ManifestDB.validate(location, rawManifest);
+    let manifest = ManifestRegistry.validate(location, rawManifest);
 
     if (systemInstall) {
       // user approval has already been granted, or this is an automatic operation
-      ManifestDB.install(manifest);
+      ManifestRegistry.install(manifest);
     }
     else {
       // we need to ask the user for confirmation:
@@ -97,7 +97,7 @@ var SocialProviderDiscovery = (function() {
                      .QueryInterface(Ci.nsIInterfaceRequestor)
                      .getInterface(Ci.nsIDOMWindow);
       askUserInstall(xulWindow, function() {
-        ManifestDB.install(manifest);
+        ManifestRegistry.install(manifest);
 
         // user requested install, lets make sure we enable after the install.
         // This is especially important on first time install.
@@ -161,7 +161,7 @@ var SocialProviderDiscovery = (function() {
         if (!allow_http && resolved.scheme != "https")
           return;
         //Services.console.logStringMessage("base "+baseUrl+" resolved to "+url);
-        ManifestDB.get(url, function(key, item) {
+        ManifestRegistry.get(url, function(key, item) {
           if (!item) {
             loadManifest(aDocument, url);
           }

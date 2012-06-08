@@ -1,7 +1,7 @@
 Cu.import("resource://gre/modules/Services.jsm");
 let modules = {} // work around the test framework complaining of leaks
 Cu.import("resource://socialapi/modules/registry.js", modules);
-Cu.import("resource://socialapi/modules/manifestDB.jsm", modules);
+Cu.import("resource://socialapi/modules/ManifestRegistry.jsm", modules);
 Cu.import("resource://socialapi/modules/Discovery.jsm", modules);
 
 function registry() modules.registry();
@@ -14,7 +14,7 @@ function doValidationTest(location, rawManifest, cb) {
   let r = registry();
   let origin = Services.io.newURI(location, null, null).prePath;
   try {
-    let manifest = modules.ManifestDB.validate(location, rawManifest);
+    let manifest = modules.ManifestRegistry.validate(location, rawManifest);
     cb(manifest);
   } catch(e) {
     info("validation exception "+e.toString());
