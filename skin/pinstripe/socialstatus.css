@@ -173,6 +173,8 @@ toolbar[mode="icons"] .social-status-area-container > menupopup {
 }
 
 .social-panel[type="arrow"] {
+    min-height: 100px;
+    min-width: 240px;
 }
 
 .social-panel .panel-arrow[side="top"] {
