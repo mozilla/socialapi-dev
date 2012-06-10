@@ -127,7 +127,6 @@ let tests = {
       onconnect = function(e) {
         let port = e.ports[0];
         port.onmessage = function(e) {
-          // Check the data we get via the port has the prototype modification
           if (e.data.topic == "go") {
             let buffer = new ArrayBuffer(10);
             // this one has always worked in the past, but worth checking anyway...
@@ -166,7 +165,6 @@ let tests = {
       onconnect = function(e) {
         let port = e.ports[0];
         port.onmessage = function(e) {
-          // Check the data we get via the port has the prototype modification
           if (e.data.topic == "go") {
             let buffer = new ArrayBuffer(10);
             let reader = new FileReader();
