@@ -14,7 +14,7 @@ onconnect = function(e) {
   // The test that uses this worker MUST use the same origin to load the worker.
   // We fetch the test app manifest so we can check the data is what we expect.
   let url = "https://example.com/browser/browser/features/socialapi/test/testprovider/app.manifest";
-  req.open("GET", "http://enable-cors.org/", true);
+  req.open("GET", url, true);
   req.onreadystatechange = function() {
     if (req.readyState === 4) {
       let ok = req.status == 200 && req.responseText.length > 0;
