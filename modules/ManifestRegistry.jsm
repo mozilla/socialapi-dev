@@ -82,10 +82,14 @@ var ManifestRegistry = (function() {
 
   // get the host+port of the url to use as a db key
   function normalizeKey(aURL) {
-    let URI = Services.io.newURI(aURL, null, null);
-    if (URI.port > 0)
-      return URI.host+":"+URI.port;
-    return URI.host;
+    try {
+      let URI = Services.io.newURI(aURL, null, null);
+      if (URI.port > 0)
+        return URI.host+":"+URI.port;
+      return URI.host;
+    } catch(e) {
+      return aURL;
+    }
   }
 
   /**
@@ -170,6 +174,7 @@ var ManifestRegistry = (function() {
       // dont overwrite enabled, but first install is always enabled
       manifest.enabled = item ? item.enabled : true;
       put(manifest.origin, manifest, function() {
+        Services.obs.notifyObservers(null, "socialapi-manifest-installed", manifest.origin);
         if (callback) {
           callback(true);
         }
@@ -186,9 +191,13 @@ var ManifestRegistry = (function() {
    */
   function put(origin, manifest, cb) {
     // TODO validate the manifest now?  what do we validate?
-    manifest.last_modified = new Date().getTime();
-    _prefBranch.setCharPref(normalizeKey(origin), JSON.stringify(manifest));
-    if (cb) cb(true);
+    try {
+      manifest.last_modified = new Date().getTime();
+      _prefBranch.setCharPref(normalizeKey(origin), JSON.stringify(manifest));
+      if (cb) cb(true);
+    } catch(e) {
+      if (cb) cb(false);
+    }
   }
 
   function remove(origin, cb) {
@@ -203,6 +212,7 @@ var ManifestRegistry = (function() {
   }
 
   function get(origin, cb) {
+    origin = normalizeKey(origin);
     try {
       let manifest = JSON.parse(_prefBranch.getCharPref(origin));
       if (cb) cb(origin, manifest);

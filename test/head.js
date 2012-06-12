@@ -16,7 +16,7 @@ const TEST_PROVIDER2_MANIFEST = TEST_PROVIDER2_ORIGIN + TEST_PROVIDER_PATH + "/a
 
 let headModules = {}
 Cu.import("resource://socialapi/modules/registry.js", headModules);
-Cu.import("resource://socialapi/modules/manifest.jsm", headModules);
+Cu.import("resource://socialapi/modules/Discovery.jsm", headModules);
 Cu.import("resource://socialapi/modules/provider.js", headModules);
 try {
   headModules.SetProviderFactory(function(manifest) {return new headModules.SocialProvider(manifest);});
@@ -32,7 +32,7 @@ function installTestProvider(callback, manifestUrl) {
   if (!manifestUrl) {
     manifestUrl = TEST_PROVIDER_MANIFEST;
   }
-  let ms = headModules.manifestSvc;
+  let ms = headModules.SocialProviderDiscovery;
   ms.loadManifest(window.document, manifestUrl, true,
                   function() {if (callback) executeSoon(callback)});
 }
@@ -96,9 +96,9 @@ observerChecker.prototype = {
     this.observed.push({subject: aSubject, topic: aTopic, data: aData});
   },
 
-  check: function(expected) {
+  check: function(expected, message) {
     if (this.observed.length != expected.length) {
-      dump("observer check failed - got topics " + [o.topic for each (o in this.observed)].join(", ") +
+      dump("observer check failed for "+(message?message:"?")+" - got topics " + [o.topic for each (o in this.observed)].join(", ") +
            " - expected " + [o.topic for each (o in expected)].join(", ") + "\n");
     }
     is(this.observed.length, expected.length, "check expected number of observations");
@@ -152,7 +152,7 @@ function runTests(tests, cbPreTest, cbPostTest) {
         try {
           func.call(tests, cleanupAndRunNextTest);
         } catch (ex) {
-          ok(false, "sub-test " + name + " failed: " + ex.toString());
+          ok(false, "sub-test " + name + " failed: " + ex.toString() +"\n"+ex.stack);
           cleanupAndRunNextTest();
         }
       })

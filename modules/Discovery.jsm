@@ -124,7 +124,7 @@ var SocialProviderDiscovery = (function() {
 
     if (systemInstall) {
       // user approval has already been granted, or this is an automatic operation
-      ManifestRegistry.install(manifest);
+      ManifestRegistry.install(manifest, callback);
     }
     else {
       // we need to ask the user for confirmation:
@@ -135,7 +135,7 @@ var SocialProviderDiscovery = (function() {
                      .QueryInterface(Ci.nsIInterfaceRequestor)
                      .getInterface(Ci.nsIDOMWindow);
       askUserInstall(xulWindow, function() {
-        ManifestRegistry.install(manifest);
+        ManifestRegistry.install(manifest, callback);
 
         // user requested install, lets make sure we enable after the install.
         // This is especially important on first time install.
@@ -153,9 +153,11 @@ var SocialProviderDiscovery = (function() {
 
   function loadManifest(aDocument, url, systemInstall, callback) {
     // test any manifest against safebrowsing
-    SafeXHR.get(uri, true, function(data) {
+    SafeXHR.get(url, true, function(data) {
       if (data) {
-        importManifest(aDocument, url, JSON.parse(data), systemInstall, callback);
+        importManifest(aDocument, url, data, systemInstall, callback);
+      } else {
+        callback(data);
       }
     });
   }
