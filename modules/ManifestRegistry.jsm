@@ -20,6 +20,8 @@ Cu.import("resource://socialapi/modules/SafeXHR.jsm");
  * getDefaultProviders
  *
  * look into our addon/feature dir and see if we have any builtin providers to install
+ *
+ * BUG 764475 to remove disk based loading, we'll move manifests into prefs later
  */
 function getBuiltinProviders() {
   var URIs = [];
@@ -33,8 +35,6 @@ function getBuiltinProviders() {
       installFile = installFile.QueryInterface(Components.interfaces.nsIJARURI);
     } catch (ex) {} //not a jar file
 
-    // load all prefs in defaults/preferences into a sandbox that has
-    // a pref function
     let resURI = Services.io.newURI("resource://socialapi/providers", null, null);
     // If we're a XPI, load from the jar file
     if (installFile.JARFile) {
@@ -213,23 +213,29 @@ var ManifestRegistry = (function() {
 
   function get(origin, cb) {
     origin = normalizeKey(origin);
+    let val;
+    let manifest;
     try {
-      let manifest = JSON.parse(_prefBranch.getCharPref(origin));
-      if (cb) cb(origin, manifest);
+      val = _prefBranch.getCharPref(origin)
+      try {
+        manifest = JSON.parse(val);
+      } catch(e) {
+        Cu.reportError("repo.get: "+e);
+      }
     } catch(e) {
-      if (cb) cb(origin, null);
+      // no need to log non-existent prefs
     }
+    if (cb) cb(origin, manifest);
   }
 
   function iterate(cb, finalize) {
-    let manifests;
+    let manifests = [];
     try {
       manifests = _prefBranch.getChildList("",{});
-      for each(let key in manifests) {
-        this.get(key, cb);
-      }
     } catch(e) {
-      Cu.reportError(e);
+    }
+    for each(let key in manifests) {
+      this.get(key, cb);
     }
     finalize(manifests.length);
   }
