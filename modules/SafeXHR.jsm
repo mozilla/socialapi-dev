@@ -36,7 +36,7 @@ var SafeXHR = (function() {
    */
   function isSafeURL(aUrl, aCallback) {
     if (isDevMode()) {
-      aCallback(true);
+      aCallback(0);
       return;
     }
     // callback gets zero if the url is not found
