@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # This is a script with a very specific purpose - to keep 2 different
 # hg branches in sync with a single git repo.
 # One of the hg branches is assumed to have a subset of the files in the git
@@ -79,9 +80,10 @@ def build_git_filelist(srcdir, hg_branchname):
             continue
         result.append((srcname, name))
     return sorted(result)
-    
+
 def main():
     global options
+
     parser = optparse.OptionParser()
     parser.add_option("-f", "--force", action="store_true",
                       help="ignore all sanity checks and do it anyway");
@@ -92,11 +94,21 @@ def main():
 
     parser.add_option("", "--hgdir", dest="hgdir",
                       help="The root of the mozilla-central hg repo");
-
-    parser.add_option("", "--gitdir", dest="gitdir",
+    parser.add_option("", "--gitdir", dest="gitdir", default=os.getcwd(),
                       help="The root of the social git repo");
 
     options, args = parser.parse_args()
+
+    # if we're in the git dir, and arg0 is a path, assume it is hgdir
+    options.gitdir = os.path.abspath(options.gitdir)
+    if not os.path.isdir(os.path.join(options.gitdir, ".git")):
+        parser.error("the specified --gitdir is not a valid hg repo")
+
+    if not options.hgdir and args[0]:
+        options.hgdir = args[0]
+    if not options.hgdir:
+        print "--hgdir is required"
+        return;
 
     options.hgdir = os.path.abspath(options.hgdir)
     if not os.path.isdir(os.path.join(options.hgdir, ".hg")):
@@ -104,10 +116,6 @@ def main():
     options.hgdir = os.path.join(options.hgdir, "browser/extensions/socialapi")
     if not os.path.isdir(options.hgdir):
         parser.error("the specified --hgdir does not have the socialapi directory")
-
-    options.gitdir = os.path.abspath(options.gitdir)
-    if not os.path.isdir(os.path.join(options.gitdir, ".git")):
-        parser.error("the specified --gitdir is not a valid hg repo")
 
     hg_branchname = get_hg_branchname(options.hgdir)
     hgdict = build_hg_filelist(options.hgdir)
