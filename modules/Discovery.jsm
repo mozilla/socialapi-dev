@@ -1,86 +1,168 @@
+/* -*- Mode: JavaScript; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Contributor(s):
+ *  Michael Hanson <mhanson@mozilla.com>
+ *  Shane Caraveo <scaraveo@mozilla.com>
+ *  Mark Hammond <mhammond@mozilla.com>
+ *
+ *
+ *
+ *  Discovery contains all UI/UX and utility functionality around installing
+ *  social service providers from remote websites.
+ */
 
 
 const {classes: Cc, interfaces: Ci, utils: Cu, manager: Cm} = Components;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://socialapi/modules/manifestDB.jsm");
-Cu.import("resource://socialapi/modules/manifest.jsm");
+Cu.import("resource://socialapi/modules/registry.js");
+Cu.import("resource://socialapi/modules/ManifestRegistry.jsm");
+Cu.import("resource://socialapi/modules/SafeXHR.jsm");
 
-/**
- * getDefaultProviders
- *
- * look into our addon/feature dir and see if we have any builtin providers to install
- */
-function getBuiltinProviders() {
-  var URIs = [];
+
+// some utility functions we can later use to determin if a "builtin" should
+// be made available or not
+
+function hasLogin(hostname) {
   try {
-    // figure out our installPath
-    let res = Services.io.getProtocolHandler("resource").QueryInterface(Ci.nsIResProtocolHandler);
-    let installURI = Services.io.newURI("resource://socialapi/", null, null);
-    let installPath = res.resolveURI(installURI);
-    let installFile = Services.io.newURI(installPath, null, null);
-    try {
-      installFile = installFile.QueryInterface(Components.interfaces.nsIJARURI);
-    } catch (ex) {} //not a jar file
-
-    // load all prefs in defaults/preferences into a sandbox that has
-    // a pref function
-    let resURI = Services.io.newURI("resource://socialapi/providers", null, null);
-    // If we're a XPI, load from the jar file
-    if (installFile.JARFile) {
-      let fileHandler = Components.classes["@mozilla.org/network/protocol;1?name=file"].
-                  getService(Components.interfaces.nsIFileProtocolHandler);
-      let fileName = fileHandler.getFileFromURLSpec(installFile.JARFile.spec);
-      let zipReader = Cc["@mozilla.org/libjar/zip-reader;1"].
-                      createInstance(Ci.nsIZipReader);
-      try {
-        zipReader.open(fileName);
-        let entries = zipReader.findEntries("providers/*");
-        while (entries.hasMore()) {
-          var entryName = resURI.resolve(entries.getNext());
-          if (entryName.indexOf("app.manifest") >= 0)
-            URIs.push(entryName);
-        }
-      }
-      finally {
-        zipReader.close();
-      }
-    }
-    else {
-      let fURI = resURI.QueryInterface(Components.interfaces.nsIFileURL).file;
-
-      var entries = fURI.directoryEntries;
-      while (entries.hasMoreElements()) {
-        var entry = entries.getNext();
-        entry.QueryInterface(Components.interfaces.nsIFile);
-        if (entry.leafName.length > 0 && entry.leafName[0] != '.') {
-          URIs.push(resURI.resolve("providers/"+entry.leafName+"/app.manifest"));
-        }
-      }
-    }
-    //dump(JSON.stringify(URIs)+"\n");
+    return Services.logins.countLogins(hostname, "", "") > 0;
   } catch(e) {
     Cu.reportError(e);
   }
-  return URIs
+  return false;
 }
 
-function installBuiltinProviders() {
-  // load the builtin providers if any
-  let URIs = getBuiltinProviders();
-  for each(let uri in URIs) {
-    manifestSvc.loadManifest(null, uri, true);
+function reverse(s){
+    return s.split("").reverse().join("");
+}
+
+function frecencyForUrl(host)
+{
+  // BUG 732275 there has got to be a better way to do this!
+  Cu.import("resource://gre/modules/PlacesUtils.jsm");
+
+  let dbconn = PlacesUtils.history.QueryInterface(Ci.nsPIPlacesDatabase)
+                                  .DBConnection;
+  let frecency = 0;
+  let stmt = dbconn.createStatement(
+    "SELECT frecency FROM moz_places WHERE rev_host = ?1"
+  );
+  try {
+    stmt.bindByIndex(0, reverse(host)+'.');
+    if (stmt.executeStep())
+      frecency = stmt.getInt32(0);
+  } finally {
+    stmt.finalize();
   }
-}
-installBuiltinProviders();
 
-var DocumentObserver = {
-  QueryInterface: XPCOMUtils.generateQI([Ci.nsISupportsWeakReference, Ci.nsIObserver]),
-  init: function() {
-    Services.obs.addObserver(DocumentObserver, "document-element-inserted", true);
-  },
-  discoverManifest: function DocumentObserver_discoverManifest(aDocument, aData) {
+  return frecency;
+}
+
+/* Utility function: returns the host:port of
+ * of a URI, or simply the host, if no port
+ * is provided.  If the URI cannot be parsed,
+ * or is a resource: URI, returns the input
+ * URI text. */
+function normalizeOriginPort(aURL) {
+  try {
+    let uri = Services.io.newURI(aURL, null, null);
+    if (uri.scheme == 'resource') return aURL;
+    return uri.hostPort;
+  }
+  catch(e) {
+    Cu.reportError(e);
+  }
+  return aURL;
+}
+
+var SocialProviderDiscovery = (function() {
+  let _prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
+
+  function askUserInstall(aWindow, aCallback, location) {
+    let origin = normalizeOriginPort(location);
+    // BUG 732263 remember if the user says no, use that as a check in
+    // discoverActivity so we bypass a lot of work.
+    let nId = "manifest-ask-install";
+    let nBox = aWindow.gBrowser.getNotificationBox();
+    let notification = nBox.getNotificationWithValue(nId);
+    let strings = Services.strings.createBundle("chrome://socialapi/locale/strings.properties");
+
+    // Check that we aren't already displaying our notification
+    if (!notification) {
+      let message = strings.GetStringFromName("installoffer.notificationbar");
+
+      buttons = [{
+        label: strings.GetStringFromName("yes.label"),
+        accessKey: null,
+        callback: function () {
+          aWindow.setTimeout(function () {
+            aCallback();
+          }, 0);
+        }
+      },
+      {
+        label: strings.GetStringFromName("dontask.label"),
+        accessKey: strings.GetStringFromName("dontask.accesskey"),
+        callback: function() {
+          _prefBranch.setBoolPref(origin+".ignore", true);
+        }
+      }];
+      nBox.appendNotification(message, nId, null,
+                nBox.PRIORITY_INFO_MEDIUM,
+                buttons);
+    }
+  }
+
+  function importManifest(aDocument, location, rawManifest, systemInstall, callback) {
+    //Services.console.logStringMessage("got manifest "+JSON.stringify(manifest));
+    let manifest = ManifestRegistry.validate(location, rawManifest);
+
+    if (systemInstall) {
+      // user approval has already been granted, or this is an automatic operation
+      ManifestRegistry.install(manifest, callback);
+    }
+    else {
+      // we need to ask the user for confirmation:
+      var xulWindow = aDocument.defaultView.QueryInterface(Ci.nsIInterfaceRequestor)
+                     .getInterface(Ci.nsIWebNavigation)
+                     .QueryInterface(Ci.nsIDocShellTreeItem)
+                     .rootTreeItem
+                     .QueryInterface(Ci.nsIInterfaceRequestor)
+                     .getInterface(Ci.nsIDOMWindow);
+      askUserInstall(xulWindow, function() {
+        ManifestRegistry.install(manifest, callback);
+
+        // user requested install, lets make sure we enable after the install.
+        // This is especially important on first time install.
+
+        registry().enabled = true;
+        let prefBranch = Services.prefs.getBranch("social.provider.").QueryInterface(Ci.nsIPrefBranch2);
+        prefBranch.setBoolPref("visible", true);
+        Services.obs.notifyObservers(null,
+                                 "social-browsing-enabled",
+                                 registry().currentProvider.origin);
+      }, location)
+      return;
+    }
+  }
+
+  function loadManifest(aDocument, url, systemInstall, callback) {
+    // test any manifest against safebrowsing
+    SafeXHR.get(url, true, function(data) {
+      if (data) {
+        importManifest(aDocument, url, data, systemInstall, callback);
+      } else {
+        callback(data);
+      }
+    });
+  }
+
+  function discoverManifest(aDocument, aData) {
     // BUG 732266 this is probably heavy weight, is there a better way to watch for
     // links in documents?
     // https://developer.mozilla.org/En/Listening_to_events_in_Firefox_extensions
@@ -119,31 +201,39 @@ var DocumentObserver = {
         if (!allow_http && resolved.scheme != "https")
           return;
         //Services.console.logStringMessage("base "+baseUrl+" resolved to "+url);
-        ManifestDB.get(url, function(key, item) {
+        ManifestRegistry.repo.get(url, function(key, item) {
           if (!item) {
-            manifestSvc.loadManifest(aDocument, url);
+            loadManifest(aDocument, url);
           }
         });
       }
     }
-  },
+  }
 
   /**
    * observer
    *
    * reset our mediators if an app is installed or uninstalled
    */
-  observe: function DocumentObserver_observe(aSubject, aTopic, aData) {
-    if (aTopic == "document-element-inserted") {
-      if (!aSubject.defaultView)
+  var DocumentObserver = {
+    QueryInterface: XPCOMUtils.generateQI([Ci.nsISupportsWeakReference, Ci.nsIObserver]),
+    observe: function DocumentObserver_observe(aSubject, aTopic, aData) {
+      if (aTopic == "document-element-inserted") {
+        if (!aSubject.defaultView)
+          return;
+        //Services.console.logStringMessage("new document "+aSubject.defaultView.location);
+        discoverManifest(aSubject, aData);
         return;
-      //Services.console.logStringMessage("new document "+aSubject.defaultView.location);
-      DocumentObserver.discoverManifest(aSubject, aData);
-      return;
+      }
     }
   }
-}
 
-DocumentObserver.init();
+  Services.obs.addObserver(DocumentObserver, "document-element-inserted", true);
 
-const EXPORTED_SYMBOLS = ["DocumentObserver"];
+  return {
+    loadManifest: loadManifest,
+    importManifest: importManifest
+  }
+})();
+
+const EXPORTED_SYMBOLS = ["SocialProviderDiscovery"];

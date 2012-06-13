@@ -28,9 +28,9 @@ function makeTestProvider(input) {
 
 let headModules = {}
 Cu.import("resource://socialapi/modules/registry.js", headModules);
-Cu.import("resource://socialapi/modules/manifest.jsm", headModules);
+Cu.import("resource://socialapi/modules/Discovery.jsm", headModules);
 try {
-  headModules.initialize(makeTestProvider);
+  headModules.SetProviderFactory(makeTestProvider);
 } catch (ex) {
   if (ex.toString() != "Error: already initialized") {
     info("Unexpected failure to initialize the registry: " + ex)
@@ -43,7 +43,7 @@ function installTestProvider(callback, manifestUrl) {
   if (!manifestUrl) {
     manifestUrl = TEST_PROVIDER_MANIFEST;
   }
-  let ms = headModules.manifestSvc;
+  let ms = headModules.SocialProviderDiscovery;
   ms.loadManifest(window.document, manifestUrl, true,
                   function() {if (callback) executeSoon(callback)});
 }

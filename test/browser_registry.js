@@ -11,7 +11,7 @@ function test() {
 let tests = {
   testSingleProvider: function(cbnext) {
     let r = registry();
-    
+
     let oc = new observerChecker(["social-browsing-current-service-changed",
                                   "social-service-manifest-changed",
                                   "social-browsing-enabled",
@@ -39,12 +39,13 @@ let tests = {
       oc.check([{topic: "social-service-manifest-changed"},
                 {topic: "social-browsing-enabled"},
                 {topic: "social-browsing-current-service-changed"}
-              ]);
+              ], "installTestProvider");
       // disable our test provider - that should disable social.
       ok(r.disableProvider(TEST_PROVIDER_ORIGIN, function() {
         is(r.enabled, false, "social should be disabled after disabling only provider");
         oc.check([{topic: "social-browsing-disabled"},
-                  {topic: "social-service-manifest-changed"}]);
+                  {topic: "social-service-manifest-changed"}],
+                 "disableProvider");
 
         // re-enable it.
         ok(r.enableProvider(TEST_PROVIDER_ORIGIN, function() {
@@ -54,12 +55,12 @@ let tests = {
           oc.check([{topic: "social-service-manifest-changed"},
                     {topic: "social-browsing-enabled"},
                     {topic: "social-browsing-current-service-changed"}
-                   ]);
+                   ], "enableProvider");
 
           // disable browsing.
           r.enabled = false;
           is(r.enabled, false, "social should be disabled");
-          oc.check([{topic: "social-browsing-disabled"}]);
+          oc.check([{topic: "social-browsing-disabled"}], "disable provider registry");
           cbnext();
         }), "check provider was enabled");
       }), "check provider was disabled");

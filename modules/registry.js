@@ -16,11 +16,9 @@ const {classes: Cc, interfaces: Ci, utils: Cu, manager: Cm} = Components;
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://socialapi/modules/defaultprefs.js");
-Cu.import("resource://socialapi/modules/manifestDB.jsm");
-//Cu.import("resource://socialapi/modules/defaultServices.jsm");
+Cu.import("resource://socialapi/modules/ManifestRegistry.jsm");
 
 const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
-const FRECENCY = 100;
 
 /** Helper function to detect "development mode",
  * which is set with the social.provider.devmode pref.
@@ -51,9 +49,10 @@ function ProviderRegistry(createCallback) {
 
   Services.obs.addObserver(this, "private-browsing", false);
   Services.obs.addObserver(this, 'quit-application', true);
+  Services.obs.addObserver(this, 'socialapi-manifest-installed', true);
 
   let self = this;
-  ManifestDB.iterate(function(key, manifest) {
+  ManifestRegistry.repo.iterate(function(key, manifest) {
     self.register(manifest);
   }, function(count) {
     self._ready = true;
@@ -121,7 +120,13 @@ ProviderRegistry.prototype = {
   },
 
   observe: function(aSubject, aTopic, aData) {
-    if (aTopic == "private-browsing") {
+    let self = this;
+    if (aTopic == "socialapi-manifest-installed") {
+      ManifestRegistry.repo.get(aData, function(key, manifest) {
+        self.register(manifest);
+      })
+    }
+    else if (aTopic == "private-browsing") {
       if (aData == "enter") {
         this._enabledBeforePrivateBrowsing = this.enabled;
         this.enabled = false;
@@ -145,7 +150,7 @@ ProviderRegistry.prototype = {
    * @param manifest jsonObject
    */
   register: function(manifest) {
-    // we are not pushing into manifestDB here, rather manifestDB is calling us
+    // we are not pushing into ManifestRegistry here, rather ManifestRegistry is calling us
     try {
       let provider = this.createProviderCallback(manifest);
       this._providers[manifest.origin] = provider;
@@ -175,7 +180,7 @@ ProviderRegistry.prototype = {
     } catch (ex) {
       Cu.reportError("attempting to remove a non-existing manifest origin: " + origin);
     }
-    ManifestDB.remove(origin, function() {
+    ManifestRegistry.repo.remove(origin, function() {
       Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
       if (callback) callback();
     });
@@ -242,12 +247,6 @@ ProviderRegistry.prototype = {
     // Don't start up again if we're already enabled
     if (provider.enabled) return true;
 
-    ManifestDB.get(origin, function(key, manifest) {
-      manifest.enabled = true;
-      ManifestDB.put(origin, manifest);
-      Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
-      if (callback) callback();
-    });
     provider.enabled = true;
     // if browsing is disabled we can't activate it!
     // XXX - but checking "this.enabled" will have the side-effect of actually
@@ -255,6 +254,13 @@ ProviderRegistry.prototype = {
     if (this._enabled) {
       provider.activate();
     }
+
+    ManifestRegistry.repo.get(origin, function(key, manifest) {
+      manifest.enabled = true;
+      ManifestRegistry.repo.put(origin, manifest);
+      Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
+      if (callback) callback();
+    });
     // nothing else to do - it is now available to be the current provider
     // but doesn't get that status simply because it was enabled.
     return true;
@@ -267,15 +273,6 @@ ProviderRegistry.prototype = {
 
     provider.shutdown();
     provider.enabled = false;
-    // and update the manifest.
-    // XXX - this is wrong!  We should track that state elsewhere, otherwise
-    // a manifest being updated by a provider loses this state!
-    ManifestDB.get(origin, function(key, manifest) {
-      manifest.enabled = false;
-      ManifestDB.put(origin, manifest);
-      Services.obs.notifyObservers(null, "social-service-manifest-changed", origin);
-      if (callback) callback();
-    });
 
     if (this._currentProvider && this._currentProvider == provider) {
       // it was current select a new current one.
@@ -299,6 +296,20 @@ ProviderRegistry.prototype = {
                                      this._currentProvider.origin);
       }
     }
+
+    // and update the manifest.
+    // XXX - this is wrong!  We should track that state elsewhere, otherwise
+    // a manifest being updated by a provider loses this state!
+    ManifestRegistry.repo.get(origin, function(key, manifest) {
+      if (!manifest) {
+        Cu.reportError("manifest for "+key+" has quietly slipped away into the night...");
+      } else {
+        manifest.enabled = false;
+        ManifestRegistry.repo.put(key, manifest);
+      }
+      Services.obs.notifyObservers(null, "social-service-manifest-changed", key);
+      if (callback) callback();
+    });
     return true;
   },
 
@@ -355,7 +366,7 @@ ProviderRegistry.prototype = {
 //const NSGetFactory = XPCOMUtils.generateNSGetFactory(components);
 let providerRegistrySingleton;
 
-function initialize(createCallback) {
+function SetProviderFactory(createCallback) {
   if (providerRegistrySingleton) {
     throw new Error("already initialized");
   }
@@ -363,4 +374,4 @@ function initialize(createCallback) {
 }
 
 function registry() providerRegistrySingleton;
-const EXPORTED_SYMBOLS = ["registry", "initialize", "isDevMode"];
+const EXPORTED_SYMBOLS = ["registry", "SetProviderFactory", "isDevMode"];
