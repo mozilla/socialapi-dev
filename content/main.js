@@ -1,7 +1,7 @@
 "use strict";
 
-Cu.import("resource://socialapi/modules/registry.js");
-Cu.import("resource://socialapi/modules/provider.js");
+Cu.import("resource://socialapi/modules/ProviderRegistry.jsm");
+Cu.import("resource://socialapi/modules/Provider.jsm");
 Cu.import("resource://socialapi/modules/Discovery.jsm");
 
 function isAvailable() {

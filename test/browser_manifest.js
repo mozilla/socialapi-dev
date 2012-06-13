@@ -1,6 +1,6 @@
 Cu.import("resource://gre/modules/Services.jsm");
 let modules = {} // work around the test framework complaining of leaks
-Cu.import("resource://socialapi/modules/registry.js", modules);
+Cu.import("resource://socialapi/modules/ProviderRegistry.jsm", modules);
 Cu.import("resource://socialapi/modules/ManifestRegistry.jsm", modules);
 Cu.import("resource://socialapi/modules/Discovery.jsm", modules);
 

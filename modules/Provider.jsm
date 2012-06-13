@@ -15,7 +15,7 @@ const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 Cu.import("resource://gre/modules/Services.jsm");
 let frameworker = {};
-Cu.import("resource://socialapi/modules/frameworker.js", frameworker);
+Cu.import("resource://socialapi/modules/Frameworker.jsm", frameworker);
 Cu.import("resource://socialapi/modules/servicewindow.js");
 Cu.import("resource://socialapi/modules/workerapi.js");
 

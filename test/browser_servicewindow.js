@@ -1,4 +1,4 @@
-Cu.import("resource://socialapi/modules/registry.js");
+Cu.import("resource://socialapi/modules/ProviderRegistry.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
 function makeHTML(runner) {

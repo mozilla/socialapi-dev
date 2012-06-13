@@ -15,9 +15,9 @@ const TEST_PROVIDER2_MANIFEST = TEST_PROVIDER2_ORIGIN + TEST_PROVIDER_PATH + "/a
 
 
 let headModules = {}
-Cu.import("resource://socialapi/modules/registry.js", headModules);
+Cu.import("resource://socialapi/modules/ProviderRegistry.jsm", headModules);
 Cu.import("resource://socialapi/modules/Discovery.jsm", headModules);
-Cu.import("resource://socialapi/modules/provider.js", headModules);
+Cu.import("resource://socialapi/modules/Provider.jsm", headModules);
 try {
   headModules.SetProviderFactory(function(manifest) {return new headModules.SocialProvider(manifest);});
 } catch (ex) {

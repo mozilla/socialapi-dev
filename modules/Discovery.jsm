@@ -20,7 +20,7 @@ const {classes: Cc, interfaces: Ci, utils: Cu, manager: Cm} = Components;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://socialapi/modules/registry.js");
+Cu.import("resource://socialapi/modules/ProviderRegistry.jsm");
 Cu.import("resource://socialapi/modules/ManifestRegistry.jsm");
 Cu.import("resource://socialapi/modules/SafeXHR.jsm");
 

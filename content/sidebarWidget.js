@@ -4,7 +4,7 @@ Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://socialapi/modules/baseWidget.js");
 
-Cu.import("resource://socialapi/modules/registry.js");
+Cu.import("resource://socialapi/modules/ProviderRegistry.jsm");
 
 
 function SocialSidebar() {

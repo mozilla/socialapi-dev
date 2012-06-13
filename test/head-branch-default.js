@@ -27,7 +27,7 @@ function makeTestProvider(input) {
 }
 
 let headModules = {}
-Cu.import("resource://socialapi/modules/registry.js", headModules);
+Cu.import("resource://socialapi/modules/ProviderRegistry.jsm", headModules);
 Cu.import("resource://socialapi/modules/Discovery.jsm", headModules);
 try {
   headModules.SetProviderFactory(makeTestProvider);

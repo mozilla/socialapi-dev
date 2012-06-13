@@ -3,7 +3,7 @@ const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
-Cu.import("resource://socialapi/modules/registry.js");
+Cu.import("resource://socialapi/modules/ProviderRegistry.jsm");
 
 const ABOUTURL = "chrome://socialapi/content/about.html";
 const EXPORTED_SYMBOLS = [];

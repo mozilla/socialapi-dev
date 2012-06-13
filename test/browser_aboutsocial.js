@@ -1,4 +1,4 @@
-Cu.import("resource://socialapi/modules/registry.js");
+Cu.import("resource://socialapi/modules/ProviderRegistry.jsm");
 
 // test about:social.
 function test() {
@@ -10,7 +10,7 @@ function test() {
   newTabBrowser.addEventListener("load", function onLoad1() {
     newTabBrowser.removeEventListener("load", onLoad1, true);
     let doc1 = newTabBrowser.contentDocument;
-    
+
     tab2 = gBrowser.addTab("about:social");
     newTabBrowser = gBrowser.getBrowserForTab(tab2);
     newTabBrowser.addEventListener("load", function onLoad2() {

@@ -1,5 +1,5 @@
 let registryModule = {} // work around the test framework complaining of leaks
-Cu.import("resource://socialapi/modules/registry.js", registryModule);
+Cu.import("resource://socialapi/modules/ProviderRegistry.jsm", registryModule);
 Cu.import("resource://gre/modules/Services.jsm");
 
 function registry() registryModule.registry();
