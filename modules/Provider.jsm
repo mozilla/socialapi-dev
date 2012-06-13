@@ -188,6 +188,11 @@ SocialProvider.prototype = {
         hasBeenIdleFor: function(ms) {
           const idleService = Cc["@mozilla.org/widget/idleservice;1"].getService(Ci.nsIIdleService);
           return idleService.idleTime >= ms;
+        },
+        __exposedProps__: {
+          getWorker: 'r',
+          openServiceWindow: 'r',
+          hasBeenIdleFor: 'r'
         }
       }
     });

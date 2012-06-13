@@ -169,7 +169,14 @@ AbstractPort.prototype = {
     let postData = {portTopic: topic,
                     portId: this._portid,
                     portFromType: this._portType,
-                    data: data};
+                    data: data,
+                    __exposedProps__: {
+                      portTopic: 'r',
+                      portId: 'r',
+                      portFromType: 'r',
+                      data: 'r'
+                    }
+                   };
     this._dopost(postData);
   },
 
@@ -185,7 +192,9 @@ AbstractPort.prototype = {
     }
     else {
       try {
-        this._handler({data: data});
+        this._handler({data: data,
+                       __exposedProps__: {data: 'r'}
+                      });
       }
       catch (ex) {
         this._onerror(ex);
@@ -268,6 +277,11 @@ function ClientPort(portid, clientWindow) {
 }
 
 ClientPort.prototype = {
+  __exposedProps__: {
+    'port': 'r',
+    'onmessage': 'rw',
+    'postMessage': 'r'
+  },
   __proto__: AbstractPort.prototype,
   _portType: "client",
 
@@ -404,7 +418,9 @@ function FrameWorker(url, clientWindow, name) {
             // resolve the uri against the loaded worker
             let scriptURL = workerURI.resolve(uri);
             if (scriptURL.indexOf(workerURI.prePath) != 0) {
-              throw new Error("importScripts same-origin violation with "+uri);
+              let err = new Error("importScripts same-origin violation with "+uri);
+              err.__exposedProps__ = {toJSON: 'r', toString: 'r'};
+              throw err;
             }
             log("importScripts loading "+scriptURL);
             // load the url *synchronously*
@@ -561,7 +577,9 @@ function FrameWorker(url, clientWindow, name) {
       log("worker terminated!");
     }, 0);
   }
-  return {port: clientPort, terminate: terminate};
+  return {port: clientPort, terminate: terminate,
+          __exposedProps__: {port: 'r', terminate: 'r'}
+  };
 };
 
 const EXPORTED_SYMBOLS = ["FrameWorker"];
