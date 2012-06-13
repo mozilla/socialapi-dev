@@ -210,30 +210,32 @@ var SocialProviderDiscovery = (function() {
     }
   }
 
-  /**
-   * observer
-   *
-   * reset our mediators if an app is installed or uninstalled
-   */
-  var DocumentObserver = {
-    QueryInterface: XPCOMUtils.generateQI([Ci.nsISupportsWeakReference, Ci.nsIObserver]),
-    observe: function DocumentObserver_observe(aSubject, aTopic, aData) {
-      if (aTopic == "document-element-inserted") {
-        if (!aSubject.defaultView)
-          return;
-        //Services.console.logStringMessage("new document "+aSubject.defaultView.location);
-        discoverManifest(aSubject, aData);
-        return;
-      }
-    }
-  }
-
-  Services.obs.addObserver(DocumentObserver, "document-element-inserted", true);
 
   return {
     loadManifest: loadManifest,
-    importManifest: importManifest
+    importManifest: importManifest,
+    discoverManifest: discoverManifest
   }
 })();
+
+/**
+ * observer
+ *
+ * reset our mediators if an app is installed or uninstalled
+ */
+var DocumentObserver = {
+  QueryInterface: XPCOMUtils.generateQI([Ci.nsISupportsWeakReference, Ci.nsIObserver]),
+  observe: function DocumentObserver_observe(aSubject, aTopic, aData) {
+    if (aTopic == "document-element-inserted") {
+      if (!aSubject.defaultView)
+        return;
+      //Services.console.logStringMessage("new document "+aSubject.defaultView.location);
+      SocialProviderDiscovery.discoverManifest(aSubject, aData);
+      return;
+    }
+  }
+}
+
+Services.obs.addObserver(DocumentObserver, "document-element-inserted", true);
 
 const EXPORTED_SYMBOLS = ["SocialProviderDiscovery"];
