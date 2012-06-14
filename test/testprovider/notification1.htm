@@ -1,1 +1,11 @@
-This is the test notification 1 window.
+<script>
+var worker = window.navigator.mozSocial.getWorker();
+window.addEventListener("unload", function() {
+  worker.port.postMessage({topic: "panel-unloaded"});
+  worker.port.close();
+}, false);
+
+</script>
+<div id="notif" style="width:330px; height:295px">
+  This is the test notification 1 window.
+</div>

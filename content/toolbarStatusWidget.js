@@ -65,16 +65,43 @@ SocialToolbarStatusArea.prototype = {
           var panel = window.document.getElementById("social-notification-panel");
           var notifBrowser = window.document.getElementById("social-notification-browser");
           notifBrowser.service = registry().currentProvider;
+          let mutationObserver;
 
           var resizer = function() {
-            notifBrowser.removeEventListener("DOMContentLoaded", resizer);
-            var body = notifBrowser.contentDocument.getElementById("notif");
-            notifBrowser.width = body.clientWidth;
-            notifBrowser.height = body.clientHeight;
-            panel.width = body.clientWidth;
-            panel.height = body.clientHeight;
+            let body = notifBrowser.contentDocument.getElementById("notif");
+            if (body) {
+              // XXX - should get the hard-coded '50' from the margin styles?
+              // (on windows at least, the margins are 50px and without this
+              // offset we get scrollbars.)
+              panel.sizeTo(body.clientWidth+50, body.clientHeight+50);
+            }
           }
-          notifBrowser.addEventListener("DOMContentLoaded", resizer, false);
+          notifBrowser.addEventListener("DOMContentLoaded", function onload() {
+            notifBrowser.removeEventListener("DOMContentLoaded", onload);
+            let body = notifBrowser.contentDocument.getElementById("notif");
+            // We setup a mutation observer on the 'notif' element.  When we
+            // get a notification we resize the panel.
+            // XXX - drop this check one we only work in FF versions we know have it
+            let mo = notifBrowser.contentWindow.MutationObserver || notifBrowser.contentWindow.MozMutationObserver;
+            if (mo) {
+              mutationObserver = new mo(function(mutations) {
+                resizer();
+              });
+              // configuration of the observer - we want everything that could
+              // cause the size to change.
+              let config = {attributes: true, childList: true, characterData: true}
+              mutationObserver.observe(body, config);
+            }
+            resizer();
+          }, false);
+          panel.addEventListener("popuphiding", function onpopuphiding() {
+            panel.removeEventListener("popuphiding", onpopuphiding);
+            if (mutationObserver) {
+              mutationObserver.disconnect();
+              mutationObserver = null;
+            }
+          }, false);
+
           notifBrowser.setAttribute("src", icon.contentPanel);
           panel.openPopup(iconImage, "bottomcenter topleft",0,0,false, false);
         }, false);
@@ -94,10 +121,8 @@ SocialToolbarStatusArea.prototype = {
       if (!currentProvider || !currentProvider.enabled) {
         this.debugLog("no service is enabled, so not rendering status area");
         return;
-      } else {
-        this.debugLog("Rendering toolbar status are; current provider is " + currentProvider.origin);
       }
-
+      this.debugLog("Rendering toolbar status are; current provider is " + currentProvider.origin);
       if (window.social.enabled) {
         var image = window.document.getElementById("social-statusarea-service-image");
         image.setAttribute("src", currentProvider.iconURL);
