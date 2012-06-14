@@ -366,7 +366,21 @@ function FrameWorker(url, clientWindow, name) {
       frame = hiddenDOMWindow.document.createElement("iframe");
     }
     frame.setAttribute("type", "content");
-    frame.setAttribute("src", url);
+    let doc = hiddenDOMWindow.document;
+    let container = doc.body ? doc.body : doc.documentElement;
+    container.appendChild(frame);
+
+    // Stop about:blank from being loaded.
+    let webNav = frame.docShell.QueryInterface(Ci.nsIWebNavigation);
+    webNav.stop(Ci.nsIWebNavigation.STOP_NETWORK);
+
+    // lock down some features on the iframe
+    webNav.allowAuth = false;
+    webNav.allowPlugins = false;
+    webNav.allowImages = false;
+    webNav.allowWindowControl = false;
+    webNav.allowMetaRedirects = false;
+    webNav.allowSubframes = false;
 
     // setup the workerInfo and add this connection to the pending queue
     workerInfo = workerInfos[url] = {
@@ -527,9 +541,7 @@ function FrameWorker(url, clientWindow, name) {
       }
     };
     Services.obs.addObserver(injectController, 'document-element-inserted', false);
-    let doc = hiddenDOMWindow.document;
-    let container = doc.body ? doc.body : doc.documentElement;
-    container.appendChild(frame);
+    frame.setAttribute("src", url);
   }
   else {
     // already have a worker - either queue or make the connection.
