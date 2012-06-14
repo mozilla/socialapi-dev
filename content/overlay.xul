@@ -81,40 +81,40 @@
       <box>
         <button class="social-statusarea-service-button"
                       type="menu"
-                      anonid="social-statusarea-service-button">
+                      anonid="social-statusarea-service-button"
+                      onclick="social.toolbarStatusArea.showPopup(event)">
           <image
               id="social-statusarea-service-image"
               class="social-statusarea-service-image"
-              src="chrome://socialapi/skin/social.png"/>
+              src="chrome://socialapi/skin/social.png"
+              onclick="social.toolbarStatusArea.showPopup(event)"/>
 
-            <image class="social-statusarea-dropmarker-image"/>
-            <menupopup
-              class="social-statusarea-popup"
-              id="social-statusarea-popup"
-              anonid="social-statusarea-popup"
-              onpopupshown="social.toolbarStatusArea.onpopupshown(event)"
-              onpopupshowing="social.toolbarStatusArea.onpopupshowing(event)"
-              onpopuphidden="social.toolbarStatusArea.onpopuphidden(event)">
+          <image class="social-statusarea-dropmarker-image"/>
+          <!--
+          <menupopup
+            class="social-statusarea-popup"
+            id="social-statusarea-popup"
+            anonid="social-statusarea-popup"
+            onpopupshown="social.toolbarStatusArea.onpopupshown(event)"
+            onpopupshowing="social.toolbarStatusArea.onpopupshowing(event)"
+            onpopuphidden="social.toolbarStatusArea.onpopuphidden(event)">
 
-              <!-- list of enabled services goes here -->
-              <menuseparator id="social-statusarea-providers-separator"/>
-              <menuitem id="social-statusarea-togglesidebar"
-                        type="checkbox"
-                        command="cmd_socialSidebarToggle">
-                <observes element="socialSidebarVisible" attribute="checked"/>
-                <observes element="socialEnabled" attribute="hidden"/>
-              </menuitem>
-              <!-- See above - why don't the observers set directly on the
-                   command work such that we we need to have them here???
-              -->
+            <menuseparator id="social-statusarea-providers-separator"/>
+            <menuitem id="social-statusarea-togglesidebar"
+                      type="checkbox"
+                      command="cmd_socialSidebarToggle">
+              <observes element="socialSidebarVisible" attribute="checked"/>
+              <observes element="socialEnabled" attribute="hidden"/>
+            </menuitem>
 
-              <menuitem id="social-statusarea-togglesocial"
-                        type="checkbox"
-                        command="cmd_socialBrowsingToggle"/>
+            <menuitem id="social-statusarea-togglesocial"
+                      type="checkbox"
+                      command="cmd_socialBrowsingToggle"/>
 
-              <menuseparator/>
-              <menuitem id="social-pref-menu" command="cmd_socialPreferences"/>
-            </menupopup>
+            <menuseparator/>
+            <menuitem id="social-pref-menu" command="cmd_socialPreferences"/>
+          </menupopup>
+          -->
         </button>
       </box>
       <hbox id="social-status-content-container"
@@ -126,6 +126,8 @@
   </toolbaritem>
 </toolbar>
 <!--</toolbarpalette>-->
+
+
 
 <hbox id="urlbar-icons">
   <image id="social-recommend-button"
@@ -142,6 +144,18 @@
          onpopuphiding="window.document.getElementById('social-notification-browser').setAttribute('src', 'about:blank');">
     <browser id="social-notification-browser" type="content" flex="1"/>
   </panel>
+
+  <panel
+    class="social-statusarea-popup social-panel"
+    id="social-statusarea-popup"
+    anonid="social-statusarea-popup"
+    type="arrow"
+    onpopupshown="social.toolbarStatusArea.onpopupshown(event)"
+    onpopupshowing="social.toolbarStatusArea.onpopupshowing(event)"
+    onpopuphidden="social.toolbarStatusArea.onpopuphidden(event)">
+  </panel>
+
+
 </popupset>
 
 <!-- the social sidebar -->

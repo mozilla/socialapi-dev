@@ -151,6 +151,7 @@ SocialToolbarStatusArea.prototype = {
       iconStack.appendChild(iconBox);
       container.appendChild(iconStack);
 
+      /*
       var portraitBox = window.document.createElementNS(XUL_NS, "div");
       portraitBox.setAttribute("class", "social-portrait-box");
       portraitBox.align = "start";
@@ -165,14 +166,18 @@ SocialToolbarStatusArea.prototype = {
         portraitBox.appendChild(portrait);
         // portrait on right: container.appendChild(portrait);
       }
-
+      */
       // And finally crop the toolbar item to the right width
 
       window.document.getElementById("social-status-area-container").width =
-        (60 + ambientNotificationCount * 26) + "px";
+        (32 + ambientNotificationCount * 26) + "px";
     } catch (e) {
       Cu.reportError(e);
     }
+  },
+
+  showPopup: function(event) {
+    window.document.getElementById("social-statusarea-popup").openPopup(event.target, "before_start", 0, 20, true, false, event);
   },
 
   onpopupshown: function(event) {
@@ -266,23 +271,82 @@ function buildSocialPopupContents(window, socialpanel)
   }
 
   try {
+
+
     let menuitem;
     let disabled = !window.social.enabled;
-    let providerSep = document.getElementById('social-statusarea-providers-separator');
-    while (providerSep.previousSibling) {
-      socialpanel.removeChild(providerSep.previousSibling);
+
+    let container = window.document.getElementById("social-statusarea-popup");
+    while (container.firstChild) {
+      socialpanel.removeChild(providerSep.firstChild);
     }
+    let rootDiv = window.document.createElementNS(HTML_NS, "div");
+    rootDiv.setAttribute("class", "social-statusarea-popup-container");
+    container.appendChild(rootDiv);
 
     // if we are disabled we don't want the list of providers nor the separators
     if (disabled) {
-      providerSep.setAttribute("hidden", "true");
+      // do something
     } else {
-      providerSep.removeAttribute("hidden");
-      // Create top-level items
+      let makeMenuItem = function(label) {
+        let menu = window.document.createElementNS(HTML_NS, "div");
+        menu.setAttribute("class", "social-statusarea-popup-menuitem");
+        menu.appendChild(window.document.createTextNode(label));
+        return menu;
+      }
+      var HTML_NS = "http://www.w3.org/1999/xhtml";
+
+      // Render the current user element
+      let curUser = window.document.createElementNS(HTML_NS, "div");
+      curUser.setAttribute("class", "social-statusarea-popup-current-user");
+      rootDiv.appendChild(curUser);
+      let userPortrait = window.document.createElementNS(HTML_NS, "img");
+      let userName = window.document.createElementNS(HTML_NS, "div");
+      userPortrait.setAttribute("src", "http://www.gravatar.com/avatar/a424101e821d1acd429f7a072d8913c6?s=32");
+      userPortrait.setAttribute("class", "social-statusarea-popup-current-user-portrait");
+      userName.setAttribute("class", "social-statusarea-popup-current-user-name");
+      userName.appendChild(window.document.createTextNode("Logged in as "));
+      
+      let userNameLink = window.document.createElementNS(HTML_NS, "a");
+      userNameLink.appendChild(window.document.createTextNode("Current User"));
+      userName.appendChild(userNameLink);
+
+      curUser.appendChild(userPortrait);
+      curUser.appendChild(userName);
+      
+      // Render the menu
+
+      let switchItem = makeMenuItem("Switch social network");
+      let removeItem = makeMenuItem("Remove from Firefox");
+      let shrinkItem = makeMenuItem("Shrink sidebar");
+      rootDiv.appendChild(switchItem);
+      rootDiv.appendChild(removeItem);
+      rootDiv.appendChild(shrinkItem);
+
+      let broadcaster = document.getElementById("socialSidebarVisible");
+      if (broadcaster.getAttribute("checked") == "true") {
+        let hideItem = makeMenuItem("Hide sidebar");//XXX this doesn't work
+        rootDiv.appendChild(hideItem);
+        hideItem.onclick = function() {
+          broadcaster.setAttribute("checked", "false");
+          broadcaster.setAttribute("hidden", "true");
+        }
+      } else {
+        let showItem = makeMenuItem("Show sidebar");
+        rootDiv.appendChild(showItem);
+        showItem.onclick = function() {
+          broadcaster.setAttribute("checked", "true");
+          broadcaster.setAttribute("hidden", "false");
+        }
+      }
+      rootDiv.appendChild(hideItem);
+      
+      // Put the list of providers in a submenu:
+      /*
       preg.each(function(service) {
         if (service.enabled)
           renderProviderMenuitem(service, socialpanel, providerSep);
-      });
+      });*/
     }
   }
   catch (e) {

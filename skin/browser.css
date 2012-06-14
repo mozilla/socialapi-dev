@@ -92,4 +92,68 @@
   opacity:0.3;
 }
 
+
+.social-statusarea-popup
+{
+  margin-top:-1px;
+}
+.social-statusarea-popup-container
+{
+  width:250px;
+  padding-bottom:6px;
+  cursor:pointer;
+  background-color:white;
+}
+.social-statusarea-popup-current-user
+{
+  border-bottom:1px solid rgb(221,221,221);
+  background-color:white;
+  color:black;
+  cursor:default;
+  position:relative;
+}
+
+.social-statusarea-popup-current-user-portrait
+{
+  width:32px;
+  height:32px;
+  border-radius:2px;
+  padding:10px;
+  display:inline-block;
+}
+.social-statusarea-popup-current-user-name
+{
+  position:absolute;
+  left:52px;
+  top:16px;
+  font-family: "lucida grande",tahoma,verdana,arial,sans-serif;
+  font-size:12px;
+}
+.social-statusarea-popup-current-user-name a
+{
+  color: rgb(59, 89, 152);
+  font-weight:bold;
+}
+
+.social-statusarea-popup-menuitem
+{
+  font-family: "lucida grande",tahoma,verdana,arial,sans-serif;
+  font-size:12px;
+  color: rgb(122, 122, 122);
+  line-height:200%;
+  background-color:white;
+  padding-left:10px;
+  padding-right:10px;
+  width:230px;
+  cursor:default;
+}
+
+.social-statusarea-popup-menuitem:hover
+{
+  background-color:rgb(31,94,239);/*todo:gradient*/
+  color:white;
+
+}
+
+
 } /* @-moz-document url-prefix("chrome://browser/content/browser.xul") */

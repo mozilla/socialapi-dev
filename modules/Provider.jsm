@@ -256,5 +256,10 @@ SocialProvider.prototype = {
   setAmbientNotificationPortrait: function(url) {
     this.ambientNotificationPortrait = url;
     Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
-  }
+  },
+
+  setAmbientNotificationUserName: function(username) {
+    this.ambientNotificationUserName = username;
+    Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
+  }  
 }

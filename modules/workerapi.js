@@ -174,6 +174,9 @@ workerAPI.prototype = {
       if (data.portrait) {
         this.service.setAmbientNotificationPortrait(data.portrait);
       }
+      if (data.userName) {
+        this.service.setAmbientNotificationUserName(data.userName);
+      }
     },
   }
 }
