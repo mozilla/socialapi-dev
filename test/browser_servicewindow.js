@@ -29,9 +29,8 @@ let tests = {
         worker.port.close();
       }, false);
     }
-    openSidebar(function(sidebarWindow) {
+    openSidebar(function(sidebarWindow, worker) {
       // tell the worker we want it to take not of when "unload" is posted.
-      let worker = sidebarWindow.wrappedJSObject.navigator.mozSocial.getWorker();
       worker.port.postMessage({topic: 'testing.record-topic', data: 'unloaded'});
       // open a "service window"
       let w;

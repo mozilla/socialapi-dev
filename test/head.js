@@ -181,7 +181,15 @@ function openSidebar(callback) {
       return;
     };
     browser.removeEventListener("DOMContentLoaded", browserlistener, true);
-    callback(browser.contentWindow);
+    // let the world initialize correctly - grab the worker and by the time
+    // it responds to a ping it should be good to go.
+    let worker = browser.contentWindow.wrappedJSObject.navigator.mozSocial.getWorker();
+    worker.port.onmessage = function(evt) {
+      if (evt.data.topic == "testing.pong") {
+        callback(browser.contentWindow, worker);
+      }
+    }
+    worker.port.postMessage({topic: "testing.ping"});
   }, true);
   window.social_sidebar_toggle();
 }

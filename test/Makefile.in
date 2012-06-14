@@ -19,6 +19,7 @@ _BROWSER_TEST_FILES = \
   browser_frameworker.js \
   browser_provider.js \
   browser_servicewindow.js \
+  browser_toolbarStatusWidget.js \
   head.js \
   worker_xhr.js \
   $(NULL)

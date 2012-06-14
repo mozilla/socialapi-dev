@@ -280,7 +280,8 @@ ClientPort.prototype = {
   __exposedProps__: {
     'port': 'r',
     'onmessage': 'rw',
-    'postMessage': 'r'
+    'postMessage': 'r',
+    'close': 'r'
   },
   __proto__: AbstractPort.prototype,
   _portType: "client",
