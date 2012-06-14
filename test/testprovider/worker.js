@@ -38,6 +38,8 @@ onconnect = function(e) {
       topicsToRecord[msg.data] = true;
     } else if (msg.topic == "testing.get-recorded") {
       port.postMessage({topic: "testing.recorded", data: topicsRecorded});
+    } else if (msg.topic == "testing.ping") {
+      port.postMessage({topic: "testing.pong", data: msg.data});
     } else if (msg.topic == "social.port-closing") {
       var index = allPorts.indexOf(port);
       if (index != -1) {
@@ -99,15 +101,15 @@ function initializeAmbientNotifications() {
 
   postAPIMessage('social.ambient-notification-area',
   {
-    portrait: "resource://socialapi/testprovider/testprovider/portrait.png"
+    portrait: "https://example.com/browser/browser/features/socialapi/test/testprovider/portrait.png"
   });
 
 	postAPIMessage('social.ambient-notification-update',
 		{
 		  name: "ambient-notification-1", 
 		  counter: 1,
-		  background: 'url("resource://socialapi/testprovider/testprovider/notification1.png") transparent no-repeat',
-		  contentPanel: "resource://socialapi/testprovider/testprovider/notification1.htm"
+		  background: 'url("https://example.com/browser/browser/features/socialapi/test/testprovider/notification1.png") transparent no-repeat',
+		  contentPanel: "https://example.com/browser/browser/features/socialapi/test/testprovider/notification1.htm"
 	 });
 
 
@@ -115,7 +117,7 @@ function initializeAmbientNotifications() {
 		{
 		  name: "ambient-notification-2", 
       counter: 1,
-      background: 'url("resource://socialapi/testprovider/testprovider/notification2.png") transparent no-repeat',
-      contentPanel: "resource://socialapi/testprovider/testprovider/notification2.htm"
+      background: 'url("https://example.com/browser/browser/features/socialapi/test/testprovider/notification2.png") transparent no-repeat',
+      contentPanel: "https://example.com/browser/browser/features/socialapi/test/testprovider/notification2.htm"
 	 });
 }
