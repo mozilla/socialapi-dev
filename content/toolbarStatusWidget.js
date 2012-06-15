@@ -5,13 +5,15 @@ Cu.import("resource://socialapi/modules/baseWidget.js");
 
 Cu.import("resource://socialapi/modules/ProviderRegistry.jsm");
 
+const HTML_NS = "http://www.w3.org/1999/xhtml";
+
 function SocialToolbarStatusArea() {
   baseWidget.call(this, window);
 
   // we need to make our button appear on first install, for now we always
   // ensure that it is in the toolbar, even if the user removes it
   var navbar = window.document.getElementById("nav-bar");
-  var newset = navbar.currentSet + ",social-status-area-container";
+  var newset = navbar.currentSet + ",social-statusarea-container";
   navbar.currentSet = newset;
   navbar.setAttribute("currentset", newset );
   window.document.persist("nav-bar", "currentset");
@@ -107,11 +109,8 @@ SocialToolbarStatusArea.prototype = {
 
     try {
       // create some elements...
-      var XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
-
-      // XXX is window safe to use here?
       var container = window.document.getElementById("social-status-content-container");
-        //social-status-area-container");
+        //social-statusarea-container");
       while (container.firstChild) container.removeChild(container.firstChild);
 
       let currentProvider = registry().currentProvider;
@@ -125,13 +124,6 @@ SocialToolbarStatusArea.prototype = {
         image.setAttribute("src", currentProvider.iconURL);
       }
 
-      /* experimenting with provider-specified background vs. chrome-specified (e.g. skin/<theme>/socialstatus.css) background:
-      if (registry.currentProvider.ambientNotificationBackground) {
-        container.style.background = registry.currentProvider.ambientNotificationBackground;
-      } else {
-        container.style.backgroundColor = "rgb(152,152,152)";
-      } */
-      //var iconStack = window.document.createElementNS(XUL_NS, "stack");
       var iconBox = window.document.createElementNS(XUL_NS, "hbox");
       iconBox.setAttribute("class", "social-buttonbar");
       iconBox.setAttribute("flex", 1);
@@ -143,10 +135,7 @@ SocialToolbarStatusArea.prototype = {
           ambientNotificationCount += 1;
           createNotificationIcon(icon);
         }
-        iconBox.style.minWidth = (26 * ambientNotificationCount) + "px";
       }
-
-      //iconStack.appendChild(iconBox);
       container.appendChild(iconBox);
 
       /*
@@ -167,7 +156,7 @@ SocialToolbarStatusArea.prototype = {
       */
       // And finally crop the toolbar item to the right width
 
-      window.document.getElementById("social-status-area-container").width =
+      window.document.getElementById("social-statusarea-container").width =
         (32 + ambientNotificationCount * 26) + "px";
     } catch (e) {
       Cu.reportError(e);
