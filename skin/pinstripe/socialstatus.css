@@ -5,24 +5,25 @@
 
 
 .social-panel .panel-arrowcontent {
-    margin: 0;
-    padding: 0;
+  margin: -4px 0 0 0;
+  padding: 0;
   border-radius: 0px;
 }
 
 .social-panel[type="arrow"] {
-    min-height: 100px;
-    min-width: 240px;
+  min-height: 100px;
+  min-width: 240px;
 }
 
 .social-panel .panel-arrow[side="top"] {
   list-style-image: url("chrome://socialapi/skin/pinstripe/panelarrow-up.png");
-  margin-bottom: -1px;
+  margin-top: -4px;
+  margin-bottom: 3px;
 }
 
 .social-panel .panel-arrow[side="bottom"] {
   list-style-image: url("chrome://socialapi/skin/pinstripe/panelarrow-down.png");
-  margin-top: -1px;
+  margin-top: -5px;
 }
 
 .social-panel .panel-arrow[side="left"] {
