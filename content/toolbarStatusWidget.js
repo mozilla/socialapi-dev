@@ -5,6 +5,7 @@ Cu.import("resource://socialapi/modules/baseWidget.js");
 
 Cu.import("resource://socialapi/modules/ProviderRegistry.jsm");
 
+
 function SocialToolbarStatusArea() {
   baseWidget.call(this, window);
 
@@ -208,7 +209,6 @@ SocialToolbarStatusArea.prototype = {
   }
 }
 
-
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 function buildSocialPopupContents(window, socialpanel)
@@ -236,7 +236,7 @@ function buildSocialPopupContents(window, socialpanel)
     return row;
   }
 
-  function renderProviderMenuitem(service, container, before) {
+  function renderProviderMenuitem(service, container) {
 
     let menuitem = window.document.createElementNS(XUL_NS, "menuitem");
 
@@ -266,11 +266,10 @@ function buildSocialPopupContents(window, socialpanel)
         preg.currentProvider = service;
       });
     }
-    container.insertBefore(menuitem, before);
+    container.appendChild(menuitem);//insertBefore(menuitem, before);
   }
 
   try {
-
 
     let menuitem;
     let disabled = !window.social.enabled;
@@ -287,9 +286,12 @@ function buildSocialPopupContents(window, socialpanel)
     if (disabled) {
       // do something
     } else {
-      let makeMenuItem = function(label) {
+      let makeMenuItem = function(label, extraClass) {
         let menu = window.document.createElementNS(HTML_NS, "div");
-        menu.setAttribute("class", "social-statusarea-popup-menuitem");
+
+        var menuClass = "social-statusarea-popup-menuitem";
+        if (extraClass) menuClass += " " + extraClass;
+        menu.setAttribute("class", menuClass);
         menu.appendChild(window.document.createTextNode(label));
         return menu;
       }
@@ -314,8 +316,17 @@ function buildSocialPopupContents(window, socialpanel)
       curUser.appendChild(userName);
 
       // Render the menu
+      let switchItem = makeMenuItem("Switch social network", "social-statusarea-popup-menuitem-arrow");
+      switchItem.addEventListener("onmouseenter", function() {
+        let panel = document.getElementById("social-statusarea-popup-provider-submenu");
+        panel.openPopup(switchItem, "right top", 0, 0, false, false);
+      }, false);
 
-      let switchItem = makeMenuItem("Switch social network");
+      switchItem.addEventListener("onmouseleave", function() {
+        let panel = document.getElementById("social-statusarea-popup-provider-submenu");
+        panel.hidePopup();
+      }, false);
+        
       let removeItem = makeMenuItem("Remove from Firefox");
       let shrinkItem = makeMenuItem("Shrink sidebar");
       rootDiv.appendChild(switchItem);
@@ -326,26 +337,28 @@ function buildSocialPopupContents(window, socialpanel)
       if (broadcaster.getAttribute("checked") == "true") {
         let hideItem = makeMenuItem("Hide sidebar");//XXX this doesn't work
         rootDiv.appendChild(hideItem);
-        hideItem.onclick = function() {
+        hideItem.addEventListener("click", function() {
           broadcaster.setAttribute("checked", "false");
           broadcaster.setAttribute("hidden", "true");
-        }
+        }, false);
       } else {
         let showItem = makeMenuItem("Show sidebar");
         rootDiv.appendChild(showItem);
-        showItem.onclick = function() {
+        showItem.addEventListener("click", function() {
           broadcaster.setAttribute("checked", "true");
           broadcaster.setAttribute("hidden", "false");
-        }
+        }, false);
       }
       rootDiv.appendChild(hideItem);
 
       // Put the list of providers in a submenu:
-      /*
       preg.each(function(service) {
-        if (service.enabled)
-          renderProviderMenuitem(service, socialpanel, providerSep);
-      });*/
+        if (service.enabled) {
+          let submenuPanel = document.getElementById("social-statusarea-popup-provider-submenu");
+          renderProviderMenuitem(service, submenuPanel);
+        }
+      });
+
     }
   }
   catch (e) {

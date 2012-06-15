@@ -152,6 +152,10 @@
     onpopuphidden="social.toolbarStatusArea.onpopuphidden(event)">
   </panel>
 
+  <panel
+    class="social-panel-provider-submenu"
+    id="social-statusarea-popup-provider-submenu">
+  </panel>
 
 </popupset>
 
