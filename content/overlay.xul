@@ -77,15 +77,14 @@
     observes="socialInstalled"
     title="Social status area">
 
-    <div class="social-statusarea-contentbox" flex="1">
-      <box>
+      <hbox xclass="social-statusarea-service-button">
         <button class="social-statusarea-service-button"
                       type="menu"
                       anonid="social-statusarea-service-button"
                       onclick="social.toolbarStatusArea.showPopup(event)">
           <image
               id="social-statusarea-service-image"
-              class="social-statusarea-service-image"
+              class="social-notification-icon-image"
               src="chrome://socialapi/skin/social.png"
               onclick="social.toolbarStatusArea.showPopup(event)"/>
 
@@ -116,13 +115,12 @@
           </menupopup>
           -->
         </button>
-      </box>
       <hbox id="social-status-content-container"
             class="social-status-content-container"
             observes="socialEnabled"
             hidden="true">
       </hbox>
-    </div>
+      </hbox>
   </toolbaritem>
 </toolbar>
 <!--</toolbarpalette>-->
@@ -146,9 +144,8 @@
   </panel>
 
   <panel
-    class="social-statusarea-popup social-panel"
+    class="social-panel"
     id="social-statusarea-popup"
-    anonid="social-statusarea-popup"
     type="arrow"
     onpopupshown="social.toolbarStatusArea.onpopupshown(event)"
     onpopupshowing="social.toolbarStatusArea.onpopupshowing(event)"

@@ -37,17 +37,15 @@ SocialToolbarStatusArea.prototype = {
     var self = this;
     function createNotificationIcon(icon) {
         self.debugLog("Creating notification icon " + icon.name + ": " + icon.background + "; counter " + icon.counter);
-        var iconContainer = window.document.createElementNS("http://www.w3.org/1999/xhtml", "div");
+        var iconContainer = window.document.createElementNS(XUL_NS, "box");
         iconContainer.setAttribute("class", "social-notification-icon-container");
 
-        var iconBackground = window.document.createElementNS("http://www.w3.org/1999/xhtml", "div");
-        iconBackground.setAttribute("class", "social-notification-icon-background-highlight");
-
-        var iconImage = window.document.createElementNS("http://www.w3.org/1999/xhtml", "div");
+        var iconImage = window.document.createElementNS(XUL_NS, "image");
         iconImage.setAttribute("class", "social-notification-icon-image");
-        iconImage.style.background = icon.background;
+        let imagesrc = /url\(\'(.*)\'\)/.exec(icon.background)[1];
+        iconImage.setAttribute("src", imagesrc);
 
-        var iconCounter = window.document.createElementNS(XUL_NS, "div");
+        var iconCounter = window.document.createElementNS(XUL_NS, "box");
         iconCounter.setAttribute("class", "social-notification-icon-counter");
 
         if (icon.counter) {
@@ -56,7 +54,6 @@ SocialToolbarStatusArea.prototype = {
           iconCounter.style.display = "none";
         }
 
-        iconContainer.appendChild(iconBackground);
         iconContainer.appendChild(iconImage);
         iconContainer.appendChild(iconCounter);
         iconBox.appendChild(iconContainer);
@@ -134,8 +131,9 @@ SocialToolbarStatusArea.prototype = {
       } else {
         container.style.backgroundColor = "rgb(152,152,152)";
       } */
-      var iconStack = window.document.createElementNS(XUL_NS, "stack");
+      //var iconStack = window.document.createElementNS(XUL_NS, "stack");
       var iconBox = window.document.createElementNS(XUL_NS, "hbox");
+      iconBox.setAttribute("class", "social-buttonbar");
       iconBox.setAttribute("flex", 1);
 
       var ambientNotificationCount = 0;
@@ -148,8 +146,8 @@ SocialToolbarStatusArea.prototype = {
         iconBox.style.minWidth = (26 * ambientNotificationCount) + "px";
       }
 
-      iconStack.appendChild(iconBox);
-      container.appendChild(iconStack);
+      //iconStack.appendChild(iconBox);
+      container.appendChild(iconBox);
 
       /*
       var portraitBox = window.document.createElementNS(XUL_NS, "div");
@@ -177,7 +175,8 @@ SocialToolbarStatusArea.prototype = {
   },
 
   showPopup: function(event) {
-    window.document.getElementById("social-statusarea-popup").openPopup(event.target, "before_start", 0, 20, true, false, event);
+    let btn = document.getElementById('social-statusarea-service-image');
+    document.getElementById("social-statusarea-popup").openPopup(btn, "bottomcenter topleft", 0, 0, false, false);
   },
 
   onpopupshown: function(event) {
@@ -306,14 +305,14 @@ function buildSocialPopupContents(window, socialpanel)
       userPortrait.setAttribute("class", "social-statusarea-popup-current-user-portrait");
       userName.setAttribute("class", "social-statusarea-popup-current-user-name");
       userName.appendChild(window.document.createTextNode("Logged in as "));
-      
+
       let userNameLink = window.document.createElementNS(HTML_NS, "a");
       userNameLink.appendChild(window.document.createTextNode("Current User"));
       userName.appendChild(userNameLink);
 
       curUser.appendChild(userPortrait);
       curUser.appendChild(userName);
-      
+
       // Render the menu
 
       let switchItem = makeMenuItem("Switch social network");
@@ -340,7 +339,7 @@ function buildSocialPopupContents(window, socialpanel)
         }
       }
       rootDiv.appendChild(hideItem);
-      
+
       // Put the list of providers in a submenu:
       /*
       preg.each(function(service) {
