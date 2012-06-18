@@ -114,7 +114,8 @@ SocialToolbarStatusArea.prototype = {
     try {
       // create some elements...
       var container = window.document.getElementById("social-status-content-container");
-        //social-statusarea-container");
+      // if container is null, it is not in the toolbar
+
       while (container.firstChild) container.removeChild(container.firstChild);
 
       let currentProvider = registry().currentProvider;
@@ -158,10 +159,6 @@ SocialToolbarStatusArea.prototype = {
         // portrait on right: container.appendChild(portrait);
       }
       */
-      // And finally crop the toolbar item to the right width
-
-      window.document.getElementById("social-statusarea-container").width =
-        (32 + ambientNotificationCount * 26) + "px";
     } catch (e) {
       Cu.reportError(e);
     }
