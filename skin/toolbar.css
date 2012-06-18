@@ -1,0 +1,148 @@
+
+/* our toolbaritem */
+#social-toolbar {
+  /*border: 1px solid green;*/
+}
+
+/* hbox that is really our button */
+.social-status-area-container
+ {
+  -moz-appearance: toolbarbutton;
+  margin: 4px; /* make sure we have the correct platform spacing*/
+}
+
+
+/* favicon for the service */
+.social-statusarea-service-image {
+  width: 20px;
+  height: 20px;
+  max-height: 20px;
+  max-width: 20px;
+  padding: 2px;
+  list-style-image: url("chrome://mozapps/skin/places/defaultFavicon.png");
+}
+.social-statusarea-service-image:hover {
+  opacity:0.3;
+}
+
+
+
+/* hbox that hold notification icons */
+.social-status-content-container {
+    margin: 0px;
+    padding: 0px;
+    /*border: 1px solid red;*/
+}
+
+/* hbox that surounds an image and its counter */
+.social-notification-icon-container {
+  cursor: pointer;
+  padding: 0px;
+  margin: 0px;
+  position: relative;
+  margin: -5px 0px 0px;
+  padding-top: 5px;
+  /*border: 1px solid yellow;*/
+}
+
+/* notification counter box */
+.social-notification-icon-counter {
+  background-color: rgb(240,61,37);
+  border: 1px solid rgb(216,55,34);
+  box-shadow: 0px 1px 0px rgba(0,39,121,0.77);
+  padding-right: 1px;
+  padding-left: 1px;
+  color: white;
+  font-size: 9px;
+  font-weight: bold;
+  position: absolute;
+  right: -3px;
+  top: -1px;
+  z-index: 1;
+  text-align: center;
+
+}
+
+/* notification image */
+.social-notification-icon-image {
+  padding: 2px;
+  margin: 0px;
+  min-width: 20px;
+  max-width: 32px;
+  max-height: 20px;
+  /*border: 1px solid black;*/
+}
+.social-notification-icon-image:hover {
+  opacity:0.3;
+}
+
+
+/* popups that hang off our toolbaritem */
+.social-statusarea-popup {
+  /*margin-top: 4px;*/
+  -moz-margin-start: 3px;
+}
+
+
+.social-statusarea-popup
+{
+  margin-top:-1px;
+}
+.social-statusarea-popup-container
+{
+  width:250px;
+  padding-bottom:6px;
+  cursor:pointer;
+  background-color:white;
+}
+.social-statusarea-popup-current-user
+{
+  border-bottom:1px solid rgb(221,221,221);
+  background-color:white;
+  color:black;
+  cursor:default;
+  position:relative;
+}
+
+.social-statusarea-popup-current-user-portrait
+{
+  width:32px;
+  height:32px;
+  border-radius:2px;
+  padding:10px;
+  display:inline-block;
+}
+.social-statusarea-popup-current-user-name
+{
+  position:absolute;
+  left:52px;
+  top:16px;
+  font-family: "lucida grande",tahoma,verdana,arial,sans-serif;
+  font-size:12px;
+}
+.social-statusarea-popup-current-user-name a
+{
+  color: rgb(59, 89, 152);
+  font-weight:bold;
+}
+
+.social-statusarea-popup-menuitem
+{
+  font-family: "lucida grande",tahoma,verdana,arial,sans-serif;
+  font-size:12px;
+  color: rgb(122, 122, 122);
+  line-height:200%;
+  background-color:white;
+  padding-left:10px;
+  padding-right:10px;
+  width:230px;
+  cursor:default;
+}
+
+.social-statusarea-popup-menuitem:hover
+{
+  background-color:rgb(31,94,239);/*todo:gradient*/
+  color:white;
+
+}
+
