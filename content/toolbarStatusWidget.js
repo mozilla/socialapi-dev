@@ -267,6 +267,10 @@ function buildSocialPopupContents(window, socialpanel)
     else {
       menuitem.addEventListener("click", function(event) {
         preg.currentProvider = service;
+
+        window.document.getElementById("social-statusarea-popup-provider-submenu").hidePopup();
+        window.document.getElementById("social-statusarea-popup").hidePopup();
+
       });
     }
     container.appendChild(menuitem);//insertBefore(menuitem, before);
