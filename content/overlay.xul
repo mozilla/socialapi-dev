@@ -78,7 +78,7 @@
     observes="socialInstalled"
     title="Social status area">
 
-      <hbox class="social-status-area-container">
+      <hbox id="social-toolbar-button" class="social-status-area-container">
         <image
             id="social-statusarea-service-image"
             class="social-statusarea-service-image"
