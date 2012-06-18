@@ -233,9 +233,12 @@ function buildSocialPopupContents(window, socialpanel)
 
   function renderProviderMenuitem(service, container) {
 
-    let menuitem = window.document.createElementNS(XUL_NS, "menuitem");
-
+    let menuitem = window.document.createElementNS(HTML_NS, "div");
+    menuitem.setAttribute("class", "social-statusarea-popup-menuitem social-statusarea-provider-list");
+    
     let itemText = service.name;
+    
+    /* add "(X notifications)"?
     let notificationCount = 0;
     if (service.ambientNotificationIcons) {
       for (var i in service.ambientNotificationIcons) {
@@ -246,15 +249,20 @@ function buildSocialPopupContents(window, socialpanel)
       if (notificationCount)
         itemText += " (" + notificationCount + " notifications)";
     }
-    menuitem.setAttribute("label", itemText);
+    */
 
-    menuitem.setAttribute("class", "menuitem-iconic");
-    menuitem.setAttribute("image", service.iconURL);
-    menuitem.setAttribute("type", "radio");
-    menuitem.setAttribute("name", "socialprovider");
+    let img = window.document.createElementNS(HTML_NS, "img");
+    img.setAttribute("src", service.iconURL);
+    menuitem.appendChild(img);
+
+    let label = window.document.createElementNS(HTML_NS, "div");
+    label.setAttribute("class", "social-statusarea-provider-list-label");
+    label.appendChild(window.document.createTextNode(itemText));
+    menuitem.appendChild(label);
+
     if (service == preg.currentProvider) {
       // no need for a click handler if we're selected
-      menuitem.setAttribute("checked", true);
+      menuitem.classList.add("social-statusarea-provider-selected");
     }
     else {
       menuitem.addEventListener("click", function(event) {
@@ -312,16 +320,56 @@ function buildSocialPopupContents(window, socialpanel)
 
       // Render the menu
       let switchItem = makeMenuItem("Switch social network", "social-statusarea-popup-menuitem-arrow");
-      switchItem.addEventListener("onmouseenter", function() {
-        let panel = document.getElementById("social-statusarea-popup-provider-submenu");
-        panel.openPopup(switchItem, "right top", 0, 0, false, false);
-      }, false);
 
-      switchItem.addEventListener("onmouseleave", function() {
+      // Re-implementing hierarchical menus here doesn't feel right.
+      // Could we get the styling we need with XUL menus?  (probably not: OS X is very hard to style)
+      let subMenuVisible = false;
+      let inSwitchItem = false;
+      let inSubmenu = false;
+      let subMenu = window.document.getElementById("social-statusarea-popup-provider-submenu");
+      let hideTimer;
+      let mouseLeaveGracePeriod = 150; // msec
+
+      let hideIfNecessary = function(evt) {
+        if (!inSwitchItem && !inSubmenu && subMenuVisible) {
+          subMenu.hidePopup();
+          subMenuVisible = false;
+        }
+      }
+      let switchItemMouseEnter = function(evt) {
+        inSwitchItem = true;
+        if (hideTimer) window.clearTimeout(hideTimer);
+        if (!subMenuVisible) {
+          subMenu.openPopup(switchItem, "end_before", 0, 0, false, false);
+          subMenuVisible = true;
+        }
+      }
+
+      let switchItemMouseLeave = function(evt) {
+        inSwitchItem = false;
+        if (hideTimer) window.clearTimeout(hideTimer);
+        hideTimer = window.setTimeout(hideIfNecessary, mouseLeaveGracePeriod);
+      }
+
+      let subMenuMouseEnter = function(evt) {
+        inSubmenu = true;
+        if (hideTimer) window.clearTimeout(hideTimer);
+      }
+      let subMenuMouseLeave = function(evt) {
+        inSubmenu = false;
+        if (hideTimer) window.clearTimeout(hideTimer);
+        hideTimer = window.setTimeout(hideIfNecessary, mouseLeaveGracePeriod);
+      }
+      switchItem.addEventListener("mouseenter", switchItemMouseEnter, false);
+      switchItem.addEventListener("mouseleave", switchItemMouseLeave, false);
+      subMenu.addEventListener("mouseenter", subMenuMouseEnter, false);
+      subMenu.addEventListener("mouseleave", subMenuMouseLeave, false);
+
+      /*switchItem.addEventListener("mouseout", function() {
         let panel = document.getElementById("social-statusarea-popup-provider-submenu");
         panel.hidePopup();
       }, false);
-        
+        */
       let removeItem = makeMenuItem("Remove from Firefox");
       let shrinkItem = makeMenuItem("Shrink sidebar");
       rootDiv.appendChild(switchItem);
@@ -348,6 +396,7 @@ function buildSocialPopupContents(window, socialpanel)
       }
 
       // Put the list of providers in a submenu:
+      while (subMenu.firstChild) subMenu.removeChild(subMenu.firstChild);
       preg.each(function(service) {
         if (service.enabled) {
           let submenuPanel = document.getElementById("social-statusarea-popup-provider-submenu");

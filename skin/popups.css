@@ -80,3 +80,30 @@
 {
   background-image:url("chrome://socialapi/skin/arrow-right-white.png");
 }
+
+.social-statusarea-provider-list {
+  position:relative;
+}
+
+.social-statusarea-provider-list img {
+  position:absolute;
+  left:20px;
+  top:4px;
+  width:16px;
+  height:16px;
+  display:inline-block;
+}
+
+.social-statusarea-provider-list-label
+{
+  position:relative;
+  left:32px;
+  font-family: "lucida grande",tahoma,verdana,arial,sans-serif;
+  font-size:12px;
+}
+
+.social-statusarea-provider-selected {
+  background-image:url("chrome://socialapi/skin/check.png");
+  background-repeat:no-repeat;
+  background-position:left 4px center;
+}
