@@ -6,6 +6,7 @@
 
 <?xml-stylesheet href="chrome://socialapi/skin/browser.css" type="text/css"?>
 <?xml-stylesheet href="chrome://socialapi/skin/toolbar.css" type="text/css"?>
+<?xml-stylesheet href="chrome://socialapi/skin/popups.css" type="text/css"?>
 <?xml-stylesheet href="chrome://socialapi-plat/skin/socialstatus.css" type="text/css"?>
 
 <overlay id="socialapi-overlay"
