@@ -143,6 +143,19 @@
 {
   background-color:rgb(31,94,239);/*todo:gradient*/
   color:white;
+}
 
+
+.social-statusarea-popup-menuitem-arrow
+{
+  background-image:url("chrome://socialapi/skin/arrow-right.png");
+  background-repeat:no-repeat;
+  background-position:right 12px center;
+}
+
+
+.social-statusarea-popup-menuitem-arrow:hover
+{
+  background-image:url("chrome://socialapi/skin/arrow-right-white.png");
 }
 

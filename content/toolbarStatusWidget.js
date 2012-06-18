@@ -271,7 +271,7 @@ function buildSocialPopupContents(window, socialpanel)
 
     let container = window.document.getElementById("social-statusarea-popup");
     while (container.firstChild) {
-      socialpanel.removeChild(providerSep.firstChild);
+      container.removeChild(container.firstChild);
     }
     let rootDiv = window.document.createElementNS(HTML_NS, "div");
     rootDiv.setAttribute("class", "social-statusarea-popup-container");
@@ -336,6 +336,7 @@ function buildSocialPopupContents(window, socialpanel)
           broadcaster.setAttribute("checked", "false");
           broadcaster.setAttribute("hidden", "true");
         }, false);
+        rootDiv.appendChild(hideItem);
       } else {
         let showItem = makeMenuItem("Show sidebar");
         rootDiv.appendChild(showItem);
@@ -343,8 +344,8 @@ function buildSocialPopupContents(window, socialpanel)
           broadcaster.setAttribute("checked", "true");
           broadcaster.setAttribute("hidden", "false");
         }, false);
+        rootDiv.appendChild(showItem);
       }
-      rootDiv.appendChild(hideItem);
 
       // Put the list of providers in a submenu:
       preg.each(function(service) {
