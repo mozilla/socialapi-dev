@@ -319,6 +319,12 @@ function buildSocialPopupContents(window, socialpanel)
       userName.appendChild(window.document.createTextNode("Logged in as "));
 
       let userNameLink = window.document.createElementNS(HTML_NS, "a");
+      userNameLink.addEventListener("click", function(evt) {
+        gBrowser.selectedTab = gBrowser.addTab(preg.currentProvider.origin);
+        evt.stopPropagation();
+        window.document.getElementById("social-statusarea-popup").hidePopup();
+        return false;
+      }, false);
       userNameLink.appendChild(window.document.createTextNode("Current User"));
       userName.appendChild(userNameLink);
 
@@ -372,11 +378,6 @@ function buildSocialPopupContents(window, socialpanel)
       subMenu.addEventListener("mouseenter", subMenuMouseEnter, false);
       subMenu.addEventListener("mouseleave", subMenuMouseLeave, false);
 
-      /*switchItem.addEventListener("mouseout", function() {
-        let panel = document.getElementById("social-statusarea-popup-provider-submenu");
-        panel.hidePopup();
-      }, false);
-        */
       let removeItem = makeMenuItem("Remove from Firefox");
       let shrinkItem = makeMenuItem("Shrink sidebar");
       rootDiv.appendChild(switchItem);
@@ -390,6 +391,7 @@ function buildSocialPopupContents(window, socialpanel)
         hideItem.addEventListener("click", function() {
           broadcaster.setAttribute("checked", "false");
           broadcaster.setAttribute("hidden", "true");
+          window.document.getElementById("social-statusarea-popup").hidePopup();
         }, false);
         rootDiv.appendChild(hideItem);
       } else {
@@ -398,6 +400,7 @@ function buildSocialPopupContents(window, socialpanel)
         showItem.addEventListener("click", function() {
           broadcaster.setAttribute("checked", "true");
           broadcaster.setAttribute("hidden", "false");
+          window.document.getElementById("social-statusarea-popup").hidePopup();
         }, false);
         rootDiv.appendChild(showItem);
       }

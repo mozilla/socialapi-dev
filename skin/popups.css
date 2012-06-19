@@ -47,6 +47,10 @@
   color: rgb(59, 89, 152);
   font-weight:bold;
 }
+.social-statusarea-popup-current-user-name a:hover
+{
+  text-decoration:underline;
+}
 
 .social-statusarea-popup-menuitem
 {
