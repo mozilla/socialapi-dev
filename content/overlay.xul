@@ -74,22 +74,18 @@
 <toolbar id="nav-bar">
   <toolbaritem
     id="social-toolbar"
-    class="chromeclass-toolbar-additional"
+    class="toolbarbutton-1 chromeclass-toolbar-additional"
     removable="true"
     observes="socialInstalled"
     title="Social status area">
 
-      <hbox id="social-toolbar-button" class="social-status-area-container">
+      <hbox id="social-toolbar-button" class="social-statusarea-container">
         <image
             id="social-statusarea-service-image"
             class="social-statusarea-service-image"
             src="chrome://socialapi/skin/social.png"
+            observes="socialEnabled"
             onclick="social.toolbarStatusArea.showPopup(event)"/>
-
-        <hbox id="social-status-content-container"
-              class="social-status-content-container"
-              observes="socialEnabled"
-              hidden="true"/>
       </hbox>
   </toolbaritem>
 </toolbar>

@@ -4,13 +4,21 @@
   /*border: 1px solid green;*/
 }
 
-/* hbox that is really our button */
-.social-status-area-container
- {
-  -moz-appearance: toolbarbutton;
-  margin: 4px; /* make sure we have the correct platform spacing*/
+.social-statusarea-container {
+  /*-moz-appearance: toolbarbutton;*/
+  margin: 2px; /* make sure we have the correct platform spacing*/
+  padding: 1px;
 }
 
+/* aero look for hover */
+#nav-bar .social-statusarea-container[open="true"],
+#nav-bar .social-statusarea-container:hover {
+  background-image: -moz-linear-gradient(hsla(0,0%,100%,.6), hsla(0,0%,100%,.1));
+  border-color: hsla(210,54%,20%,.3) hsla(210,54%,20%,.35) hsla(210,54%,20%,.4);
+  box-shadow: 0 1px hsla(0,0%,100%,.85) inset,
+              0 1px hsla(210,54%,20%,.1),
+              0 0 2px hsla(210,54%,20%,.4);
+}
 
 /* favicon for the service */
 .social-statusarea-service-image {
@@ -75,5 +83,3 @@
 .social-notification-icon-image:hover {
   opacity:0.3;
 }
-
-
