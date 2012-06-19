@@ -138,7 +138,7 @@
 
 <popupset id="mainPopupSet">
   <panel id="social-notification-panel" class="social-panel" type="arrow"
-         minheight="300px" minwidth="500px"
+         minheight="100px" minwidth="100px"
          onpopuphiding="window.document.getElementById('social-notification-browser').setAttribute('src', 'about:blank');">
     <browser id="social-notification-browser" type="content" flex="1"/>
   </panel>
