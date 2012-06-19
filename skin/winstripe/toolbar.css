@@ -1,17 +1,19 @@
 
 /* our toolbaritem */
-#social-toolbar {
-  /*border: 1px solid green;*/
+.social-statusarea-container {
+  -moz-appearance: toolbarbutton;
+  margin: 0 2px;
+  padding: 3px;
 }
 
-.social-statusarea-container {
-  /*-moz-appearance: toolbarbutton;*/
+#nav-bar .social-statusarea-container {
+  -moz-appearance: none;
   margin: 2px; /* make sure we have the correct platform spacing*/
   padding: 1px;
 }
 
 /* aero look for hover */
-#nav-bar .social-statusarea-container[open="true"],
+#nav-bar #social-toolbar[open="true"] .social-statusarea-container,
 #nav-bar .social-statusarea-container:hover {
   background-image: -moz-linear-gradient(hsla(0,0%,100%,.6), hsla(0,0%,100%,.1));
   border-color: hsla(210,54%,20%,.3) hsla(210,54%,20%,.35) hsla(210,54%,20%,.4);
