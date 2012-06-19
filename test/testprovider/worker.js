@@ -3,7 +3,7 @@
 */
 
 function testLog(subject, data) {
-  dump(subject + "\t" + data + "\n");
+  dump("[test provider worker]" + "\t" + subject + "\t" + data + "\n");
 }
 
 var apiPort;
@@ -25,21 +25,24 @@ onconnect = function(e) {
   allPorts.push(port);
 
   port.onmessage = function(e) {
-    testLog("TestProvider's port.onmessage", e.data.topic + " " + e.data.data)
+    testLog("port.onmessage", JSON.stringify(e.data));
     var msg = e.data;
     // Some special support for automated tests - we can "record" some
     // topics and return them when requested so the test suite can confirm
     // whatever it needs to confirm.
     if (topicsToRecord[msg.topic]) {
-      topicsRecorded.push(msg.topic);
+      topicsRecorded.push(msg);
     }
 
     if (msg.topic == "testing.record-topic") {
       topicsToRecord[msg.data] = true;
     } else if (msg.topic == "testing.get-recorded") {
       port.postMessage({topic: "testing.recorded", data: topicsRecorded});
+      topicsRecorded = [];
     } else if (msg.topic == "testing.ping") {
       port.postMessage({topic: "testing.pong", data: msg.data});
+    } else if (msg.topic == "testing.make-api-request") {
+      apiPort.postMessage(msg.data);
     } else if (msg.topic == "social.port-closing") {
       var index = allPorts.indexOf(port);
       if (index != -1) {
@@ -85,7 +88,7 @@ onconnect = function(e) {
     else if (msg.topic == "social.notification-click") {
 
     } else {
-      testLog("warning", "Unhandled message: " + msg.topic + "\n");
+      testLog("warning", "Unhandled message: " + msg.topic);
     }
   }
 }
