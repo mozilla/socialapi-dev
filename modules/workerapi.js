@@ -178,5 +178,22 @@ workerAPI.prototype = {
         this.service.setAmbientNotificationUserName(data.userName);
       }
     },
+    'social.cookies-get': function(worker, data) {
+      let cm = Cc["@mozilla.org/cookiemanager;1"]
+               .getService(Ci.nsICookieManager2);
+      let cenum = cm.getCookiesFromHost(this.serviceHost);
+      let results = [];
+      while (cenum.hasMoreElements()) {
+        let cookie = cenum.getNext().QueryInterface(Ci.nsICookie2);
+        results.push({name: cookie.name,
+                      value: cookie.value});
+      }
+      worker.port.postMessage({topic: "social.cookies-get-response",
+                               data: results});
+    },
+    'social.get-attention': function(worker, data) {
+      let bw = Services.wm.getMostRecentWindow('navigator:browser');
+      bw.getAttention();
+    }
   }
 }

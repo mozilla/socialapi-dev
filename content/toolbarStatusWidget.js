@@ -75,6 +75,9 @@ SocialToolbarStatusArea.prototype = {
               // (on windows at least, the margins are 50px and without this
               // offset we get scrollbars.)
               panel.sizeTo(body.clientWidth+50, body.clientHeight+50);
+            } else {
+              // no explicit size, so select a reasonable default.
+              panel.sizeTo(500, 300);
             }
           }
           notifBrowser.addEventListener("DOMContentLoaded", function onload() {

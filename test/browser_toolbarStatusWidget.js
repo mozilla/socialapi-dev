@@ -37,7 +37,7 @@ let tests = {
               worker.port.onmessage = function(evt) {
                 if (evt.data.topic == "testing.recorded") {
                   is(evt.data.data.length, 1, "got one unload message");
-                  is(evt.data.data[0], "panel-unloaded", "and it is actually unload!");
+                  is(evt.data.data[0].topic, "panel-unloaded", "and it is actually unload!");
                   worker.port.close();
                   cbnext();
                 }

@@ -407,11 +407,6 @@ function FrameWorker(url, clientWindow, name) {
             Cu.reportError("failed to import API "+fn+"\n"+e+"\n");
           }
         }
-        Object.defineProperty(sandbox, 'cookie', {
-          get: function() { return workerWindow.document.cookie },
-          set: function(val) { workerWindow.document.cookie = val },
-          enumerable: true
-        });
         sandbox.importScripts = function importScripts() {
           if (arguments.length < 1) return;
           let workerURI = Services.io.newURI(url, null, null);
