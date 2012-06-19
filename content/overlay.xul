@@ -18,7 +18,7 @@
   <script type="application/x-javascript" src="chrome://socialapi/content/main.js"/>
 
   <broadcasterset>
-    <broadcaster id="socialInstalled" checked="false" hidden="true"/>
+    <broadcaster id="socialInstalled" hidden="true"/>
     <broadcaster id="socialEnabled" checked="false" hidden="true"/>
     <broadcaster id="socialSidebarVisible" checked="false" hidden="true"/>
   </broadcasterset>

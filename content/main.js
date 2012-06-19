@@ -90,7 +90,6 @@ function set_window_social_enabled(val) {
     window.social.toolbarStatusArea.setProvider(registry().currentProvider);
   }
   broadcaster = document.getElementById("socialInstalled");
-  broadcaster.setAttribute("checked", installed ? "true" : "false");
   broadcaster.setAttribute("hidden", installed ? "false" : "true");
   // and the sidebar state.
   let sideBarVisible;

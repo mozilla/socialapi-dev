@@ -101,12 +101,12 @@ SocialToolbarStatusArea.prototype = {
               mutationObserver.disconnect();
               mutationObserver = null;
             }
-            document.getElementById("social-toolbar-button").removeAttribute("open");
+            document.getElementById("social-toolbar").removeAttribute("open");
           }, false);
 
           notifBrowser.setAttribute("src", icon.contentPanel);
           panel.openPopup(iconImage, "bottomcenter topleft",0,0,false, false);
-          document.getElementById("social-toolbar-button").setAttribute("open", "true");
+          document.getElementById("social-toolbar").setAttribute("open", "true");
         }, false);
     }
 
@@ -169,10 +169,10 @@ SocialToolbarStatusArea.prototype = {
     let panel = document.getElementById("social-statusarea-popup");
     panel.addEventListener("popuphiding", function onpopuphiding() {
       panel.removeEventListener("popuphiding", onpopuphiding);
-      document.getElementById("social-toolbar-button").removeAttribute("open");
+      document.getElementById("social-toolbar").removeAttribute("open");
     }, false);
     panel.openPopup(btn, "bottomcenter topleft", 0, 0, false, false);
-    document.getElementById("social-toolbar-button").setAttribute("open", "true");
+    document.getElementById("social-toolbar").setAttribute("open", "true");
   },
 
   onpopupshown: function(event) {

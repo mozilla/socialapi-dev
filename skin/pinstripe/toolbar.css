@@ -1,17 +1,4 @@
 
-/* our toolbaritem */
-#social-toolbar {
-  /*border: 1px solid green;*/
-}
-
-/* hbox that is really our button */
-.social-statusarea-container
- {
-  -moz-appearance: toolbarbutton;
-  margin: 4px; /* make sure we have the correct platform spacing*/
-}
-
-
 /* favicon for the service */
 .social-statusarea-service-image {
   width: 20px;
