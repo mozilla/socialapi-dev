@@ -5,7 +5,7 @@
 }
 
 /* hbox that is really our button */
-.social-status-area-container
+.social-statusarea-container
  {
   -moz-appearance: toolbarbutton;
   margin: 4px; /* make sure we have the correct platform spacing*/
@@ -75,5 +75,3 @@
 .social-notification-icon-image:hover {
   opacity:0.3;
 }
-
-
