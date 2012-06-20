@@ -3,19 +3,13 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * Contributor(s):
- *  Michael Hanson <mhanson@mozilla.com>
- *  Edward Lee <edilee@mozilla.com>
- *  Mark Hammond <mhammond@mozilla.com>
- *  Shane Caraveo <scaraveo@mozilla.com>
  */
 
 /*
-* This is an implementation of a "Shared Worker" using an iframe in the
-* hidden DOM window.  A subset of new APIs are introduced to the window
-* by cloning methods from the worker's JS origin.
-*/
+ * This is an implementation of a "Shared Worker" using an iframe in the
+ * hidden DOM window.  A subset of new APIs are introduced to the window
+ * by cloning methods from the worker's JS origin.
+ */
 
 "use strict";
 
@@ -25,12 +19,6 @@ Cu.import("resource://gre/modules/Services.jsm");
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 var workerInfos = {}; // keyed by URL.
-
-
-function log(msg) {
-  Services.console.logStringMessage(new Date().toISOString() + " [frameworker]: " + msg);
-};
-
 var _nextPortId = 1;
 
 // This function is magically injected into the sandbox and used there.
@@ -152,20 +140,20 @@ function AbstractPort(portid) {
 AbstractPort.prototype = {
   _portType: null, // set by a subclass.
   // abstract methods to be overridden.
-  _dopost: function(data) {
+  _dopost: function fw_AbstractPort_dopost(data) {
     throw new Error("not implemented");
   },
-  _onerror: function(err) {
+  _onerror: function fw_AbstractPort_onerror(err) {
     throw new Error("not implemented");
   },
 
   // and concrete methods shared by client and workers.
-  toString: function() {
+  toString: function fw_AbstractPort_toString() {
     return "MessagePort(portType='" + this._portType + "', portId=" + this._portid + ")";
   },
-  _JSONParse: function(data) JSON.parse(data),
+  _JSONParse: function fw_AbstractPort_JSONParse(data) JSON.parse(data),
 
- _postControlMessage: function(topic, data) {
+ _postControlMessage: function fw_AbstractPort_postControlMessage(topic, data) {
     let postData = {portTopic: topic,
                     portId: this._portid,
                     portFromType: this._portType,
@@ -180,7 +168,7 @@ AbstractPort.prototype = {
     this._dopost(postData);
   },
 
-  _onmessage: function(data) {
+  _onmessage: function fw_AbstractPort_onmessage(data) {
     // See comments in postMessage below - we work around a cloning
     // issue by using JSON for these messages.
     // Further, we allow the workers to override exactly how the JSON parsing
@@ -217,7 +205,7 @@ AbstractPort.prototype = {
    *
    * @param {jsobj} data
    */
-  postMessage: function(data) {
+  postMessage: function fw_AbstractPort_postMessage(data) {
     if (this._portid === null) {
       throw new Error("port is closed");
     }
@@ -231,7 +219,7 @@ AbstractPort.prototype = {
     this._postControlMessage("port-message", JSON.stringify(data));
   },
 
-  close: function() {
+  close: function fw_AbstractPort_close() {
     if (!this._portid) {
       return; // already closed.
     }
@@ -254,20 +242,26 @@ WorkerPort.prototype = {
   __proto__: AbstractPort.prototype,
   _portType: "worker",
 
-  _dopost: function(data) {
+  _dopost: function fw_WorkerPort_dopost(data) {
     // postMessage is injected into the sandbox.
     postMessage(data, "*");
   },
 
-  _onerror: function(err) {
-    // dump() is the only thing available in the worker context to report
-    // errors.  We could possibly send a message back to the chrome code so
-    // it can be logged more appropriately - later..
-    dump("Port " + this + " handler failed: " + err + "\n" + err.stack);
+  _onerror: function fw_WorkerPort_onerror(err) {
+    throw new Error("Port " + this + " handler failed: " + err);
   }
 }
 
-// This port lives entirely in chrome.
+/**
+ * ClientPort
+ *
+ * Client side of the entangled ports. The ClientPort is used by both XUL
+ * windows and Content windows to communicate with the worker
+ *
+ * constructor:
+ * @param {integer} portid
+ * @param {nsiDOMWindow} clientWindow, optional
+ */
 function ClientPort(portid, clientWindow) {
   this._clientWindow = clientWindow
   this._window = null;
@@ -286,14 +280,14 @@ ClientPort.prototype = {
   __proto__: AbstractPort.prototype,
   _portType: "client",
 
-  _JSONParse: function(data) {
+  _JSONParse: function fw_ClientPort_JSONParse(data) {
     if (this._clientWindow) {
       return this._clientWindow.JSON.parse(data);
     }
     return JSON.parse(data);
   },
 
-  _createWorkerAndEntangle: function(workerInfo) {
+  _createWorkerAndEntangle: function fw_ClientPort_createWorkerAndEntangle(workerInfo) {
     this._window = workerInfo.frame.contentWindow;
     workerInfo.ports[this._portid] = this;
     this._postControlMessage("port-create");
@@ -302,7 +296,7 @@ ClientPort.prototype = {
     }
   },
 
-  _dopost: function(data) {
+  _dopost: function fw_ClientPort_dopost(data) {
     if (!this._window) {
       this._pendingMessagesOutgoing.push(data);
     } else {
@@ -310,11 +304,11 @@ ClientPort.prototype = {
     }
   },
 
-  _onerror: function(err) {
+  _onerror: function fw_ClientPort_onerror(err) {
     Cu.reportError("Port " + this + " handler failed: " + err + "\n" + err.stack);
   },
 
-  close: function() {
+  close: function fw_ClientPort_close() {
     if (!this._portid) {
       return; // already closed.
     }
@@ -326,6 +320,7 @@ ClientPort.prototype = {
     this._pendingMessagesOutgoing = null;
   }
 }
+
 
 /**
  * FrameWorker
@@ -340,11 +335,12 @@ ClientPort.prototype = {
  * alread, exists, the FrameWorker constructor will connect to it.
  *
  * @param {String} url
+ * @param {nsIDOMWindow} clientWindow
+ * @param {String} name
  * @returns {Object} object containing a port and terminate function
  */
 function FrameWorker(url, clientWindow, name) {
   let workerName = (name ? name : url);
-  log("creating worker for " + workerName);
   // first create the client port we are going to use.  Laster we will
   // message the worker to create the worker port.
   let portid = _nextPortId++;
@@ -352,19 +348,17 @@ function FrameWorker(url, clientWindow, name) {
 
   let workerInfo = workerInfos[url];
   if (!workerInfo) {
-    log("creating a new worker for " + workerName);
-    let appShell = Cc["@mozilla.org/appshell/appShellService;1"]
-                    .getService(Ci.nsIAppShellService);
-    let hiddenDOMWindow = appShell.hiddenDOMWindow;
-    // hrmph - I guess mixedpuppy had a good reason for changing from
-    // createElement to createElementNS, but markh gets NS_ERROR_NOT_AVAILABLE
-    // so just try both :)
+    let hiddenDoc = Cc["@mozilla.org/appshell/appShellService;1"]
+                    .getService(Ci.nsIAppShellService)
+                    .hiddenDOMWindow.document;
+    // on OSX, using createElement fails, on Win, createElementNS fails with
+    // NS_ERROR_NOT_AVAILABLE, so just try both :)
     let frame;
     try {
-      frame = hiddenDOMWindow.document.createElementNS(XUL_NS, "iframe");
+      frame = hiddenDoc.createElementNS(XUL_NS, "iframe");
     }
     catch (ex) {
-      frame = hiddenDOMWindow.document.createElement("iframe");
+      frame = hiddenDoc.createElement("iframe");
     }
     frame.setAttribute("type", "content");
     frame.setAttribute("src", url);
@@ -391,24 +385,23 @@ function FrameWorker(url, clientWindow, name) {
         // copy the window apis onto the sandbox namespace only functions or
         // objects that are naturally a part of an iframe, I'm assuming they are
         // safe to import this way
-        let workerAPI = ['MozWebSocket', 'WebSocket', 'mozIndexedDB', 'localStorage',
-                         'XMLHttpRequest',
+        let workerAPI = ['MozWebSocket', 'WebSocket', 'localStorage',
+                         'XMLHttpRequest', /*'mozIndexedDB',*/
                          'atob', 'btoa', 'clearInterval', 'clearTimeout', 'dump',
                          'setInterval', 'setTimeout',
                          'MozBlobBuilder', 'FileReader', 'Blob',
                          'navigator'];
-        for each(let fn in workerAPI) {
+        workerAPI.forEach(function(fn) {
           try {
-            if (workerWindow[fn]) {
-              sandbox[fn] = workerWindow[fn];
-            }
+            sandbox[fn] = workerWindow[fn];
           }
           catch(e) {
             Cu.reportError("failed to import API "+fn+"\n"+e+"\n");
           }
-        }
-        sandbox.importScripts = function importScripts() {
-          if (arguments.length < 1) return;
+        });
+        sandbox.importScripts = function fw_importScripts() {
+          if (arguments.length < 1)
+            return;
           let workerURI = Services.io.newURI(url, null, null);
           for each(let uri in arguments) {
             // resolve the uri against the loaded worker
@@ -418,7 +411,6 @@ function FrameWorker(url, clientWindow, name) {
               err.__exposedProps__ = {toJSON: 'r', toString: 'r'};
               throw err;
             }
-            log("importScripts loading "+scriptURL);
             // load the url *synchronously*
             let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"]
                         .createInstance(Ci.nsIXMLHttpRequest);
@@ -443,23 +435,28 @@ function FrameWorker(url, clientWindow, name) {
         };
         // and we delegate ononline and onoffline events to the worker.
         // See http://www.whatwg.org/specs/web-apps/current-work/multipage/workers.html#workerglobalscope
-        frame.addEventListener('offline', function(event) {
+        frame.addEventListener('offline', function fw_onoffline(event) {
           Cu.evalInSandbox("onoffline();", sandbox);
         }, false);
-        frame.addEventListener('online', function(event) {
+        frame.addEventListener('online', function fw_ononline(event) {
           Cu.evalInSandbox("ononline();", sandbox);
         }, false);
 
-        sandbox.postMessage = function(d, o) { workerWindow.postMessage(d, o) };
-        sandbox.addEventListener = function(t, l, c) { workerWindow.addEventListener(t, l, c) };
-
-        // And a very hacky work-around for bug 734215
-        sandbox.bufferToArrayHack = function(a) {
-            return new workerWindow.Uint8Array(a);
+        sandbox.postMessage = function fw_postMessage(d, o) {
+          workerWindow.postMessage(d, o)
+        };
+        sandbox.addEventListener = function fw_addEventListener(t, l, c) {
+          workerWindow.addEventListener(t, l, c)
         };
 
+        // And a very hacky work-around for bug 734215
+        sandbox.bufferToArrayHack = function fw_bufferToArrayHack(a) {
+          return new workerWindow.Uint8Array(a);
+        };
+
+        // once the js is loaded into the iframe (as text) we grab the text and
+        // evaluate it in the sandbox attached to the iframe.
         workerWindow.addEventListener("load", function() {
-          log("got worker onload event for " + workerName);
           // the iframe has loaded the js file as text - first inject the magic
           // port-handling code into the sandbox.
           function getProtoSource(ob) {
@@ -481,6 +478,7 @@ function FrameWorker(url, clientWindow, name) {
           catch (e) {
             Cu.reportError("Error injecting port code into content side of the worker: " + e + "\n" + e.stack);
           }
+
           // and wire up the client message handling.
           try {
             initClientMessageHandler(workerInfo, workerWindow);
@@ -488,6 +486,7 @@ function FrameWorker(url, clientWindow, name) {
           catch (e) {
             Cu.reportError("Error setting up event listener for chrome side of the worker: " + e + "\n" + e.stack);
           }
+
           // Now get the worker js code and eval it into the sandbox
           try {
             let scriptText = workerWindow.document.body.textContent;
@@ -498,12 +497,12 @@ function FrameWorker(url, clientWindow, name) {
                 (e.stack ? ("\n" + e.stack) : ""));
             return;
           }
+
           // so finally we are ready to roll - dequeue all the pending connects
           workerInfo.loaded = true;
           // save the sandbox somewhere convenient before we connect.
           frame.sandbox = sandbox;
           let pending = workerInfo.pendingPorts;
-          log("worker window " + workerName + " loaded - connecting " + pending.length + " ports");
           while (pending.length) {
             let port = pending.shift();
             if (port._portid) { // may have already been closed!
@@ -523,8 +522,9 @@ function FrameWorker(url, clientWindow, name) {
       }
     };
     Services.obs.addObserver(injectController, 'document-element-inserted', false);
-    let doc = hiddenDOMWindow.document;
-    let container = doc.body ? doc.body : doc.documentElement;
+    // doc.documentElement on the hiddenWindow is not working on windows,
+    // doc.body does work.
+    let container = hiddenDoc.body ? hiddenDoc.body : hiddenDoc.documentElement;
     container.appendChild(frame);
   }
   else {
@@ -548,31 +548,32 @@ function FrameWorker(url, clientWindow, name) {
   // a callback to be made in the worker when this happens - it all just dies.
   // TODO: work out a sane impl for 'terminate'.
   function terminate() {
-    log("worker at " + workerName + " terminating");
     // closing the port also removes it from workerInfo.ports, so we don't
     // iterate over that directly, just over the port IDs.
-    for each (let portid in Object.keys(workerInfo.ports)) {
+    Object.keys(workerInfo.ports).forEach(function(portid) {
       try {
         workerInfo.ports[portid].close();
       }
       catch (ex) {
         Cu.reportError(ex);
       }
-    }
+    });
+
     // and do the actual killing on a timeout so the pending events get
     // delivered first.
     workerInfo.frame.contentWindow.setTimeout(function() {
       // now nuke the iframe itself and forget everything about this worker.
-      let appShell = Cc["@mozilla.org/appshell/appShellService;1"]
-                      .getService(Ci.nsIAppShellService);
-      let hiddenDOMWindow = appShell.hiddenDOMWindow;
-      let doc = hiddenDOMWindow.document;
+      let doc = Cc["@mozilla.org/appshell/appShellService;1"]
+                      .getService(Ci.nsIAppShellService)
+                      .hiddenDOMWindow.document;
+      // doc.documentElement on the hiddenWindow is not working on windows,
+      // doc.body does work.
       let container = doc.body ? doc.body : doc.documentElement;
       container.removeChild(workerInfo.frame);
       delete workerInfos[url];
-      log("worker terminated!");
     }, 0);
   }
+
   return {port: clientPort, terminate: terminate,
           __exposedProps__: {port: 'r', terminate: 'r'}
   };
