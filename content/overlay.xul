@@ -86,6 +86,20 @@
             src="chrome://socialapi/skin/social.png"
             observes="socialEnabled"
             onclick="social.toolbarStatusArea.showPopup(event)"/>
+        <hbox id="social-statis-iconbox" class="social-buttonbar" flex="1" style="display: none">
+          <box class="social-notification-icon-container">
+            <image class="social-notification-icon-image" onclick="social.toolbarStatusArea.showAmbientPopup(this)"/>
+            <box class="social-notification-icon-counter" collapsed="true"/>
+          </box>
+          <box class="social-notification-icon-container">
+            <image class="social-notification-icon-image" onclick="social.toolbarStatusArea.showAmbientPopup(this)"/>
+            <box class="social-notification-icon-counter" collapsed="true"/>
+          </box>
+          <box class="social-notification-icon-container">
+            <image class="social-notification-icon-image" onclick="social.toolbarStatusArea.showAmbientPopup(this)"/>
+            <box class="social-notification-icon-counter" collapsed="true"/>
+          </box>
+        </hbox>
       </hbox>
   </toolbaritem>
 </toolbar>

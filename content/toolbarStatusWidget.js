@@ -37,83 +37,59 @@ SocialToolbarStatusArea.prototype = {
     this.renderAmbientNotification();
   },
 
-  renderAmbientNotification: function() {
-    var self = this;
-    function createNotificationIcon(icon) {
-        self.debugLog("Creating notification icon " + icon.name + ": " + icon.background + "; counter " + icon.counter);
-        var iconContainer = window.document.createElementNS(XUL_NS, "box");
-        iconContainer.setAttribute("class", "social-notification-icon-container");
+  showAmbientPopup: function(iconImage) {
+    var panel = window.document.getElementById("social-notification-panel");
+    var notifBrowser = window.document.getElementById("social-notification-browser");
+    notifBrowser.service = registry().currentProvider;
+    let mutationObserver;
 
-        var iconImage = window.document.createElementNS(XUL_NS, "image");
-        iconImage.setAttribute("class", "social-notification-icon-image");
-        let imagesrc = /url\(\'(.*)\'\)/.exec(icon.background)[1];
-        iconImage.setAttribute("src", imagesrc);
-
-        var iconCounter = window.document.createElementNS(XUL_NS, "box");
-        iconCounter.setAttribute("class", "social-notification-icon-counter");
-
-        if (icon.counter) {
-          iconCounter.appendChild(window.document.createTextNode(icon.counter));
-        } else {
-          iconCounter.style.display = "none";
-        }
-
-        iconContainer.appendChild(iconImage);
-        iconContainer.appendChild(iconCounter);
-        iconBox.appendChild(iconContainer);
-
-        iconContainer.addEventListener("click", function(e) {
-          var panel = window.document.getElementById("social-notification-panel");
-          var notifBrowser = window.document.getElementById("social-notification-browser");
-          notifBrowser.service = registry().currentProvider;
-          let mutationObserver;
-
-          var sizeToContent = function () {
-            let doc = notifBrowser.contentDocument;
-            let wrapper = doc && doc.getElementById('notif');
-            if (!wrapper) {
-              return;
-            }
-            let h = wrapper.scrollHeight > 0 ? wrapper.scrollHeight : 300;
-            dump("size to "+h+" w "+wrapper.scrollWidth+"\n");
-            notifBrowser.style.width = wrapper.scrollWidth + "px";
-            notifBrowser.style.height = h + "px";
-          }
-
-          notifBrowser.addEventListener("DOMContentLoaded", function onload() {
-            notifBrowser.removeEventListener("DOMContentLoaded", onload);
-            let body = notifBrowser.contentDocument.getElementById("notif");
-            // We setup a mutation observer on the 'notif' element.  When we
-            // get a notification we resize the panel.
-            // XXX - drop this check one we only work in FF versions we know have it
-            let mo = notifBrowser.contentWindow.MutationObserver || notifBrowser.contentWindow.MozMutationObserver;
-            if (mo) {
-              mutationObserver = new mo(function(mutations) {
-                sizeToContent();
-              });
-              // configuration of the observer - we want everything that could
-              // cause the size to change.
-              let config = {attributes: true, childList: true, characterData: true}
-              mutationObserver.observe(body, config);
-            }
-            sizeToContent();
-          }, false);
-          panel.addEventListener("popuphiding", function onpopuphiding() {
-            panel.removeEventListener("popuphiding", onpopuphiding);
-            if (mutationObserver) {
-              mutationObserver.disconnect();
-              mutationObserver = null;
-            }
-            document.getElementById("social-toolbar").removeAttribute("open");
-          }, false);
-
-          notifBrowser.setAttribute("src", icon.contentPanel);
-          panel.openPopup(iconImage, "bottomcenter topleft",0,0,false, false);
-          document.getElementById("social-toolbar").setAttribute("open", "true");
-        }, false);
+    var sizeToContent = function () {
+      let doc = notifBrowser.contentDocument;
+      let wrapper = doc && doc.getElementById('notif');
+      if (!wrapper) {
+        return;
+      }
+      let h = wrapper.scrollHeight > 0 ? wrapper.scrollHeight : 300;
+      dump("size to "+h+" w "+wrapper.scrollWidth+"\n");
+      notifBrowser.style.width = wrapper.scrollWidth + "px";
+      notifBrowser.style.height = h + "px";
     }
 
+    notifBrowser.addEventListener("DOMContentLoaded", function onload() {
+      notifBrowser.removeEventListener("DOMContentLoaded", onload);
+      let body = notifBrowser.contentDocument.getElementById("notif");
+      // We setup a mutation observer on the 'notif' element.  When we
+      // get a notification we resize the panel.
+      // XXX - drop this check one we only work in FF versions we know have it
+      let mo = notifBrowser.contentWindow.MutationObserver || notifBrowser.contentWindow.MozMutationObserver;
+      if (mo) {
+        mutationObserver = new mo(function(mutations) {
+          dump("mutation observer changing panel size\n");
+          sizeToContent();
+        });
+        // configuration of the observer - we want everything that could
+        // cause the size to change.
+        let config = {attributes: true, childList: true, characterData: true}
+        mutationObserver.observe(body, config);
+      }
+      sizeToContent();
+    }, false);
+    panel.addEventListener("popuphiding", function onpopuphiding() {
+      panel.removeEventListener("popuphiding", onpopuphiding);
+      if (mutationObserver) {
+        mutationObserver.disconnect();
+        mutationObserver = null;
+      }
+      document.getElementById("social-toolbar").removeAttribute("open");
+    }, false);
 
+    notifBrowser.setAttribute("src", iconImage.getAttribute("contentPanel"));
+    panel.openPopup(iconImage, "bottomcenter topleft",0,0,false, false);
+    document.getElementById("social-toolbar").setAttribute("open", "true");
+  },
+
+  renderAmbientNotification: function() {
+    var self = this;
     try {
       // create some elements...
       var container = window.document.getElementById("social-toolbar-button");
@@ -121,10 +97,8 @@ SocialToolbarStatusArea.prototype = {
       if (!container)
         return;
 
-      while (container.firstChild.nextSibling) container.removeChild(container.firstChild.nextSibling);
-
       let currentProvider = registry().currentProvider;
-      if (!currentProvider || !currentProvider.enabled) {
+      if (!currentProvider || !currentProvider.enabled || !currentProvider.ambientNotificationIcons) {
         this.debugLog("no service is enabled, so not rendering status area");
         return;
       }
@@ -134,19 +108,32 @@ SocialToolbarStatusArea.prototype = {
         image.setAttribute("src", currentProvider.iconURL);
       }
 
-      var iconBox = window.document.createElementNS(XUL_NS, "hbox");
-      iconBox.setAttribute("class", "social-buttonbar");
-      iconBox.setAttribute("flex", 1);
+      var iconBox = window.document.getElementById("social-statis-iconbox");
 
       var ambientNotificationCount = 0;
       if (currentProvider.ambientNotificationIcons) {
-        for each (var icon in currentProvider.ambientNotificationIcons)
-        {
-          ambientNotificationCount += 1;
-          createNotificationIcon(icon);
+        let iconNames = Object.keys(currentProvider.ambientNotificationIcons);
+        for (var i=0; i < iconNames.length; i++) {
+          let icon = currentProvider.ambientNotificationIcons[iconNames[i]];
+          let iconContainer = iconBox.childNodes[i];
+          let iconImage = iconContainer.firstChild;
+          let iconCounter = iconImage.nextSibling;
+
+          iconImage.setAttribute("contentPanel", icon.contentPanel);
+
+          let imagesrc = /url\(\'(.*)\'\)/.exec(icon.background)[1];
+          iconImage.setAttribute("src", imagesrc);
+
+          if (icon.counter) {
+            if (iconCounter.firstChild)
+              iconCounter.removeChild(iconCounter.firstChild);
+            iconCounter.appendChild(window.document.createTextNode(icon.counter));
+            iconCounter.removeAttribute("collapsed");
+          } else {
+            iconCounter.setAttribute("collapsed", "true");
+          }
         }
       }
-      container.appendChild(iconBox);
 
       /*
       var portraitBox = window.document.createElementNS(XUL_NS, "div");
