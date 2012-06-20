@@ -378,15 +378,12 @@ function FrameWorker(url, clientWindow, name) {
         }
         Services.obs.removeObserver(injectController, 'document-element-inserted', false);
 
-        // using wrappedJSObject makes XHR and other classes work properly
-        let workerWindow = frame.contentWindow.wrappedJSObject;
-
-        let sandbox = new Cu.Sandbox(workerWindow);
+        let workerWindow = frame.contentWindow;
+        let sandbox = new Cu.Sandbox(workerWindow, { wantXHRConstructor: true });
         // copy the window apis onto the sandbox namespace only functions or
         // objects that are naturally a part of an iframe, I'm assuming they are
         // safe to import this way
         let workerAPI = ['MozWebSocket', 'WebSocket', 'localStorage',
-                         'XMLHttpRequest', /*'mozIndexedDB',*/
                          'atob', 'btoa', 'clearInterval', 'clearTimeout', 'dump',
                          'setInterval', 'setTimeout',
                          'MozBlobBuilder', 'FileReader', 'Blob',
