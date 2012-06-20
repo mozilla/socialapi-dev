@@ -118,6 +118,8 @@ SocialToolbarStatusArea.prototype = {
       // create some elements...
       var container = window.document.getElementById("social-toolbar-button");
       // if container is null, it is not in the toolbar
+      if (!container)
+        return;
 
       while (container.firstChild.nextSibling) container.removeChild(container.firstChild.nextSibling);
 
