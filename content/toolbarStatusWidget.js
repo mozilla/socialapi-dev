@@ -68,18 +68,18 @@ SocialToolbarStatusArea.prototype = {
           notifBrowser.service = registry().currentProvider;
           let mutationObserver;
 
-          var resizer = function() {
-            let body = notifBrowser.contentDocument.getElementById("notif");
-            if (body) {
-              // XXX - should get the hard-coded '50' from the margin styles?
-              // (on windows at least, the margins are 50px and without this
-              // offset we get scrollbars.)
-              panel.sizeTo(body.clientWidth+50, body.clientHeight+50);
-            } else {
-              // no explicit size, so select a reasonable default.
-              panel.sizeTo(500, 300);
+          var sizeToContent = function () {
+            let doc = notifBrowser.contentDocument;
+            let wrapper = doc && doc.getElementById('notif');
+            if (!wrapper) {
+              return;
             }
+            let h = wrapper.scrollHeight > 0 ? wrapper.scrollHeight : 300;
+            dump("size to "+h+" w "+wrapper.scrollWidth+"\n");
+            notifBrowser.style.width = wrapper.scrollWidth + "px";
+            notifBrowser.style.height = h + "px";
           }
+
           notifBrowser.addEventListener("DOMContentLoaded", function onload() {
             notifBrowser.removeEventListener("DOMContentLoaded", onload);
             let body = notifBrowser.contentDocument.getElementById("notif");
@@ -89,14 +89,14 @@ SocialToolbarStatusArea.prototype = {
             let mo = notifBrowser.contentWindow.MutationObserver || notifBrowser.contentWindow.MozMutationObserver;
             if (mo) {
               mutationObserver = new mo(function(mutations) {
-                resizer();
+                sizeToContent();
               });
               // configuration of the observer - we want everything that could
               // cause the size to change.
               let config = {attributes: true, childList: true, characterData: true}
               mutationObserver.observe(body, config);
             }
-            resizer();
+            sizeToContent();
           }, false);
           panel.addEventListener("popuphiding", function onpopuphiding() {
             panel.removeEventListener("popuphiding", onpopuphiding);
