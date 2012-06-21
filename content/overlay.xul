@@ -137,7 +137,7 @@
                src="chrome://socialapi/skin/social.png"/>
         <vbox class="social-statusarea-popup-current-user-name">
           <label>Logged in as</label>
-          <button type="link" id="social-statusarea-username">Current User</button>
+          <button id="social-statusarea-username">Current User</button>
         </vbox>
       </hbox>
     </vbox>

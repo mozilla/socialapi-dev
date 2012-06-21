@@ -38,11 +38,16 @@
   font-family: "lucida grande",tahoma,verdana,arial,sans-serif;
   font-size:12px;
 }
+
 .social-statusarea-popup-current-user-name button
 {
-  color: rgb(59, 89, 152);
-  font-weight:bold;
   -moz-appearance: none;
+  background: transparent;
+  border: none;
+  color: -moz-nativehyperlinktext;
+  cursor: pointer;
+  min-width: 0;
+  margin: 0 6px;
 }
 .social-statusarea-popup-current-user-name button:hover
 {
