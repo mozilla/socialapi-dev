@@ -50,7 +50,6 @@ SocialToolbarStatusArea.prototype = {
         return;
       }
       let h = wrapper.scrollHeight > 0 ? wrapper.scrollHeight : 300;
-      dump("size to "+h+" w "+wrapper.scrollWidth+"\n");
       notifBrowser.style.width = wrapper.scrollWidth + "px";
       notifBrowser.style.height = h + "px";
     }
@@ -64,7 +63,6 @@ SocialToolbarStatusArea.prototype = {
       let mo = notifBrowser.contentWindow.MutationObserver || notifBrowser.contentWindow.MozMutationObserver;
       if (mo) {
         mutationObserver = new mo(function(mutations) {
-          dump("mutation observer changing panel size\n");
           sizeToContent();
         });
         // configuration of the observer - we want everything that could
@@ -98,7 +96,7 @@ SocialToolbarStatusArea.prototype = {
         return;
 
       let currentProvider = registry().currentProvider;
-      if (!currentProvider || !currentProvider.enabled || !currentProvider.ambientNotificationIcons) {
+      if (!currentProvider || !currentProvider.enabled) {
         this.debugLog("no service is enabled, so not rendering status area");
         return;
       }
@@ -111,27 +109,30 @@ SocialToolbarStatusArea.prototype = {
       var iconBox = window.document.getElementById("social-statis-iconbox");
 
       var ambientNotificationCount = 0;
-      if (currentProvider.ambientNotificationIcons) {
-        let iconNames = Object.keys(currentProvider.ambientNotificationIcons);
-        for (var i=0; i < iconNames.length; i++) {
-          let icon = currentProvider.ambientNotificationIcons[iconNames[i]];
-          let iconContainer = iconBox.childNodes[i];
-          let iconImage = iconContainer.firstChild;
-          let iconCounter = iconImage.nextSibling;
+      let iconNames = currentProvider.ambientNotificationIcons ? Object.keys(currentProvider.ambientNotificationIcons) : [];
+      for (var i=0; i < iconBox.childNodes.length; i++) {
+        let iconContainer = iconBox.childNodes[i];
+        if (iconNames.length-1 < i) {
+          iconContainer.setAttribute("collapsed", "true");
+          continue;
+        } else {
+          iconContainer.removeAttribute("collapsed");
+        }
+        let icon = currentProvider.ambientNotificationIcons[iconNames[i]];
+        let iconImage = iconContainer.firstChild;
+        let iconCounter = iconImage.nextSibling;
 
-          iconImage.setAttribute("contentPanel", icon.contentPanel);
+        iconImage.setAttribute("contentPanel", icon.contentPanel);
+        let imagesrc = /url\(['"](.*)['"]\)/.exec(icon.background)[1];
+        iconImage.setAttribute("src", imagesrc);
 
-          let imagesrc = /url\(\'(.*)\'\)/.exec(icon.background)[1];
-          iconImage.setAttribute("src", imagesrc);
-
-          if (icon.counter) {
-            if (iconCounter.firstChild)
-              iconCounter.removeChild(iconCounter.firstChild);
-            iconCounter.appendChild(window.document.createTextNode(icon.counter));
-            iconCounter.removeAttribute("collapsed");
-          } else {
-            iconCounter.setAttribute("collapsed", "true");
-          }
+        if (icon.counter) {
+          if (iconCounter.firstChild)
+            iconCounter.removeChild(iconCounter.firstChild);
+          iconCounter.appendChild(window.document.createTextNode(icon.counter));
+          iconCounter.removeAttribute("collapsed");
+        } else {
+          iconCounter.setAttribute("collapsed", "true");
         }
       }
 
