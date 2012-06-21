@@ -138,7 +138,11 @@ SocialToolbarStatusArea.prototype = {
 
       let userPortrait = document.getElementById("social-statusarea-popup-current-user-portrait")
       userPortrait.setAttribute("id", "social-statusarea-popup-current-user-portrait");
-      userPortrait.setAttribute("src", currentProvider.ambientNotificationPortrait);
+      if (currentProvider.ambientNotificationPortrait) {
+        userPortrait.setAttribute("src", currentProvider.ambientNotificationPortrait);
+      } else {
+        userPortrait.setAttribute("src", "chrome://socialapi/skin/social.png");
+      }
 
     } catch (e) {
       Cu.reportError(e);
