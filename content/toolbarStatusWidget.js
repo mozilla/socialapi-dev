@@ -9,6 +9,56 @@ Cu.import("resource://socialapi/modules/ProviderRegistry.jsm");
 
 const HTML_NS = "http://www.w3.org/1999/xhtml";
 
+// onpopupshowing logic from arrow panel xbl bindings
+function panelOnPopupShowing(window) {
+  var container = window.document.getElementById("social-statusarea-popup");
+  var panel = container;
+  var arrowbox = window.document.getElementById("social-panel-arrowbox");
+  var arrow = window.document.getElementById("social-panel-arrow");
+
+  var anchor = panel.anchorNode;
+  if (!anchor) {
+    arrow.hidden = true;
+    return;
+  }
+
+  // Returns whether the first float is smaller than the second float or
+  // equals to it in a range of epsilon.
+  function smallerTo(aFloat1, aFloat2, aEpsilon)
+  {
+    return aFloat1 <= (aFloat2 + aEpsilon);
+  }
+
+  let popupRect = panel.getBoundingClientRect();
+  let popupLeft = window.mozInnerScreenX + popupRect.left;
+  let popupTop = window.mozInnerScreenY + popupRect.top;
+  let popupRight = popupLeft + popupRect.width;
+  let popupBottom = popupTop + popupRect.height;
+
+  let anchorRect = anchor.getBoundingClientRect();
+  let anchorLeft = anchor.ownerDocument.defaultView.mozInnerScreenX + anchorRect.left;
+  let anchorTop = anchor.ownerDocument.defaultView.mozInnerScreenY + anchorRect.top;
+  let anchorRight = anchorLeft + anchorRect.width;
+  let anchorBottom = anchorTop + anchorRect.height;
+
+  try {
+    let anchorWindow = anchor.ownerDocument.defaultView;
+    if (anchorWindow != window) {
+      let utils = anchorWindow.QueryInterface(Components.interfaces.nsIInterfaceRequestor).
+                               getInterface(Components.interfaces.nsIDOMWindowUtils);
+      let spp = utils.screenPixelsPerCSSPixel;
+      anchorLeft *= spp;
+      anchorRight *= spp;
+      anchorTop *= spp;
+      anchorBottom *= spp;
+    }
+  } catch(ex) { }
+
+  let pack = smallerTo(popupLeft, anchorLeft, 26) && smallerTo(popupRight, anchorRight, 26) ? "end" : "start";
+  arrowbox.setAttribute("pack", pack);
+}
+
+
 function SocialToolbarStatusArea() {
   baseWidget.call(this, window);
 
@@ -176,6 +226,11 @@ SocialToolbarStatusArea.prototype = {
     let aWindow = event.target.ownerDocument.defaultView;
     let popup = aWindow.document.getElementById("social-statusarea-popup");
     buildSocialPopupContents(aWindow, popup);
+    try {
+      panelOnPopupShowing(aWindow);
+    } catch(e) {
+      dump(e+"\n");
+    }
   },
 
   disable: function() {
@@ -195,31 +250,10 @@ function buildSocialPopupContents(window, socialpanel)
 {
   let preg = registry();
 
-  function renderNotificationRow(img, title, text) {
-    let row = window.document.createElementNS(HTML_NS, "div");
-    row.setAttribute("style", "clear:all;cursor:pointer;margin-left:8px;height:32px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:-moz-system-font;border-right:");
-
-    let imgElem = window.document.createElementNS(HTML_NS, "img");
-    imgElem.setAttribute("src", img);
-    imgElem.setAttribute("style", "width:28px;height:28px;margin-right:8px;float:left");
-
-    let titleElem = window.document.createElementNS(HTML_NS, "span");
-    titleElem.appendChild(window.document.createTextNode(title));
-    titleElem.setAttribute("style", "font-weight:bold");
-
-    let textElem = window.document.createElementNS(HTML_NS, "span");
-    textElem.appendChild(window.document.createTextNode(((text.length > 0 && text[0] != ' ') ? " " : "")+ text));
-
-    row.appendChild(imgElem);
-    row.appendChild(titleElem);
-    row.appendChild(textElem);
-    return row;
-  }
-
   function renderProviderMenuitem(service, container) {
 
-    let menuitem = window.document.createElementNS(HTML_NS, "div");
-    menuitem.setAttribute("class", "social-statusarea-popup-menuitem social-statusarea-provider-list");
+    let menuitem = window.document.createElementNS(XUL_NS, "menuitem");
+    menuitem.setAttribute("class", "menuitem-iconic");
 
     let itemText = service.name;
 
@@ -236,18 +270,12 @@ function buildSocialPopupContents(window, socialpanel)
     }
     */
 
-    let img = window.document.createElementNS(HTML_NS, "img");
-    img.setAttribute("src", service.iconURL);
-    menuitem.appendChild(img);
-
-    let label = window.document.createElementNS(HTML_NS, "div");
-    label.setAttribute("class", "social-statusarea-provider-list-label");
-    label.appendChild(window.document.createTextNode(itemText));
-    menuitem.appendChild(label);
+    menuitem.setAttribute("image", service.iconURL);
+    menuitem.setAttribute("label", itemText);
 
     if (service == preg.currentProvider) {
       // no need for a click handler if we're selected
-      menuitem.classList.add("social-statusarea-provider-selected");
+      //menuitem.classList.add("social-statusarea-provider-selected");
     }
     else {
       menuitem.addEventListener("click", function(event) {
@@ -260,6 +288,16 @@ function buildSocialPopupContents(window, socialpanel)
     }
     container.appendChild(menuitem);//insertBefore(menuitem, before);
   }
+
+  // Put the list of providers in a submenu:
+  let subMenu = window.document.getElementById("social-provider-menupopup")
+  while (subMenu.firstChild) subMenu.removeChild(subMenu.firstChild);
+  preg.each(function(service) {
+    if (service.enabled) {
+      renderProviderMenuitem(service, subMenu);
+    }
+  });
+
 return;
   try {
 

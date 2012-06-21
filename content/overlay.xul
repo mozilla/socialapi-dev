@@ -160,9 +160,9 @@
     onpopupshowing="social.toolbarStatusArea.onpopupshowing(event)"
     onpopuphidden="social.toolbarStatusArea.onpopuphidden(event)">
 
-<box id="arrowbox" class="panel-arrowbox">
-  <image id="arrow" class="panel-arrow" side="top"/>
-</box>
+<hbox id="social-panel-arrowbox" class="panel-arrowbox" flex="1" pack="start">
+  <image id="social-panel-arrow" class="panel-arrow" side="top"/>
+</hbox>
       <hbox id="social-statusarea-currentuser" class="social-statusarea-popup-current-user" pack="left" align="center">
         <image id="social-statusarea-popup-current-user-portrait"
                class="social-statusarea-popup-current-user-portrait"
@@ -173,10 +173,7 @@
         </vbox>
       </hbox>
       <menu id="social-provider-menu" label="Switch social network">
-        <menupopup>
-          <menuitem label="Remove from Firefox"/>
-          <menuitem label="Shrink sidebar"/>
-          <menuitem label="Show/Hide sidebar"/>
+        <menupopup id="social-provider-menupopup">
         </menupopup>
       </menu>
       <menuitem label="Shrink sidebar"/>

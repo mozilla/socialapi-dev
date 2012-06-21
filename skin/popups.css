@@ -14,10 +14,11 @@
   -moz-appearance: none;
   background: transparent;
   margin-left: -26px;
+  margin-right: -26px;
 }
 #social-statusarea-popup .panel-arrowbox {
   background: transparent;
-  padding: 0 8px;
+  padding: 0 6px;
   margin-bottom: -4px;
 }
 
