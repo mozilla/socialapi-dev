@@ -260,13 +260,12 @@ function buildSocialPopupContents(window, socialpanel)
     }
     container.appendChild(menuitem);//insertBefore(menuitem, before);
   }
-
+return;
   try {
 
     let menuitem;
     let disabled = !window.social.enabled;
 
-    let container = window.document.getElementById("social-statusarea-popup");
     let rootDiv = window.document.getElementById("social-statusarea-user");
     while (rootDiv.firstChild.nextSibling) {
       rootDiv.removeChild(rootDiv.firstChild.nextSibling);

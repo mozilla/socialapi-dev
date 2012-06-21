@@ -2,15 +2,27 @@
 /* popups that hang off our toolbaritem */
 .social-statusarea-popup {
   /*margin-top: 4px;*/
+  -moz-appearance: none;
   -moz-margin-start: 3px;
+  border-radius: 0;
 }
 
 
-.social-statusarea-popup
+#social-statusarea-popup
 {
-  margin-top:-1px;
+  margin-top:-4px;
+  -moz-appearance: none;
+  background: transparent;
+  margin-left: -26px;
 }
-.social-statusarea-popup-container
+#social-statusarea-popup .panel-arrowbox {
+  background: transparent;
+  padding: 0 8px;
+  margin-bottom: -4px;
+}
+
+
+.social-statusarea-popup-containerx
 {
   width:250px;
   padding-bottom:6px;

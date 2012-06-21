@@ -123,14 +123,46 @@
     <browser id="social-notification-browser" type="content" flex="1"/>
   </panel>
 
-  <panel
-    class="social-panel"
-    id="social-statusarea-popup"
-    type="arrow"
+  <menupopup
+    class="x-statusarea-popup"
+    id="x-statusarea-popupmenu"
+    anonid="x-statusarea-popup"
     onpopupshown="social.toolbarStatusArea.onpopupshown(event)"
     onpopupshowing="social.toolbarStatusArea.onpopupshowing(event)"
     onpopuphidden="social.toolbarStatusArea.onpopuphidden(event)">
-    <vbox id="social-statusarea-user" class="social-statusarea-popup-container">
+
+    <!-- list of enabled services goes here -->
+    <menuseparator id="x-statusarea-providers-separator"/>
+    <menuitem id="x-statusarea-togglesidebar"
+              type="checkbox"
+              command="cmd_socialSidebarToggle">
+      <observes element="socialSidebarVisible" attribute="checked"/>
+      <observes element="socialEnabled" attribute="hidden"/>
+    </menuitem>
+    <!-- See above - why don't the observers set directly on the
+         command work such that we we need to have them here???
+    -->
+
+    <menuitem id="x-statusarea-togglesocial"
+              type="checkbox"
+              command="cmd_socialBrowsingToggle"/>
+
+    <menuseparator/>
+    <menuitem id="x-pref-menu" command="cmd_socialPreferences"/>
+  </menupopup>
+
+  <menupopup
+    class="social-panel"
+    id="social-statusarea-popup"
+    type="arrow"
+    orient="vertical"
+    onpopupshown="social.toolbarStatusArea.onpopupshown(event)"
+    onpopupshowing="social.toolbarStatusArea.onpopupshowing(event)"
+    onpopuphidden="social.toolbarStatusArea.onpopuphidden(event)">
+
+<box id="arrowbox" class="panel-arrowbox">
+  <image id="arrow" class="panel-arrow" side="top"/>
+</box>
       <hbox id="social-statusarea-currentuser" class="social-statusarea-popup-current-user" pack="left" align="center">
         <image id="social-statusarea-popup-current-user-portrait"
                class="social-statusarea-popup-current-user-portrait"
@@ -140,8 +172,24 @@
           <button id="social-statusarea-username">Current User</button>
         </vbox>
       </hbox>
-    </vbox>
-  </panel>
+      <menu id="social-provider-menu" label="Switch social network">
+        <menupopup>
+          <menuitem label="Remove from Firefox"/>
+          <menuitem label="Shrink sidebar"/>
+          <menuitem label="Show/Hide sidebar"/>
+        </menupopup>
+      </menu>
+      <menuitem label="Shrink sidebar"/>
+      <menuitem id="social-statusarea-togglesidebar"
+                type="checkbox"
+                command="cmd_socialSidebarToggle">
+        <observes element="socialSidebarVisible" attribute="checked"/>
+        <observes element="socialEnabled" attribute="hidden"/>
+      </menuitem>
+      <menuitem id="social-statusarea-togglesocial"
+              type="checkbox"
+              command="cmd_socialBrowsingToggle"/>
+  </menupopup>
 
   <panel
     class="social-panel-provider-submenu"
