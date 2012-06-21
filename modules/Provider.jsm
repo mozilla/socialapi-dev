@@ -189,10 +189,22 @@ SocialProvider.prototype = {
           const idleService = Cc["@mozilla.org/widget/idleservice;1"].getService(Ci.nsIIdleService);
           return idleService.idleTime >= ms;
         },
+        getAttention: function() {
+          // oh yeah, this is obvious, right?
+          // See https://developer.mozilla.org/en/Working_with_windows_in_chrome_code
+          let mainWindow = targetWindow.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
+                             .getInterface(Components.interfaces.nsIWebNavigation)
+                             .QueryInterface(Components.interfaces.nsIDocShellTreeItem)
+                             .rootTreeItem
+                             .QueryInterface(Components.interfaces.nsIInterfaceRequestor)
+                             .getInterface(Components.interfaces.nsIDOMWindow);
+          mainWindow.getAttention();
+        },
         __exposedProps__: {
           getWorker: 'r',
           openServiceWindow: 'r',
-          hasBeenIdleFor: 'r'
+          hasBeenIdleFor: 'r',
+          getAttention: 'r'
         }
       }
     });

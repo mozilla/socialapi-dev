@@ -187,10 +187,6 @@ workerAPI.prototype = {
       }
       worker.port.postMessage({topic: "social.cookies-get-response",
                                data: results});
-    },
-    'social.get-attention': function(worker, data) {
-      let bw = Services.wm.getMostRecentWindow('navigator:browser');
-      bw.getAttention();
     }
   }
 }
