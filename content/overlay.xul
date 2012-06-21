@@ -130,6 +130,17 @@
     onpopupshown="social.toolbarStatusArea.onpopupshown(event)"
     onpopupshowing="social.toolbarStatusArea.onpopupshowing(event)"
     onpopuphidden="social.toolbarStatusArea.onpopuphidden(event)">
+    <vbox id="social-statusarea-user" class="social-statusarea-popup-container">
+      <hbox id="social-statusarea-currentuser" class="social-statusarea-popup-current-user" pack="left" align="center">
+        <image id="social-statusarea-popup-current-user-portrait"
+               class="social-statusarea-popup-current-user-portrait"
+               src="chrome://socialapi/skin/social.png"/>
+        <vbox class="social-statusarea-popup-current-user-name">
+          <label>Logged in as</label>
+          <button type="link" id="social-statusarea-username">Current User</button>
+        </vbox>
+      </hbox>
+    </vbox>
   </panel>
 
   <panel

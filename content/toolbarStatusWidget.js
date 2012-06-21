@@ -135,22 +135,10 @@ SocialToolbarStatusArea.prototype = {
         }
       }
 
-      /*
-      var portraitBox = window.document.createElementNS(XUL_NS, "div");
-      portraitBox.setAttribute("class", "social-portrait-box");
-      portraitBox.align = "start";
-      container.insertBefore(portraitBox, container.firstChild);
+      let userPortrait = document.getElementById("social-statusarea-popup-current-user-portrait")
+      userPortrait.setAttribute("id", "social-statusarea-popup-current-user-portrait");
+      userPortrait.setAttribute("src", currentProvider.ambientNotificationPortrait);
 
-      if (currentProvider.ambientNotificationPortrait) {
-        this.debugLog("Setting portrait to " + currentProvider.ambientNotificationPortrait);
-        var portrait = window.document.createElementNS(XUL_NS, "image");
-        portrait.setAttribute("class", "social-portrait-image");
-        portrait.setAttribute("src", currentProvider.ambientNotificationPortrait);
-        // portrait on left:
-        portraitBox.appendChild(portrait);
-        // portrait on right: container.appendChild(portrait);
-      }
-      */
     } catch (e) {
       Cu.reportError(e);
     }
@@ -274,12 +262,10 @@ function buildSocialPopupContents(window, socialpanel)
     let disabled = !window.social.enabled;
 
     let container = window.document.getElementById("social-statusarea-popup");
-    while (container.firstChild) {
-      container.removeChild(container.firstChild);
+    let rootDiv = window.document.getElementById("social-statusarea-user");
+    while (rootDiv.firstChild.nextSibling) {
+      rootDiv.removeChild(rootDiv.firstChild.nextSibling);
     }
-    let rootDiv = window.document.createElementNS(HTML_NS, "div");
-    rootDiv.setAttribute("class", "social-statusarea-popup-container");
-    container.appendChild(rootDiv);
 
     // if we are disabled we don't want the list of providers nor the separators
     if (disabled) {
@@ -297,28 +283,16 @@ function buildSocialPopupContents(window, socialpanel)
       var HTML_NS = "http://www.w3.org/1999/xhtml";
 
       // Render the current user element
-      let curUser = window.document.createElementNS(HTML_NS, "div");
-      curUser.setAttribute("class", "social-statusarea-popup-current-user");
-      rootDiv.appendChild(curUser);
-      let userPortrait = window.document.createElementNS(HTML_NS, "img");
-      let userName = window.document.createElementNS(HTML_NS, "div");
-      userPortrait.setAttribute("src", "http://www.gravatar.com/avatar/a424101e821d1acd429f7a072d8913c6?s=32");
-      userPortrait.setAttribute("class", "social-statusarea-popup-current-user-portrait");
-      userName.setAttribute("class", "social-statusarea-popup-current-user-name");
-      userName.appendChild(window.document.createTextNode("Logged in as "));
+      let curUser = window.document.getElementById("social-statusarea-currentuser");
+      let userPortrait = window.document.getElementById("social-statusarea-popup-current-user-portrait");
 
-      let userNameLink = window.document.createElementNS(HTML_NS, "a");
+      let userNameLink = window.document.getElementById("social-statusarea-username");
       userNameLink.addEventListener("click", function(evt) {
         gBrowser.selectedTab = gBrowser.addTab(preg.currentProvider.origin);
         evt.stopPropagation();
         window.document.getElementById("social-statusarea-popup").hidePopup();
         return false;
       }, false);
-      userNameLink.appendChild(window.document.createTextNode("Current User"));
-      userName.appendChild(userNameLink);
-
-      curUser.appendChild(userPortrait);
-      curUser.appendChild(userName);
 
       // Render the menu
       let switchItem = makeMenuItem("Switch social network", "social-statusarea-popup-menuitem-arrow");
@@ -407,5 +381,6 @@ function buildSocialPopupContents(window, socialpanel)
   }
   catch (e) {
     Cu.reportError("Error creating socialpopupcontents: " + e);
+    dump(e.stack+"\n");
   }
 }

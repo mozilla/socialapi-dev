@@ -31,23 +31,20 @@
   width:32px;
   height:32px;
   border-radius:2px;
-  padding:10px;
-  display:inline-block;
+  margin:10px;
 }
 .social-statusarea-popup-current-user-name
 {
-  position:absolute;
-  left:52px;
-  top:16px;
   font-family: "lucida grande",tahoma,verdana,arial,sans-serif;
   font-size:12px;
 }
-.social-statusarea-popup-current-user-name a
+.social-statusarea-popup-current-user-name button
 {
   color: rgb(59, 89, 152);
   font-weight:bold;
+  -moz-appearance: none;
 }
-.social-statusarea-popup-current-user-name a:hover
+.social-statusarea-popup-current-user-name button:hover
 {
   text-decoration:underline;
 }
