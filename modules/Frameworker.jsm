@@ -353,13 +353,7 @@ function FrameWorker(url, clientWindow, name) {
                     .hiddenDOMWindow.document;
     // on OSX, using createElement fails, on Win, createElementNS fails with
     // NS_ERROR_NOT_AVAILABLE, so just try both :)
-    let frame;
-    try {
-      frame = hiddenDoc.createElementNS(XUL_NS, "iframe");
-    }
-    catch (ex) {
-      frame = hiddenDoc.createElement("iframe");
-    }
+    let frame = hiddenDoc.createElement("iframe");
     frame.setAttribute("type", "content");
     frame.setAttribute("src", url);
 
@@ -519,10 +513,7 @@ function FrameWorker(url, clientWindow, name) {
       }
     };
     Services.obs.addObserver(injectController, 'document-element-inserted', false);
-    // doc.documentElement on the hiddenWindow is not working on windows,
-    // doc.body does work.
-    let container = hiddenDoc.body ? hiddenDoc.body : hiddenDoc.documentElement;
-    container.appendChild(frame);
+    hiddenDoc.documentElement.appendChild(frame);
   }
   else {
     // already have a worker - either queue or make the connection.
