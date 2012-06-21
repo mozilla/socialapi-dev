@@ -20,6 +20,10 @@ Cu.import("resource://socialapi/modules/ManifestRegistry.jsm");
 
 const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
+function schedule(callback) {
+  Services.tm.mainThread.dispatch(callback, Ci.nsIThread.DISPATCH_NORMAL);
+}
+
 /** Helper function to detect "development mode",
  * which is set with the social.provider.devmode pref.
  *
@@ -56,7 +60,11 @@ function ProviderRegistry(createCallback) {
     self.register(manifest);
   }, function(count) {
     self._ready = true;
-    Services.obs.notifyObservers(null, "social-service-ready", null)
+    // ensure this is async since we need to finish constructing this instance before
+    // any attempts to access it.
+    schedule(function() {
+      Services.obs.notifyObservers(null, "social-service-ready", null)
+    });
   });
 
   // developer?
