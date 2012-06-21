@@ -170,13 +170,13 @@ SocialToolbarStatusArea.prototype = {
   onpopupshown: function(event) {
     let aWindow = event.target.ownerDocument.defaultView;
     if (aWindow.social.sidebar && aWindow.social.sidebar.browser) {
-      aWindow.social.sidebar.browser.style.opacity = 0.3;
+      aWindow.social.sidebar.browser.setAttribute("toolbar-popup-visible", "true");
     }
   },
   onpopuphidden: function(event) {
     let aWindow = event.target.ownerDocument.defaultView;
     if (aWindow.social.sidebar && aWindow.social.sidebar.browser) {
-      aWindow.social.sidebar.browser.style.opacity = 1;
+      aWindow.social.sidebar.browser.removeAttribute("toolbar-popup-visible");
     }
   },
   onpopupshowing: function(event) {

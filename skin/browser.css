@@ -20,6 +20,15 @@
   -moz-transition-delay: 0s;
 }
 
+#social-status-sidebar-browser {
+  overflow: hidden;
+  opacity: 1;
+}
+
+#social-status-sidebar-browser[toolbar-popup-visible] {
+  opacity: 0.3;
+}
+
 #social-toolbar-menu {
   padding-bottom:6px;
   padding-right:4px;

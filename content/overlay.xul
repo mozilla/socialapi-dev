@@ -155,8 +155,7 @@
         observes="socialSidebarVisible">
     <browser id="social-status-sidebar-browser"
              type="content"
-             flex="1"
-             style="overflow: hidden">
+             flex="1">
     </browser>
   </vbox>
 </hbox>
