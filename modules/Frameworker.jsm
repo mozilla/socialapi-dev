@@ -322,6 +322,28 @@ ClientPort.prototype = {
 }
 
 
+function importScripts() {
+  for (var i=0; i < arguments.length; i++) {
+    // load the url *synchronously*
+    var scriptURL = arguments[i];
+    dump("loading script "+scriptURL+"\n");
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', scriptURL, false);
+    xhr.onreadystatechange = function(aEvt) {
+      if (xhr.readyState == 4) {
+        if (xhr.status == 200 || xhr.status == 0) {
+          eval(xhr.responseText);
+        }
+        else {
+          throw new Error("Unable to importScripts ["+scriptURL+"], status " + xhr.status)
+        }
+      }
+    };
+    xhr.send(null);
+  }
+}
+
+
 /**
  * FrameWorker
  *
@@ -381,7 +403,7 @@ function FrameWorker(url, clientWindow, name) {
                          'atob', 'btoa', 'clearInterval', 'clearTimeout', 'dump',
                          'setInterval', 'setTimeout',
                          'MozBlobBuilder', 'FileReader', 'Blob',
-                         'navigator'];
+                         'navigator', 'location'];
         workerAPI.forEach(function(fn) {
           try {
             sandbox[fn] = workerWindow[fn];
@@ -390,6 +412,10 @@ function FrameWorker(url, clientWindow, name) {
             Cu.reportError("failed to import API "+fn+"\n"+e+"\n");
           }
         });
+        sandbox._resolveURI = function fw_resolveURI(path) {
+          return Services.io.newURI(url, null, null).resolve(path);
+        }
+        /*
         sandbox.importScripts = function fw_importScripts() {
           if (arguments.length < 1)
             return;
@@ -424,6 +450,7 @@ function FrameWorker(url, clientWindow, name) {
             xhr.send(null);
           }
         };
+        */
         // and we delegate ononline and onoffline events to the worker.
         // See http://www.whatwg.org/specs/web-apps/current-work/multipage/workers.html#workerglobalscope
         frame.addEventListener('offline', function fw_onoffline(event) {
@@ -455,7 +482,8 @@ function FrameWorker(url, clientWindow, name) {
             return ob.name + ".prototype=" + raw + ";"
           }
           try {
-            let scriptText = [AbstractPort.toSource(),
+            let scriptText = [importScripts.toSource(),
+                              AbstractPort.toSource(),
                               getProtoSource(AbstractPort),
                               WorkerPort.toSource(),
                               getProtoSource(WorkerPort),
