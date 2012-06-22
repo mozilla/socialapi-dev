@@ -325,8 +325,7 @@ ClientPort.prototype = {
 function importScripts() {
   for (var i=0; i < arguments.length; i++) {
     // load the url *synchronously*
-    var scriptURL = arguments[i];
-    dump("loading script "+scriptURL+"\n");
+    var scriptURL = _resolveURI(arguments[i]);
     var xhr = new XMLHttpRequest();
     xhr.open('GET', scriptURL, false);
     xhr.onreadystatechange = function(aEvt) {
@@ -412,45 +411,11 @@ function FrameWorker(url, clientWindow, name) {
             Cu.reportError("failed to import API "+fn+"\n"+e+"\n");
           }
         });
+        // helper for XHR relative urls
         sandbox._resolveURI = function fw_resolveURI(path) {
           return Services.io.newURI(url, null, null).resolve(path);
         }
-        /*
-        sandbox.importScripts = function fw_importScripts() {
-          if (arguments.length < 1)
-            return;
-          let workerURI = Services.io.newURI(url, null, null);
-          for each(let uri in arguments) {
-            // resolve the uri against the loaded worker
-            let scriptURL = workerURI.resolve(uri);
-            if (scriptURL.indexOf(workerURI.prePath) != 0) {
-              let err = new Error("importScripts same-origin violation with "+uri);
-              err.__exposedProps__ = {toJSON: 'r', toString: 'r'};
-              throw err;
-            }
-            // load the url *synchronously*
-            let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"]
-                        .createInstance(Ci.nsIXMLHttpRequest);
-            xhr.open('GET', scriptURL, false);
-            xhr.onreadystatechange = function(aEvt) {
-              if (xhr.readyState == 4) {
-                if (xhr.status == 200 || xhr.status == 0) {
-                  try {
-                    Cu.evalInSandbox(xhr.responseText, sandbox);
-                  }
-                  catch(e) {
-                    Cu.reportError("importScripts eval failed: "+e);
-                  }
-                }
-                else {
-                  Cu.reportError("Unable to importScripts ["+scriptURL+"], status " + xhr.status);
-                }
-              }
-            };
-            xhr.send(null);
-          }
-        };
-        */
+
         // and we delegate ononline and onoffline events to the worker.
         // See http://www.whatwg.org/specs/web-apps/current-work/multipage/workers.html#workerglobalscope
         frame.addEventListener('offline', function fw_onoffline(event) {
@@ -582,10 +547,7 @@ function FrameWorker(url, clientWindow, name) {
       let doc = Cc["@mozilla.org/appshell/appShellService;1"]
                       .getService(Ci.nsIAppShellService)
                       .hiddenDOMWindow.document;
-      // doc.documentElement on the hiddenWindow is not working on windows,
-      // doc.body does work.
-      let container = doc.body ? doc.body : doc.documentElement;
-      container.removeChild(workerInfo.frame);
+      doc.documentElement.removeChild(workerInfo.frame);
       delete workerInfos[url];
     }, 0);
   }
