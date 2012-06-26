@@ -124,34 +124,6 @@
   </panel>
 
   <menupopup
-    class="x-statusarea-popup"
-    id="x-statusarea-popupmenu"
-    anonid="x-statusarea-popup"
-    onpopupshown="social.toolbarStatusArea.onpopupshown(event)"
-    onpopupshowing="social.toolbarStatusArea.onpopupshowing(event)"
-    onpopuphidden="social.toolbarStatusArea.onpopuphidden(event)">
-
-    <!-- list of enabled services goes here -->
-    <menuseparator id="x-statusarea-providers-separator"/>
-    <menuitem id="x-statusarea-togglesidebar"
-              type="checkbox"
-              command="cmd_socialSidebarToggle">
-      <observes element="socialSidebarVisible" attribute="checked"/>
-      <observes element="socialEnabled" attribute="hidden"/>
-    </menuitem>
-    <!-- See above - why don't the observers set directly on the
-         command work such that we we need to have them here???
-    -->
-
-    <menuitem id="x-statusarea-togglesocial"
-              type="checkbox"
-              command="cmd_socialBrowsingToggle"/>
-
-    <menuseparator/>
-    <menuitem id="x-pref-menu" command="cmd_socialPreferences"/>
-  </menupopup>
-
-  <menupopup
     class="social-panel"
     id="social-statusarea-popup"
     type="arrow"
@@ -160,9 +132,9 @@
     onpopupshowing="social.toolbarStatusArea.onpopupshowing(event)"
     onpopuphidden="social.toolbarStatusArea.onpopuphidden(event)">
 
-<hbox id="social-panel-arrowbox" class="panel-arrowbox" flex="1" pack="start">
-  <image id="social-panel-arrow" class="panel-arrow" side="top"/>
-</hbox>
+      <hbox id="social-panel-arrowbox" class="panel-arrowbox" flex="1" pack="start">
+        <image id="social-panel-arrow" class="panel-arrow" side="top"/>
+      </hbox>
       <hbox id="social-statusarea-currentuser" class="social-statusarea-popup-current-user" pack="left" align="center">
         <image id="social-statusarea-popup-current-user-portrait"
                class="social-statusarea-popup-current-user-portrait"
@@ -186,6 +158,7 @@
       <menuitem id="social-statusarea-togglesocial"
               type="checkbox"
               command="cmd_socialBrowsingToggle"/>
+      <menuitem id="pref-menu" command="cmd_socialPreferences"/>
   </menupopup>
 
   <panel

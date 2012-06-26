@@ -173,7 +173,12 @@ SocialToolbarStatusArea.prototype = {
         let iconCounter = iconImage.nextSibling;
 
         iconImage.setAttribute("contentPanel", icon.contentPanel);
-        let imagesrc = /url\(['"](.*)['"]\)/.exec(icon.background)[1];
+        let imagesrc;
+        try {
+          imagesrc = /url\(['"]?(.*)['"]?\)/.exec(icon.background)[1];
+        } catch(e) {
+          imagesrc = icon.background;
+        }
         iconImage.setAttribute("src", imagesrc);
 
         if (icon.counter) {
@@ -280,10 +285,6 @@ function buildSocialPopupContents(window, socialpanel)
     else {
       menuitem.addEventListener("click", function(event) {
         preg.currentProvider = service;
-
-        window.document.getElementById("social-statusarea-popup-provider-submenu").hidePopup();
-        window.document.getElementById("social-statusarea-popup").hidePopup();
-
       });
     }
     container.appendChild(menuitem);//insertBefore(menuitem, before);
@@ -297,132 +298,4 @@ function buildSocialPopupContents(window, socialpanel)
       renderProviderMenuitem(service, subMenu);
     }
   });
-
-return;
-  try {
-
-    let menuitem;
-    let disabled = !window.social.enabled;
-
-    let rootDiv = window.document.getElementById("social-statusarea-user");
-    while (rootDiv.firstChild.nextSibling) {
-      rootDiv.removeChild(rootDiv.firstChild.nextSibling);
-    }
-
-    // if we are disabled we don't want the list of providers nor the separators
-    if (disabled) {
-      // do something
-    } else {
-      let makeMenuItem = function(label, extraClass) {
-        let menu = window.document.createElementNS(HTML_NS, "div");
-
-        var menuClass = "social-statusarea-popup-menuitem";
-        if (extraClass) menuClass += " " + extraClass;
-        menu.setAttribute("class", menuClass);
-        menu.appendChild(window.document.createTextNode(label));
-        return menu;
-      }
-      var HTML_NS = "http://www.w3.org/1999/xhtml";
-
-      // Render the current user element
-      let curUser = window.document.getElementById("social-statusarea-currentuser");
-      let userPortrait = window.document.getElementById("social-statusarea-popup-current-user-portrait");
-
-      let userNameLink = window.document.getElementById("social-statusarea-username");
-      userNameLink.addEventListener("click", function(evt) {
-        gBrowser.selectedTab = gBrowser.addTab(preg.currentProvider.origin);
-        evt.stopPropagation();
-        window.document.getElementById("social-statusarea-popup").hidePopup();
-        return false;
-      }, false);
-
-      // Render the menu
-      let switchItem = makeMenuItem("Switch social network", "social-statusarea-popup-menuitem-arrow");
-
-      // Re-implementing hierarchical menus here doesn't feel right.
-      // Could we get the styling we need with XUL menus?  (probably not: OS X is very hard to style)
-      let subMenuVisible = false;
-      let inSwitchItem = false;
-      let inSubmenu = false;
-      let subMenu = window.document.getElementById("social-statusarea-popup-provider-submenu");
-      let hideTimer;
-      let mouseLeaveGracePeriod = 150; // msec
-
-      let hideIfNecessary = function(evt) {
-        if (!inSwitchItem && !inSubmenu && subMenuVisible) {
-          subMenu.hidePopup();
-          subMenuVisible = false;
-        }
-      }
-      let switchItemMouseEnter = function(evt) {
-        inSwitchItem = true;
-        if (hideTimer) window.clearTimeout(hideTimer);
-        if (!subMenuVisible) {
-          subMenu.openPopup(switchItem, "end_before", 0, 0, false, false);
-          subMenuVisible = true;
-        }
-      }
-
-      let switchItemMouseLeave = function(evt) {
-        inSwitchItem = false;
-        if (hideTimer) window.clearTimeout(hideTimer);
-        hideTimer = window.setTimeout(hideIfNecessary, mouseLeaveGracePeriod);
-      }
-
-      let subMenuMouseEnter = function(evt) {
-        inSubmenu = true;
-        if (hideTimer) window.clearTimeout(hideTimer);
-      }
-      let subMenuMouseLeave = function(evt) {
-        inSubmenu = false;
-        if (hideTimer) window.clearTimeout(hideTimer);
-        hideTimer = window.setTimeout(hideIfNecessary, mouseLeaveGracePeriod);
-      }
-      switchItem.addEventListener("mouseenter", switchItemMouseEnter, false);
-      switchItem.addEventListener("mouseleave", switchItemMouseLeave, false);
-      subMenu.addEventListener("mouseenter", subMenuMouseEnter, false);
-      subMenu.addEventListener("mouseleave", subMenuMouseLeave, false);
-
-      let removeItem = makeMenuItem("Remove from Firefox");
-      let shrinkItem = makeMenuItem("Shrink sidebar");
-      rootDiv.appendChild(switchItem);
-      rootDiv.appendChild(removeItem);
-      rootDiv.appendChild(shrinkItem);
-
-      let broadcaster = document.getElementById("socialSidebarVisible");
-      if (broadcaster.getAttribute("checked") == "true") {
-        let hideItem = makeMenuItem("Hide sidebar");//XXX this doesn't work
-        rootDiv.appendChild(hideItem);
-        hideItem.addEventListener("click", function() {
-          broadcaster.setAttribute("checked", "false");
-          broadcaster.setAttribute("hidden", "true");
-          window.document.getElementById("social-statusarea-popup").hidePopup();
-        }, false);
-        rootDiv.appendChild(hideItem);
-      } else {
-        let showItem = makeMenuItem("Show sidebar");
-        rootDiv.appendChild(showItem);
-        showItem.addEventListener("click", function() {
-          broadcaster.setAttribute("checked", "true");
-          broadcaster.setAttribute("hidden", "false");
-          window.document.getElementById("social-statusarea-popup").hidePopup();
-        }, false);
-        rootDiv.appendChild(showItem);
-      }
-
-      // Put the list of providers in a submenu:
-      while (subMenu.firstChild) subMenu.removeChild(subMenu.firstChild);
-      preg.each(function(service) {
-        if (service.enabled) {
-          let submenuPanel = document.getElementById("social-statusarea-popup-provider-submenu");
-          renderProviderMenuitem(service, submenuPanel);
-        }
-      });
-
-    }
-  }
-  catch (e) {
-    Cu.reportError("Error creating socialpopupcontents: " + e);
-    dump(e.stack+"\n");
-  }
 }

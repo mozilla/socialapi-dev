@@ -1,13 +1,5 @@
 
 /* popups that hang off our toolbaritem */
-.social-statusarea-popup {
-  /*margin-top: 4px;*/
-  -moz-appearance: none;
-  -moz-margin-start: 3px;
-  border-radius: 0;
-}
-
-
 #social-statusarea-popup
 {
   margin-top:-4px;
@@ -22,14 +14,6 @@
   margin-bottom: -4px;
 }
 
-
-.social-statusarea-popup-containerx
-{
-  width:250px;
-  padding-bottom:6px;
-  cursor:pointer;
-  background-color:white;
-}
 .social-statusarea-popup-current-user
 {
   border-bottom:1px solid rgb(221,221,221);
@@ -67,62 +51,3 @@
   text-decoration:underline;
 }
 
-.social-statusarea-popup-menuitem
-{
-  font-family: "lucida grande",tahoma,verdana,arial,sans-serif;
-  font-size:12px;
-  color: rgb(122, 122, 122);
-  line-height:200%;
-  background-color:white;
-  padding-left:10px;
-  padding-right:10px;
-  width:230px;
-  cursor:default;
-}
-
-.social-statusarea-popup-menuitem:hover
-{
-  background-color:rgb(31,94,239);/*todo:gradient*/
-  color:white;
-}
-
-
-.social-statusarea-popup-menuitem-arrow
-{
-  background-image:url("chrome://socialapi/skin/arrow-right.png");
-  background-repeat:no-repeat;
-  background-position:right 12px center;
-}
-
-
-.social-statusarea-popup-menuitem-arrow:hover
-{
-  background-image:url("chrome://socialapi/skin/arrow-right-white.png");
-}
-
-.social-statusarea-provider-list {
-  position:relative;
-}
-
-.social-statusarea-provider-list img {
-  position:absolute;
-  left:20px;
-  top:4px;
-  width:16px;
-  height:16px;
-  display:inline-block;
-}
-
-.social-statusarea-provider-list-label
-{
-  position:relative;
-  left:32px;
-  font-family: "lucida grande",tahoma,verdana,arial,sans-serif;
-  font-size:12px;
-}
-
-.social-statusarea-provider-selected {
-  background-image:url("chrome://socialapi/skin/check.png");
-  background-repeat:no-repeat;
-  background-position:left 4px center;
-}
