@@ -192,12 +192,17 @@ SocialToolbarStatusArea.prototype = {
       }
 
       let userPortrait = document.getElementById("social-statusarea-popup-current-user-portrait")
-      userPortrait.setAttribute("id", "social-statusarea-popup-current-user-portrait");
       if (currentProvider.ambientNotificationPortrait) {
         userPortrait.setAttribute("src", currentProvider.ambientNotificationPortrait);
       } else {
         userPortrait.setAttribute("src", "chrome://socialapi/skin/social.png");
       }
+
+      let userNameBtn = document.getElementById("social-statusarea-username")
+      let userName = currentProvider.ambientNotificationUserName ? currentProvider.ambientNotificationUserName : "Current User";
+      if (userNameBtn.firstChild)
+        userNameBtn.removeChild(userNameBtn.firstChild);
+      userNameBtn.appendChild(window.document.createTextNode(userName));
 
     } catch (e) {
       Cu.reportError(e);
