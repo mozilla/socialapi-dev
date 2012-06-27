@@ -2,22 +2,19 @@
 /* popups that hang off our toolbaritem */
 #social-statusarea-popup
 {
-  margin-top:-4px;
-  -moz-appearance: none;
-  background: transparent;
-  margin-left: -26px;
-  margin-right: -26px;
+  margin-top:0px;
+  margin-left: -12px;
+  margin-right: -12px;
 }
+
 #social-statusarea-popup .panel-arrowbox {
-  background: transparent;
-  padding: 0 6px;
-  margin-bottom: -4px;
+  display: none;
 }
 
 .social-statusarea-popup-current-user
 {
   border-bottom:1px solid rgb(221,221,221);
-  background-color:white;
+  background-color:-moz-Dialog;
   color:black;
   cursor:default;
   position:relative;
@@ -50,4 +47,3 @@
 {
   text-decoration:underline;
 }
-
