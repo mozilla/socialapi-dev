@@ -212,10 +212,6 @@ SocialToolbarStatusArea.prototype = {
   showPopup: function(event) {
     let btn = document.getElementById('social-statusarea-service-image');
     let panel = document.getElementById("social-statusarea-popup");
-    panel.addEventListener("popuphiding", function onpopuphiding() {
-      panel.removeEventListener("popuphiding", onpopuphiding);
-      document.getElementById("social-toolbar").removeAttribute("open");
-    }, false);
     panel.openPopup(btn, "bottomcenter topleft", 0, 0, false, false);
     document.getElementById("social-toolbar").setAttribute("open", "true");
   },
@@ -231,6 +227,7 @@ SocialToolbarStatusArea.prototype = {
     if (aWindow.social.sidebar && aWindow.social.sidebar.browser) {
       aWindow.social.sidebar.browser.removeAttribute("toolbar-popup-visible");
     }
+    document.getElementById("social-toolbar").removeAttribute("open");
   },
   onpopupshowing: function(event) {
     let aWindow = event.target.ownerDocument.defaultView;

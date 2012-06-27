@@ -128,9 +128,9 @@
     id="social-statusarea-popup"
     type="arrow"
     orient="vertical"
-    onpopupshown="social.toolbarStatusArea.onpopupshown(event)"
-    onpopupshowing="social.toolbarStatusArea.onpopupshowing(event)"
-    onpopuphidden="social.toolbarStatusArea.onpopuphidden(event)">
+    onpopupshown="if (event.target == this) social.toolbarStatusArea.onpopupshown(event)"
+    onpopupshowing="if (event.target == this) social.toolbarStatusArea.onpopupshowing(event)"
+    onpopuphidden="if (event.target == this) social.toolbarStatusArea.onpopuphidden(event)">
 
       <hbox id="social-panel-arrowbox" class="panel-arrowbox" flex="1" pack="start">
         <image id="social-panel-arrow" class="panel-arrow" side="top"/>
