@@ -175,7 +175,7 @@ SocialToolbarStatusArea.prototype = {
         iconImage.setAttribute("contentPanel", icon.contentPanel);
         let imagesrc;
         try {
-          imagesrc = /url\(['"]?(.*)['"]?\)/.exec(icon.background)[1];
+          imagesrc = /url\((['"]?)(.*)(\1)\)/.exec(icon.background)[2];
         } catch(e) {
           imagesrc = icon.background;
         }
