@@ -19,7 +19,8 @@
         height="300"
         screenX="20"
         screenY="20"
-        persist="screenX screenY width height"
+        sizemode="normal"
+        persist="screenX screenY width height sizemode"
         chromemargin="0,-1,-1,-1"
         >
   <script type="application/x-javascript" src="chrome://socialapi/content/serviceWindow.js"/>

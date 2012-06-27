@@ -37,8 +37,12 @@ function serviceWindowMaker(options) {
 
   let ww = Cc["@mozilla.org/embedcomp/window-watcher;1"]
     .getService(Ci.nsIWindowWatcher);
+  // due to a conflict between some of the features which can be specified
+  // (notably the size options) and the XUL layout, we ignore features
+  // provided by the provider and use ones we know to work.
+  let features = "minimizable=yes,dialog=no,resizable=yes,scrollbars=yes";
   var window = ww.openWindow(null, 'chrome://socialapi/content/serviceWindow.xul',
-                             options.name, options.features, options);
+                             options.name, features, options);
 
   // We catch the first DOMContentLoaded, which means the XUL
   // document has loaded.

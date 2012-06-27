@@ -325,7 +325,7 @@ ClientPort.prototype = {
 function importScripts() {
   for (var i=0; i < arguments.length; i++) {
     // load the url *synchronously*
-    var scriptURL = _resolveURI(arguments[i]);
+    var scriptURL = arguments[i];
     var xhr = new XMLHttpRequest();
     xhr.open('GET', scriptURL, false);
     xhr.onreadystatechange = function(aEvt) {
@@ -369,14 +369,19 @@ function FrameWorker(url, clientWindow, name) {
 
   let workerInfo = workerInfos[url];
   if (!workerInfo) {
-    let hiddenDoc = Cc["@mozilla.org/appshell/appShellService;1"]
-                    .getService(Ci.nsIAppShellService)
-                    .hiddenDOMWindow.document;
-    // on OSX, using createElement fails, on Win, createElementNS fails with
-    // NS_ERROR_NOT_AVAILABLE, so just try both :)
+    let hiddenDoc = Services.appShell.hiddenDOMWindow.document;
     let frame = hiddenDoc.createElement("iframe");
     frame.setAttribute("type", "content");
-    frame.setAttribute("src", url);
+    hiddenDoc.documentElement.appendChild(frame);
+    let docShell = frame.contentWindow.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDocShell)
+
+    let webNav = docShell.QueryInterface(Ci.nsIWebNavigation);
+    // Disable some types of content
+    webNav.allowAuth = false;
+    webNav.allowPlugins = false;
+    webNav.allowImages = false;
+    webNav.allowWindowControl = false;
+    // TODO: disable media (bug 759964)
 
     // setup the workerInfo and add this connection to the pending queue
     workerInfo = workerInfos[url] = {
@@ -393,14 +398,14 @@ function FrameWorker(url, clientWindow, name) {
         }
         Services.obs.removeObserver(injectController, 'document-element-inserted', false);
 
-        let workerWindow = frame.contentWindow;
-        let sandbox = new Cu.Sandbox(workerWindow, { wantXHRConstructor: true });
+        let workerWindow = frame.contentWindow.wrappedJSObject;
+        let sandbox = new Cu.Sandbox(workerWindow);
         // copy the window apis onto the sandbox namespace only functions or
         // objects that are naturally a part of an iframe, I'm assuming they are
         // safe to import this way
         let workerAPI = ['MozWebSocket', 'WebSocket', 'localStorage',
                          'atob', 'btoa', 'clearInterval', 'clearTimeout', 'dump',
-                         'setInterval', 'setTimeout',
+                         'setInterval', 'setTimeout', 'XMLHttpRequest',
                          'MozBlobBuilder', 'FileReader', 'Blob',
                          'navigator', 'location'];
         workerAPI.forEach(function(fn) {
@@ -411,10 +416,6 @@ function FrameWorker(url, clientWindow, name) {
             Cu.reportError("failed to import API "+fn+"\n"+e+"\n");
           }
         });
-        // helper for XHR relative urls
-        sandbox._resolveURI = function fw_resolveURI(path) {
-          return Services.io.newURI(url, null, null).resolve(path);
-        }
 
         // and we delegate ononline and onoffline events to the worker.
         // See http://www.whatwg.org/specs/web-apps/current-work/multipage/workers.html#workerglobalscope
@@ -506,7 +507,7 @@ function FrameWorker(url, clientWindow, name) {
       }
     };
     Services.obs.addObserver(injectController, 'document-element-inserted', false);
-    hiddenDoc.documentElement.appendChild(frame);
+    frame.setAttribute("src", url);
   }
   else {
     // already have a worker - either queue or make the connection.
