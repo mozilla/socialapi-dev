@@ -155,6 +155,10 @@ SocialProvider.prototype = {
     if (!this.enabled) {
       throw new Error("cannot use disabled service "+this.origin);
     }
+    let target = Services.io.newURI(targetWindow.location.href, null, null);
+    if (this.origin != target.prePath) {
+      throw new Error("cannot use service worker "+this.origin+" for "+targetWindow.location.href);
+    }
     let self = this;
     this._log("attachToWindow");
     var worker = this.makeWorker(targetWindow.wrappedJSObject);
@@ -273,5 +277,5 @@ SocialProvider.prototype = {
   setAmbientNotificationUserName: function(username) {
     this.ambientNotificationUserName = username;
     Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
-  }  
+  }
 }
