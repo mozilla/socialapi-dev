@@ -24,6 +24,7 @@
   </broadcasterset>
 
   <commandset id="mainCommandSet">
+    <command id="cmd_socialProfile" oncommand="social.toolbarStatusArea.onProfileClick(event);"/>
     <command id="cmd_socialRecommend" oncommand="social.recommendButton.oncommand(event);"/>
     <command id="cmd_socialPreferences"
              label="&socialapi.prefslabel;"
@@ -141,7 +142,7 @@
                src="chrome://socialapi/skin/social.png"/>
         <vbox class="social-statusarea-popup-current-user-name">
           <label>Logged in as</label>
-          <button id="social-statusarea-username">Current User</button>
+          <button id="social-statusarea-username" command="cmd_socialProfile">Current User</button>
         </vbox>
       </hbox>
       <menu id="social-provider-menu" label="Switch social network">

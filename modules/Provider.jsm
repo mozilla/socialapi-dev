@@ -269,13 +269,8 @@ SocialProvider.prototype = {
     return icon;
   },
 
-  setAmbientNotificationPortrait: function(url) {
-    this.ambientNotificationPortrait = url;
-    Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
-  },
-
-  setAmbientNotificationUserName: function(username) {
-    this.ambientNotificationUserName = username;
-    Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
+  setProfileData: function(profile) {
+    this.profile = profile;
+    Services.obs.notifyObservers(null, "social-browsing-profile-changed", null);//XX which args?
   }
 }

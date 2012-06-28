@@ -171,11 +171,12 @@ workerAPI.prototype = {
       if (data.background) {
         this.service.setAmbientNotificationBackground(data.background);
       }
-      if (data.portrait) {
-        this.service.setAmbientNotificationPortrait(data.portrait);
-      }
-      if (data.userName) {
-        this.service.setAmbientNotificationUserName(data.userName);
+      if (data.portrait || data.userName || data.profileURL) {
+        this.service.setProfileData({
+          portrait: data.portrait,
+          userName: data.userName,
+          profileURL: data.profileURL
+        });
       }
     },
     'social.cookies-get': function(worker, data) {

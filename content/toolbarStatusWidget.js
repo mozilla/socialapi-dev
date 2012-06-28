@@ -71,10 +71,19 @@ function SocialToolbarStatusArea() {
   window.document.persist("nav-bar", "currentset");
 
   Services.obs.addObserver(this, 'social-browsing-ambient-notification-changed', false);
+  Services.obs.addObserver(this, 'social-browsing-profile-changed', false);
 }
 
 SocialToolbarStatusArea.prototype = {
   __proto__: baseWidget.prototype,
+
+  observe: function(aSubject, aTopic, aData) {
+    if (aTopic == 'social-browsing-profile-changed') {
+      this.updateProfile();
+    } else {
+      baseWidget.prototype.observe.call(this, aSubject, aTopic, aData);
+    }
+  },
 
   create: function(aWindow) {
   },
@@ -136,6 +145,29 @@ SocialToolbarStatusArea.prototype = {
     document.getElementById("social-toolbar").setAttribute("open", "true");
   },
 
+  onProfileClick: function(e) {
+    let currentProvider = registry().currentProvider;
+    openUILink(currentProvider.profile.profileURL);
+    document.getElementById("social-statusarea-popup").hidePopup();
+  },
+
+  updateProfile: function() {
+    let currentProvider = registry().currentProvider;
+    let userPortrait = document.getElementById("social-statusarea-popup-current-user-portrait")
+    if (currentProvider.profile.portrait) {
+      userPortrait.setAttribute("src", currentProvider.profile.portrait);
+    } else {
+      userPortrait.setAttribute("src", "chrome://socialapi/skin/social.png");
+    }
+
+    let userNameBtn = document.getElementById("social-statusarea-username")
+    let userName = currentProvider.profile.userName ? currentProvider.profile.userName : "Current User";
+    if (userNameBtn.firstChild)
+      userNameBtn.removeChild(userNameBtn.firstChild);
+    userNameBtn.appendChild(window.document.createTextNode(userName));
+
+  },
+
   renderAmbientNotification: function() {
     var self = this;
     try {
@@ -190,19 +222,6 @@ SocialToolbarStatusArea.prototype = {
           iconCounter.setAttribute("collapsed", "true");
         }
       }
-
-      let userPortrait = document.getElementById("social-statusarea-popup-current-user-portrait")
-      if (currentProvider.ambientNotificationPortrait) {
-        userPortrait.setAttribute("src", currentProvider.ambientNotificationPortrait);
-      } else {
-        userPortrait.setAttribute("src", "chrome://socialapi/skin/social.png");
-      }
-
-      let userNameBtn = document.getElementById("social-statusarea-username")
-      let userName = currentProvider.ambientNotificationUserName ? currentProvider.ambientNotificationUserName : "Current User";
-      if (userNameBtn.firstChild)
-        userNameBtn.removeChild(userNameBtn.firstChild);
-      userNameBtn.appendChild(window.document.createTextNode(userName));
 
     } catch (e) {
       Cu.reportError(e);
