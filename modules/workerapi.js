@@ -189,13 +189,12 @@ workerAPI.prototype = {
       if (data.iconURL) {
         this.service.setProviderIcon(data.iconURL);
       }
-      if (data.portrait || data.userName || data.profileURL) {
-        this.service.setProfileData({
-          portrait: data.portrait,
-          userName: data.userName,
-          profileURL: data.profileURL
-        });
-      }
+      this.service.setProfileData({
+        portrait: data.portrait,
+        userName: data.userName,
+        displayName: data.displayName || data.userName,
+        profileURL: data.profileURL
+      });
     },
     'social.cookies-get': function(worker, data) {
       let cm = Cc["@mozilla.org/cookiemanager;1"]
