@@ -246,6 +246,9 @@ SocialProvider.prototype = {
   },
 
   createAmbientNotificationIcon: function(name) {
+    if (!this.profile.userName) {
+      return null;
+    }
     // if we already have one named, return that
     if (!this.ambientNotificationIcons) this.ambientNotificationIcons = {};
     if (this.ambientNotificationIcons[name]) {
@@ -272,5 +275,9 @@ SocialProvider.prototype = {
   setProfileData: function(profile) {
     this.profile = profile;
     Services.obs.notifyObservers(null, "social-browsing-profile-changed", null);//XX which args?
+    if (!profile.userName) {
+      this.ambientNotificationIcons = {};
+      Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
+    }
   }
 }
