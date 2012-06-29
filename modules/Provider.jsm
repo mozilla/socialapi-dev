@@ -156,7 +156,7 @@ SocialProvider.prototype = {
       throw new Error("cannot use disabled service "+this.origin);
     }
     let target = Services.io.newURI(targetWindow.location.href, null, null);
-    if (this.origin != target.prePath) {
+    if (this.origin != target.prePath && target.prePath.indexOf("resource:") != 0) {
       throw new Error("cannot use service worker "+this.origin+" for "+targetWindow.location.href);
     }
     let self = this;
