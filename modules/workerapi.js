@@ -189,12 +189,17 @@ workerAPI.prototype = {
       if (data.iconURL) {
         this.service.setProviderIcon(data.iconURL);
       }
-      this.service.setProfileData({
+      let profile = {
         portrait: data.portrait,
         userName: data.userName,
         displayName: data.displayName || data.userName,
         profileURL: data.profileURL
-      });
+      };
+      // XXX support older messages for a little while
+      if (profile.portrait && !profile.userName) {
+        profile.userName = "No userName";
+      }
+      this.service.setProfileData(profile);
     },
     'social.cookies-get': function(worker, data) {
       let cm = Cc["@mozilla.org/cookiemanager;1"]
