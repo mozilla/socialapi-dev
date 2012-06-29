@@ -147,6 +147,9 @@ avoid additional http requests.
 **dispayName**
 > String, required.  Real name of the user used for display purposes in various UI elements.
 
+**profileURL**
+> String, required.  URL to the logged in users profile page.  This will be opened in a normal browser tab when the username is clicked on.
+
 
 ### `social.ambient-notification-update`
 
