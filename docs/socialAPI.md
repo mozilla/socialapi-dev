@@ -122,7 +122,7 @@ Ambient Notification Control
 ----------------------------
 ### `social.ambient-notification-area`
 
-Sent by the worker, to set the properties for the provider icon and user profile data used for the toolbar button.  If the users portrait and userName are absent, the button UI will indicate a logged out state.
+Sent by the worker, to set the properties for the provider icon and user profile data used for the toolbar button.  If the users portrait and userName are absent, the button UI will indicate a logged out state.  When indicating logged out state, status icons set via `social.ambient-notification-update` will be removed.
 
 *Argument:*
 **background** DEPRECATED, replaced by iconURL
@@ -153,7 +153,7 @@ avoid additional http requests.
 
 ### `social.ambient-notification-update`
 
-Sent by the worker, to update or create an ambient notification icon.  One is sent for each icon.
+Sent by the worker, to update or create an ambient notification icon.  One is sent for each icon.  A user must be logged in to show status icons, and you must call `social.ambient-notification-area` prior to calling `social.ambient-notification-update` to set status icons.
 
 *Argument:*
 **name**
