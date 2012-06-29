@@ -156,7 +156,7 @@ SocialProvider.prototype = {
       throw new Error("cannot use disabled service "+this.origin);
     }
     let target = Services.io.newURI(targetWindow.location.href, null, null);
-    if (this.origin != target.prePath) {
+    if (this.origin != target.prePath && target.prePath.indexOf("resource:") != 0) {
       throw new Error("cannot use service worker "+this.origin+" for "+targetWindow.location.href);
     }
     let self = this;
@@ -240,20 +240,23 @@ SocialProvider.prototype = {
 
   },
 
-  setAmbientNotificationBackground: function(background) {
-    this.ambientNotificationBackground = background;
+  setProviderIcon: function(iconURL) {
+    this.providerIcon = iconURL;
     Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
   },
 
   createAmbientNotificationIcon: function(name) {
+    if (!this.profile.userName) {
+      return null;
+    }
     // if we already have one named, return that
     if (!this.ambientNotificationIcons) this.ambientNotificationIcons = {};
     if (this.ambientNotificationIcons[name]) {
       return this.ambientNotificationIcons[name];
     }
     var icon = {
-      setBackground: function(backgroundText) {
-        icon.background = backgroundText;
+      setIcon: function(url) {
+        icon.url = url;
         Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
       },
       setCounter: function(counter) {
@@ -269,13 +272,12 @@ SocialProvider.prototype = {
     return icon;
   },
 
-  setAmbientNotificationPortrait: function(url) {
-    this.ambientNotificationPortrait = url;
-    Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
-  },
-
-  setAmbientNotificationUserName: function(username) {
-    this.ambientNotificationUserName = username;
-    Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
+  setProfileData: function(profile) {
+    this.profile = profile;
+    Services.obs.notifyObservers(null, "social-browsing-profile-changed", null);//XX which args?
+    if (!profile.userName) {
+      this.ambientNotificationIcons = {};
+      Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
+    }
   }
 }

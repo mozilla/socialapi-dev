@@ -1,0 +1,53 @@
+
+/* popups that hang off our toolbaritem */
+#social-statusarea-popup
+{
+  margin-top:-4px;
+  -moz-appearance: none;
+  background: transparent;
+  margin-left: -26px;
+  margin-right: -26px;
+}
+#social-statusarea-popup .panel-arrowbox {
+  background: transparent;
+  padding: 0 6px;
+  margin-bottom: -4px;
+}
+
+.social-statusarea-popup-current-user
+{
+  border-bottom:1px solid rgb(221,221,221);
+  background-color:white;
+  color:black;
+  cursor:default;
+  position:relative;
+}
+
+.social-statusarea-popup-current-user-portrait
+{
+  width:32px;
+  height:32px;
+  border-radius:2px;
+  margin:10px;
+}
+.social-statusarea-popup-current-user-name
+{
+  font-family: "lucida grande",tahoma,verdana,arial,sans-serif;
+  font-size:12px;
+}
+
+.social-statusarea-popup-current-user-name button
+{
+  -moz-appearance: none;
+  background: transparent;
+  border: none;
+  color: -moz-nativehyperlinktext;
+  cursor: pointer;
+  min-width: 0;
+  margin: 0 6px;
+}
+.social-statusarea-popup-current-user-name button:hover
+{
+  text-decoration:underline;
+}
+

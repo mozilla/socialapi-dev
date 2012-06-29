@@ -53,39 +53,6 @@
   list-style-image: url("chrome://socialapi/skin/social.png");
 }
 
-.social-notification-icon-container {
-  cursor: pointer;
-  height: 27px;
-  width: 24px;
-  position: relative;
-  margin-top: -5px;
-}
-.social-notification-icon-counter {
-  background-color: rgb(240,61,37);
-  border: 1px solid rgb(216,55,34);
-  box-shadow: 0px 1px 0px rgba(0,39,121,0.77);
-  padding-right: 1px;
-  padding-left: 1px;
-  color: white;
-  font-size: 9px;
-  font-weight: bold;
-  position: absolute;
-  right: -3px;
-  top: -1px;
-  z-index: 1;
-  text-align: center;
-  
-}
-.social-notification-icon-image {
-  width: 24px;
-  height: 31px;
-}
-.social-notification-icon-background-highlight {
-  opacity:0;
-  width:100%;
-  height:100%;
-  background-color:white;
-}
 .social-portrait-box {
   margin-right: 4px;
   margin-top: 0px;
@@ -96,9 +63,6 @@
 .social-portrait-image {
   width: 20px;
   height: 20px;
-}
-.social-notification-icon-background-highlight:hover {
-  opacity:0.3;
 }
 
 } /* @-moz-document url-prefix("chrome://browser/content/browser.xul") */

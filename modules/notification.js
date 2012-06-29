@@ -70,16 +70,17 @@ function Notification(iconUrl, title, body, notificationid, onclick, onhide) {
 function createAmbientNotification(service) {
   // need to return per-service accessors...
   return {
-    setBackground: function(background) {
-      service.setAmbientNotificationBackground(background);
+    setProviderIcon: function(url) {
+      service.setProviderIcon(url);
     },
-    
+
     createNotificationIcon: function(name) {
       return service.createAmbientNotificationIcon(name);
     },
 
     setPortrait: function(url) {
-      service.setAmbientNotificationPortrait(url);
+      service.profile.portrait = url;
+      service.setProfileData(service.profile);
     }
 
   }

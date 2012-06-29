@@ -154,9 +154,18 @@ workerAPI.prototype = {
       }
     },
     'social.ambient-notification-update': function(worker, data) {
+      // handle data for secondary status icons
       let ani = this.service.createAmbientNotificationIcon(data.name);
       if (data.background) {
-        ani.setBackground(data.background);
+        // backwards compat
+        try {
+          data.iconURL = /url\((['"]?)(.*)(\1)\)/.exec(data.background)[2];
+        } catch(e) {
+          data.iconURL = data.background;
+        }
+      }
+      if (data.iconURL) {
+        ani.setIcon(data.iconURL);
       }
       if (data.counter) {
         ani.setCounter(data.counter);
@@ -168,12 +177,29 @@ workerAPI.prototype = {
       }
     },
     'social.ambient-notification-area': function(worker, data) {
+      // handle the provider icon and user profile for the primary provider menu
       if (data.background) {
-        this.service.setAmbientNotificationBackground(data.background);
+        // backwards compat
+        try {
+          data.iconURL = /url\((['"]?)(.*)(\1)\)/.exec(data.background)[2];
+        } catch(e) {
+          data.iconURL = data.background;
+        }
       }
-      if (data.portrait) {
-        this.service.setAmbientNotificationPortrait(data.portrait);
+      if (data.iconURL) {
+        this.service.setProviderIcon(data.iconURL);
       }
+      let profile = {
+        portrait: data.portrait,
+        userName: data.userName,
+        displayName: data.displayName || data.userName,
+        profileURL: data.profileURL
+      };
+      // XXX support older messages for a little while
+      if (profile.portrait && !profile.userName) {
+        profile.userName = "No userName";
+      }
+      this.service.setProfileData(profile);
     },
     'social.cookies-get': function(worker, data) {
       let cm = Cc["@mozilla.org/cookiemanager;1"]

@@ -5,6 +5,8 @@
 ]>
 
 <?xml-stylesheet href="chrome://socialapi/skin/browser.css" type="text/css"?>
+<?xml-stylesheet href="chrome://socialapi-plat/skin/toolbar.css" type="text/css"?>
+<?xml-stylesheet href="chrome://socialapi-plat/skin/popups.css" type="text/css"?>
 <?xml-stylesheet href="chrome://socialapi-plat/skin/socialstatus.css" type="text/css"?>
 
 <overlay id="socialapi-overlay"
@@ -16,12 +18,13 @@
   <script type="application/x-javascript" src="chrome://socialapi/content/main.js"/>
 
   <broadcasterset>
-    <broadcaster id="socialInstalled" checked="false" hidden="true"/>
+    <broadcaster id="socialInstalled" hidden="true"/>
     <broadcaster id="socialEnabled" checked="false" hidden="true"/>
     <broadcaster id="socialSidebarVisible" checked="false" hidden="true"/>
   </broadcasterset>
 
   <commandset id="mainCommandSet">
+    <command id="cmd_socialProfile" oncommand="social.toolbarStatusArea.onProfileClick(event);"/>
     <command id="cmd_socialRecommend" oncommand="social.recommendButton.oncommand(event);"/>
     <command id="cmd_socialPreferences"
              label="&socialapi.prefslabel;"
@@ -71,61 +74,39 @@
 <!--<toolbarpalette id="BrowserToolbarPalette">-->
 <toolbar id="nav-bar">
   <toolbaritem
-    id="social-status-area-container"
-    class="chromeclass-toolbar-additional social-status-area-container"
+    id="social-toolbar"
+    class="toolbarbutton-1 chromeclass-toolbar-additional"
     removable="true"
     observes="socialInstalled"
     title="Social status area">
 
-    <div class="social-statusarea-contentbox" flex="1">
-      <box>
-        <button class="social-statusarea-service-button"
-                      type="menu"
-                      anonid="social-statusarea-service-button">
-          <image
-              id="social-statusarea-service-image"
-              class="social-statusarea-service-image"
-              src="chrome://socialapi/skin/social.png"/>
-
-            <image class="social-statusarea-dropmarker-image"/>
-            <menupopup
-              class="social-statusarea-popup"
-              id="social-statusarea-popup"
-              anonid="social-statusarea-popup"
-              onpopupshown="social.toolbarStatusArea.onpopupshown(event)"
-              onpopupshowing="social.toolbarStatusArea.onpopupshowing(event)"
-              onpopuphidden="social.toolbarStatusArea.onpopuphidden(event)">
-
-              <!-- list of enabled services goes here -->
-              <menuseparator id="social-statusarea-providers-separator"/>
-              <menuitem id="social-statusarea-togglesidebar"
-                        type="checkbox"
-                        command="cmd_socialSidebarToggle">
-                <observes element="socialSidebarVisible" attribute="checked"/>
-                <observes element="socialEnabled" attribute="hidden"/>
-              </menuitem>
-              <!-- See above - why don't the observers set directly on the
-                   command work such that we we need to have them here???
-              -->
-
-              <menuitem id="social-statusarea-togglesocial"
-                        type="checkbox"
-                        command="cmd_socialBrowsingToggle"/>
-
-              <menuseparator/>
-              <menuitem id="social-pref-menu" command="cmd_socialPreferences"/>
-            </menupopup>
-        </button>
-      </box>
-      <hbox id="social-status-content-container"
-            class="social-status-content-container"
+      <hbox id="social-toolbar-button" class="social-statusarea-container">
+        <image
+            id="social-statusarea-service-image"
+            class="social-statusarea-service-image"
+            src="chrome://socialapi/skin/social.png"
             observes="socialEnabled"
-            hidden="true">
+            onclick="social.toolbarStatusArea.showPopup(event)"/>
+        <hbox id="social-statis-iconbox" class="social-buttonbar" flex="1" style="display: none">
+          <box class="social-notification-icon-container" collapsed="true">
+            <image class="social-notification-icon-image" onclick="social.toolbarStatusArea.showAmbientPopup(this)"/>
+            <box class="social-notification-icon-counter" collapsed="true"/>
+          </box>
+          <box class="social-notification-icon-container" collapsed="true">
+            <image class="social-notification-icon-image" onclick="social.toolbarStatusArea.showAmbientPopup(this)"/>
+            <box class="social-notification-icon-counter" collapsed="true"/>
+          </box>
+          <box class="social-notification-icon-container" collapsed="true">
+            <image class="social-notification-icon-image" onclick="social.toolbarStatusArea.showAmbientPopup(this)"/>
+            <box class="social-notification-icon-counter" collapsed="true"/>
+          </box>
+        </hbox>
       </hbox>
-    </div>
   </toolbaritem>
 </toolbar>
 <!--</toolbarpalette>-->
+
+
 
 <hbox id="urlbar-icons">
   <image id="social-recommend-button"
@@ -142,6 +123,50 @@
          onpopuphiding="window.document.getElementById('social-notification-browser').setAttribute('src', 'about:blank');">
     <browser id="social-notification-browser" type="content" flex="1"/>
   </panel>
+
+  <menupopup
+    class="social-panel"
+    id="social-statusarea-popup"
+    type="arrow"
+    orient="vertical"
+    onpopupshown="if (event.target == this) social.toolbarStatusArea.onpopupshown(event)"
+    onpopupshowing="if (event.target == this) social.toolbarStatusArea.onpopupshowing(event)"
+    onpopuphidden="if (event.target == this) social.toolbarStatusArea.onpopuphidden(event)">
+
+      <hbox id="social-panel-arrowbox" class="panel-arrowbox" flex="1" pack="start">
+        <image id="social-panel-arrow" class="panel-arrow" side="top"/>
+      </hbox>
+      <hbox id="social-statusarea-currentuser" class="social-statusarea-popup-current-user" pack="left" align="center">
+        <image id="social-statusarea-popup-current-user-portrait"
+               class="social-statusarea-popup-current-user-portrait"
+               src="chrome://socialapi/skin/social.png"/>
+        <vbox class="social-statusarea-popup-current-user-name">
+          <label id="social-login-status">Logged in as</label>
+          <button id="social-statusarea-username" command="cmd_socialProfile">Current User</button>
+        </vbox>
+      </hbox>
+      <menu id="social-provider-menu" label="Switch social network">
+        <menupopup id="social-provider-menupopup">
+        </menupopup>
+      </menu>
+      <menuitem label="Shrink sidebar"/>
+      <menuitem id="social-statusarea-togglesidebar"
+                type="checkbox"
+                command="cmd_socialSidebarToggle">
+        <observes element="socialSidebarVisible" attribute="checked"/>
+        <observes element="socialEnabled" attribute="hidden"/>
+      </menuitem>
+      <menuitem id="social-statusarea-togglesocial"
+              type="checkbox"
+              command="cmd_socialBrowsingToggle"/>
+      <menuitem id="pref-menu" command="cmd_socialPreferences"/>
+  </menupopup>
+
+  <panel
+    class="social-panel-provider-submenu"
+    id="social-statusarea-popup-provider-submenu">
+  </panel>
+
 </popupset>
 
 <!-- the social sidebar -->
