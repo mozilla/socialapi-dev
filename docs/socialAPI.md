@@ -122,7 +122,7 @@ Ambient Notification Control
 ----------------------------
 ### `social.ambient-notification-area`
 
-Sent by the worker, to set the properties for the provider icon and user profile data used for the toolbar button.
+Sent by the worker, to set the properties for the provider icon and user profile data used for the toolbar button.  If the users portrait and userName are absent, the button UI will indicate a logged out state.
 
 *Argument:*
 **background** DEPRECATED, replaced by iconURL
@@ -142,7 +142,7 @@ of the user.  The portrait can be a data url with encoded image to
 avoid additional http requests.
 
 **userName**
-> String, required.  Account name displayed with the portrait in the provider menu.
+> String, optional.  Account name displayed with the portrait in the provider menu.
 
 **dispayName**
 > String, required.  Real name of the user used for display purposes in various UI elements.
