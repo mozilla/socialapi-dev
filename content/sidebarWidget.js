@@ -71,7 +71,7 @@ SocialSidebar.prototype = {
       // that, but we still need to do both for enable/disable to properly work
     }
     // setting isAppTab causes clicks to open new tabs
-    //sbrowser.docShell.isAppTab = true;
+    sbrowser.docShell.isAppTab = true;
   },
   enable: function() {
     // XXX - this is wrong and needs refactoring.
