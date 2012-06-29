@@ -141,7 +141,7 @@
                class="social-statusarea-popup-current-user-portrait"
                src="chrome://socialapi/skin/social.png"/>
         <vbox class="social-statusarea-popup-current-user-name">
-          <label>Logged in as</label>
+          <label id="social-login-status">Logged in as</label>
           <button id="social-statusarea-username" command="cmd_socialProfile">Current User</button>
         </vbox>
       </hbox>

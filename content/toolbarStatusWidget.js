@@ -160,12 +160,20 @@ SocialToolbarStatusArea.prototype = {
       userPortrait.setAttribute("src", "chrome://socialapi/skin/social.png");
     }
 
+    let loginLabel = document.getElementById("social-login-status");
     let userNameBtn = document.getElementById("social-statusarea-username")
-    let userName = currentProvider.profile.userName ? currentProvider.profile.userName : "Current User";
+    if (loginLabel.firstChild)
+      loginLabel.removeChild(loginLabel.firstChild);
     if (userNameBtn.firstChild)
       userNameBtn.removeChild(userNameBtn.firstChild);
-    userNameBtn.appendChild(window.document.createTextNode(userName));
-
+    if (currentProvider.profile.userName) {
+      loginLabel.appendChild(window.document.createTextNode("Logged in as"));
+      userNameBtn.removeAttribute("collapsed");
+      userNameBtn.appendChild(window.document.createTextNode(currentProvider.profile.userName));
+    } else {
+      loginLabel.appendChild(window.document.createTextNode("Not logged in"));
+      userNameBtn.setAttribute("collapsed", "true");
+    }
   },
 
   renderAmbientNotification: function() {
