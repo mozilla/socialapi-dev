@@ -133,11 +133,13 @@ using sprite icons produces incorrect results.
 
 **iconURL**
 > String, required.  If supplied, specifies the URL to a 16x16 pixel image
-used for the status icon.
+used for the status icon. The iconURL can be a data url with encoded image to
+avoid additional http requests. (e.g. "data:image/png;base64,...data...")
 
 **portrait**
 > String, optional.  If supplied, specifies the URL to a 48x48 pixel image
-of the user.
+of the user.  The portrait can be a data url with encoded image to
+avoid additional http requests.
 
 **userName**
 > String, required.  Account name displayed with the portrait in the provider menu.
@@ -164,7 +166,8 @@ using sprite icons produces incorrect results.
 
 **iconURL**
 > String, optional.  If supplied, specifies the URL to a 16x16 pixel image
-used for the status icon.
+used for the status icon.  The iconURL can be a data url with encoded image to
+avoid additional http requests. (e.g. "data:image/png;base64,...data...")
 
 **counter**
 > Number, optional.  Specifies a number that will be overlaid over the icon,
