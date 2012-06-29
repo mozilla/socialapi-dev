@@ -87,7 +87,7 @@ var apiPort;
 
 onconnect = function(e) {
     port = e.ports[0];
-    apiPort.onmessage = function (msgEvent) 
+    apiPort.onmessage = function (msgEvent)
     {
         var msg = msgEvent.data;
         if (msg.topic == "social.port-closing") {
@@ -122,20 +122,33 @@ Ambient Notification Control
 ----------------------------
 ### `social.ambient-notification-area`
 
-Sent by the worker, to set the properties for the ambient notification area.
+Sent by the worker, to set the properties for the provider icon and user profile data used for the toolbar button.
 
 *Argument:*
-**background**
+**background** DEPRECATED, replaced by iconURL
 > String, optional.  If supplied, specifies the CSS value for the background
-of the area.  Typically this will just supply a background color.
+of the area.  Typically this will just supply a background color.  UPDATE: the
+data url is parsed to provide the iconURL.  This currently works, however
+using sprite icons produces incorrect results.
+
+**iconURL**
+> String, required.  If supplied, specifies the URL to a 16x16 pixel image
+used for the status icon.
 
 **portrait**
-> String, optional.  If supplied, specifies the URL to a small, square image
+> String, optional.  If supplied, specifies the URL to a 48x48 pixel image
 of the user.
+
+**userName**
+> String, required.  Account name displayed with the portrait in the provider menu.
+
+**dispayName**
+> String, required.  Real name of the user used for display purposes in various UI elements.
+
 
 ### `social.ambient-notification-update`
 
-Sent by the worker, to update or create an ambient notification icon.
+Sent by the worker, to update or create an ambient notification icon.  One is sent for each icon.
 
 *Argument:*
 **name**
@@ -143,10 +156,15 @@ Sent by the worker, to update or create an ambient notification icon.
 it effectively creates a new icon.  If the same name is used in subsequent
 calls, the existing icon is updated.
 
-**background**
+**background** DEPRECATED, replaced by iconURL
 > String, optional.  If supplied, specifies the CSS value for the background
-of the icon.  This string will typically include a `url()` portion which
-specifies an image to use.
+of the area.  Typically this will just supply a background color.  UPDATE: the
+data url is parsed to provide the iconURL.  This currently works, however
+using sprite icons produces incorrect results.
+
+**iconURL**
+> String, optional.  If supplied, specifies the URL to a 16x16 pixel image
+used for the status icon.
 
 **counter**
 > Number, optional.  Specifies a number that will be overlaid over the icon,
@@ -178,7 +196,7 @@ NOTE: No way of allowing duration and no way exposed to "cancel" a notification 
 > String: The body of the notification message.  This body will be rendered as a hyperlink and may be clicked.  HTML markup is not supported.
 
 ** id **
-> String: An optional ID for the notification.  This ID will not be displayed but will be passed back via a `social.notification-click` event if the user clicks on the notification.  If null or an empty string, the body will not be rendered as a hyperlink and no notification will be sent on click.  
+> String: An optional ID for the notification.  This ID will not be displayed but will be passed back via a `social.notification-click` event if the user clicks on the notification.  If null or an empty string, the body will not be rendered as a hyperlink and no notification will be sent on click.
 
 
 ### `social.notification-click`
@@ -267,7 +285,7 @@ Methods:
 --------
 ### `navigator.mozSocial.getWorker()`
 
-returns a reference to the Service Worker. 
+returns a reference to the Service Worker.
 
 The content can then call postMessage on it as normal.  Messages posted this way may be private implementation messages or any of the standard `social.` messages described above.
 
@@ -371,7 +389,7 @@ Message Serialization
 =====================
 
 For a message with topic `topic` and arguments (arg1:val1, arg2:val2), construct an object like:
-    
+
     { topic: topic, arg1: val1, arg2: val2 }
 
 
@@ -435,7 +453,7 @@ Example interactions / expected implementation flow
 * The service worker catches the "hello" message and adds the sidebarContentWindow to a list of event sinks.
 * The sidebar content may then perform more elaborate publish-subscribe handshaking, to limit what events it receives.
 * When the service receives events from the server (or from other content), it invokes postMessage on each window reference that was previously saved. The sidebar redraws as needed.
-* If the user clicks in the sidebar to e.g. open a chat window, window.open is invoked and a new window is created. The chat window registers with the service by using mozSocial.getWorker().postMessage("hello") and receives a message back telling it who to open a chat with. The service might then deliver server-pushed events to the chat window, perhaps through a publish-subscribe system. 
+* If the user clicks in the sidebar to e.g. open a chat window, window.open is invoked and a new window is created. The chat window registers with the service by using mozSocial.getWorker().postMessage("hello") and receives a message back telling it who to open a chat with. The service might then deliver server-pushed events to the chat window, perhaps through a publish-subscribe system.
 
 To Figure Out
 =============
@@ -445,5 +463,4 @@ To Figure Out
 3. Can sidebar content cause itself to be hidden, minimized, maximized?
 4. Can serviceWindows cause themselves to be hidden, minimized, maximized, resized?
 5. Still need to figure out panels popping out of sidebar, especially in minimized mode; position, sizing, asynchrony.
-6. Punting on any questions of content-talking-to-service right now, or vice-versa. Two worlds for now. Preference is for markup. 
-
+6. Punting on any questions of content-talking-to-service right now, or vice-versa. Two worlds for now. Preference is for markup.

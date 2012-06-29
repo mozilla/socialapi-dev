@@ -154,9 +154,18 @@ workerAPI.prototype = {
       }
     },
     'social.ambient-notification-update': function(worker, data) {
+      // handle data for secondary status icons
       let ani = this.service.createAmbientNotificationIcon(data.name);
       if (data.background) {
-        ani.setBackground(data.background);
+        // backwards compat
+        try {
+          data.iconURL = /url\((['"]?)(.*)(\1)\)/.exec(data.background)[2];
+        } catch(e) {
+          data.iconURL = data.background;
+        }
+      }
+      if (data.iconURL) {
+        ani.setIcon(data.iconURL);
       }
       if (data.counter) {
         ani.setCounter(data.counter);
@@ -168,8 +177,17 @@ workerAPI.prototype = {
       }
     },
     'social.ambient-notification-area': function(worker, data) {
+      // handle the provider icon and user profile for the primary provider menu
       if (data.background) {
-        this.service.setAmbientNotificationBackground(data.background);
+        // backwards compat
+        try {
+          data.iconURL = /url\((['"]?)(.*)(\1)\)/.exec(data.background)[2];
+        } catch(e) {
+          data.iconURL = data.background;
+        }
+      }
+      if (data.iconURL) {
+        this.service.setProviderIcon(data.iconURL);
       }
       if (data.portrait || data.userName || data.profileURL) {
         this.service.setProfileData({

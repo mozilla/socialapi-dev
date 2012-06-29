@@ -240,8 +240,8 @@ SocialProvider.prototype = {
 
   },
 
-  setAmbientNotificationBackground: function(background) {
-    this.ambientNotificationBackground = background;
+  setProviderIcon: function(iconURL) {
+    this.providerIcon = iconURL;
     Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
   },
 
@@ -252,8 +252,8 @@ SocialProvider.prototype = {
       return this.ambientNotificationIcons[name];
     }
     var icon = {
-      setBackground: function(backgroundText) {
-        icon.background = backgroundText;
+      setIcon: function(url) {
+        icon.url = url;
         Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
       },
       setCounter: function(counter) {

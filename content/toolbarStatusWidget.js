@@ -185,7 +185,11 @@ SocialToolbarStatusArea.prototype = {
       this.debugLog("Rendering toolbar status are; current provider is " + currentProvider.origin);
       if (window.social.enabled) {
         var image = window.document.getElementById("social-statusarea-service-image");
-        image.setAttribute("src", currentProvider.iconURL);
+        if (currentProvider.providerIcon) {
+          image.setAttribute("src", currentProvider.providerIcon);
+        } else {
+          image.setAttribute("src", currentProvider.iconURL);
+        }
       }
 
       var iconBox = window.document.getElementById("social-statis-iconbox");
@@ -205,13 +209,7 @@ SocialToolbarStatusArea.prototype = {
         let iconCounter = iconImage.nextSibling;
 
         iconImage.setAttribute("contentPanel", icon.contentPanel);
-        let imagesrc;
-        try {
-          imagesrc = /url\((['"]?)(.*)(\1)\)/.exec(icon.background)[2];
-        } catch(e) {
-          imagesrc = icon.background;
-        }
-        iconImage.setAttribute("src", imagesrc);
+        iconImage.setAttribute("src", icon.url);
 
         if (icon.counter) {
           if (iconCounter.firstChild)
