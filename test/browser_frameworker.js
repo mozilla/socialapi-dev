@@ -1,5 +1,5 @@
 let modules = {};
-Cu.import("resource://socialapi/modules/Frameworker.jsm", modules);
+Cu.import("resource://socialapi/modules/FrameWorker.jsm", modules);
 
 function makeWorkerUrl(runner) {
   return "data:application/javascript," + encodeURI("let run=" + runner.toSource()) + ";run();"
