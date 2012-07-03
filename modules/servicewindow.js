@@ -90,6 +90,12 @@ function wrapServiceWindowForContent(aWindow)
 // Passed to services to allow them to create new windows for themselves.
 function createServiceWindow(toURL, name, options, withService, title, readyCallback)
 {
+  // toURL must be same-origin as provider
+  let toURI = Services.io.newURI(toURL, null, null);
+  if (withService.origin != toURI.prePath && toURI.prePath.indexOf("resource:") != 0) {
+    throw new Error("service window url must be same-origin as provider");
+  }
+
   // See if we've already got one...
   let windows = Services.wm.getEnumerator(null);
   while (windows.hasMoreElements()) {

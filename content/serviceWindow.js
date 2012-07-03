@@ -1,5 +1,6 @@
 let Ci = Components.interfaces;
 let Cu = Components.utils;
+let Cr = Components.results;
 
 function SecurityStatusListener() {
   return {
@@ -61,6 +62,12 @@ function SecurityStatusListener() {
     onLocationChange: function(/*in nsIWebProgress*/ aWebProgress,
                           /*in nsIRequest*/ aRequest,
                           /*in nsIURI*/ aLocation) {
+      // ensure any location change is same-origin as the service
+      if (window.service.origin != aLocation.prePath && aLocation.prePath.indexOf("resource:") != 0) {
+        aRequest.cancel(Cr.NS_BINDING_ABORTED);
+        return;
+      }
+
       this.securityDisplay.setAttribute('label', aLocation.host);
     },
 
@@ -121,8 +128,8 @@ Object.defineProperty(window, "browser", {
 });
 
 var options = window.arguments[0].wrappedJSObject;
-dump("window options are "+JSON.stringify(window.arguments)+"\n");
 window.addEventListener('load', function() {
+  browser.docShell.isAppTab = true; // external clicks to browser tabs
   browser.addProgressListener(SecurityStatusListener(),
                             Ci.nsIWebProgress.NOTIFY_ALL);
   document.title = options.title;
