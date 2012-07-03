@@ -156,6 +156,7 @@ workerAPI.prototype = {
     'social.ambient-notification-update': function(worker, data) {
       // handle data for secondary status icons
       let ani = this.service.createAmbientNotificationIcon(data.name);
+      if (!ani) return;
       if (data.background) {
         // backwards compat
         try {

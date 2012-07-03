@@ -246,7 +246,7 @@ SocialProvider.prototype = {
   },
 
   createAmbientNotificationIcon: function(name) {
-    if (!this.profile.userName) {
+    if (!this.profile || !this.profile.userName) {
       return null;
     }
     // if we already have one named, return that
