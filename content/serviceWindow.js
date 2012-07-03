@@ -20,7 +20,7 @@ function SecurityStatusListener() {
       delete this.securityDisplay;
       return this.securityDisplay = document.getElementById("security-display");
     },
-    
+
     QueryInterface: function(aIID) {
       if (aIID.equals(Ci.nsIWebProgressListener)   ||
           aIID.equals(Ci.nsIWebProgressListener2)  ||
@@ -45,7 +45,7 @@ function SecurityStatusListener() {
         this.securityLabel.collapsed = false;
       }
     },
-  
+
     onProgressChange: function(/*in nsIWebProgress*/ aWebProgress,
                           /*in nsIRequest*/ aRequest,
                           /*in long*/ aCurSelfProgress,
@@ -57,21 +57,19 @@ function SecurityStatusListener() {
         this.statusMeter.value = percentage;
       }
     },
-  
+
     onLocationChange: function(/*in nsIWebProgress*/ aWebProgress,
                           /*in nsIRequest*/ aRequest,
                           /*in nsIURI*/ aLocation) {
-      // XXX this needs to be cleaned up to handle differences better, the
-      // callback url should be configurable as well
       this.securityDisplay.setAttribute('label', aLocation.host);
     },
-  
+
     onStatusChange: function(/*in nsIWebProgress*/ aWebProgress,
                         /*in nsIRequest*/ aRequest,
                         /*in nsresult*/ aStatus,
                         /*in wstring*/ aMessage) {
     },
-  
+
     onSecurityChange: function(/*in nsIWebProgress*/ aWebProgress,
                           /*in nsIRequest*/ aRequest,
                           /*in unsigned long*/ aState) {
@@ -83,7 +81,7 @@ function SecurityStatusListener() {
                                 Ci.nsIWebProgressListener.STATE_SECURE_LOW;
       var browser = document.getElementById("browser");
       var level;
-      
+
       switch (aState & wpl_security_bits) {
         case Ci.nsIWebProgressListener.STATE_IS_SECURE | Ci.nsIWebProgressListener.STATE_SECURE_HIGH:
           level = "high";
@@ -134,4 +132,3 @@ window.addEventListener('load', function() {
 window.loadURI = function loadURI(URI) {
   browser.setAttribute('src', URI);
 }
-
