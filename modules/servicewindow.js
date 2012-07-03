@@ -90,7 +90,6 @@ function wrapServiceWindowForContent(aWindow)
 // Passed to services to allow them to create new windows for themselves.
 function createServiceWindow(toURL, name, options, withService, title, readyCallback)
 {
-
   // See if we've already got one...
   let windows = Services.wm.getEnumerator(null);
   while (windows.hasMoreElements()) {
