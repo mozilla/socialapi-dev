@@ -76,7 +76,11 @@ SocialSidebar.prototype = {
             Cu.reportError("unable to load new location, "+sbrowser.service.origin+" != "+aLocation.prePath);
             return;
           }
-        }
+        },
+        onStateChange: function() {},
+        onStatusChange: function() {},
+        onProgressChange: function() {},
+        onSecurityChange: function() {}
       };
       sbrowser.addProgressListener(sbrowser.watcher, Ci.nsIWebProgress.NOTIFY_STATE_DOCUMENT);
     });
