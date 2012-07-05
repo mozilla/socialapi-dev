@@ -11,7 +11,7 @@
  *  Shane Caraveo <scaraveo@mozilla.com>
  */
 
-const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
+const {classes: Cc, interfaces: Ci, utils: Cu, results: Cr} = Components;
 
 Cu.import("resource://gre/modules/Services.jsm");
 let frameworker = {};
@@ -144,6 +144,42 @@ SocialProvider.prototype = {
   },
 
   /**
+   * returns an nsIWebProgressListener that knows how to block the use of window.location
+   * to change to a url that is not same-origin as the provider
+   */
+  getWebListener: function() {
+    // prevent location changes outside our domain
+    let self = this;
+    return {
+      QueryInterface: function(aIID) {
+        if (aIID.equals(Ci.nsIWebProgressListener)   ||
+            aIID.equals(Ci.nsISupportsWeakReference) ||
+            aIID.equals(Ci.nsISupports))
+          return this;
+        throw Components.results.NS_NOINTERFACE;
+      },
+      onStateChange: function(/*in nsIWebProgress*/ aWebProgress,
+                         /*in nsIRequest*/ aRequest,
+                         /*in unsigned long*/ aStateFlags,
+                         /*in nsresult*/ aStatus) {
+        // we have to block during STATE_START to prevent the current page onloading
+        // and leaving about:blank in our service window.
+        if (aStateFlags & Ci.nsIWebProgressListener.STATE_START && aRequest.name) {
+          let rURI = Services.io.newURI(aRequest.name, null, null);
+          if (self.origin != rURI.prePath && rURI.prePath.indexOf("resource:") != 0) {
+            aRequest.cancel(Cr.NS_BINDING_ABORTED);
+            return;
+          }
+        }
+      },
+      onProgressChange: function() {},
+      onLocationChange: function() {},
+      onStatusChange: function() {},
+      onSecurityChange: function() {}
+    }
+  },
+
+  /**
    * attachToWindow
    *
    * loads sandboxed support functions and socialAPI into content panels for
@@ -187,7 +223,36 @@ SocialProvider.prototype = {
           return worker;
         },
         openServiceWindow: function(toURL, name, options, title, readyCallback) {
-          return createServiceWindow(toURL, name, options, self, title, readyCallback);
+          let fullURL = Services.io.newURI(targetWindow.location.href,null,null).resolve(toURL);
+          let dURI = Services.io.newURI(fullURL, null, null);
+          if (self.origin != dURI.prePath && dURI.prePath.indexOf("resource:") != 0) {
+            Cu.reportError("unable to load new location, "+self.origin+" != "+dURI.prePath);
+            return undefined;
+          }
+
+          // See if we've already got one...
+          let xulw = Services.ww.getWindowByName(name, targetWindow);
+          if (xulw)
+            return xulw;
+
+          let thewin = targetWindow.openDialog(fullURL, name, "chrome=no,dialog=no,"+options);
+          var xulWindow = thewin.document.defaultView.QueryInterface(Ci.nsIInterfaceRequestor)
+                         .getInterface(Ci.nsIWebNavigation)
+                         .QueryInterface(Ci.nsIDocShellTreeItem)
+                         .rootTreeItem
+                         .QueryInterface(Ci.nsIInterfaceRequestor)
+                         .getInterface(Ci.nsIDOMWindow);
+          // give the window a reference to the service provider object
+          xulWindow.service = self;
+          // hook up our weblistener to prevent redirects to other sites
+          let content = xulWindow.document.getElementById("content");
+          content.addProgressListener(self.getWebListener());
+          // we dont want the default title the browser produces, we'll fixup whenever it changes
+          xulWindow.addEventListener("DOMTitleChanged", function() {
+            var sep = xulWindow.document.documentElement.getAttribute("titlemenuseparator");
+            xulWindow.document.title = xulWindow.service.name + sep + thewin.document.title;
+          });
+          return thewin;
         },
         hasBeenIdleFor: function(ms) {
           const idleService = Cc["@mozilla.org/widget/idleservice;1"].getService(Ci.nsIIdleService);

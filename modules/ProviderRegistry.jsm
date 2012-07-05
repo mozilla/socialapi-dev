@@ -84,7 +84,7 @@ function ProviderRegistry(createCallback) {
                      .QueryInterface(Ci.nsIInterfaceRequestor)
                      .getInterface(Ci.nsIDOMWindow);
       // our service windows simply have browser attached to them
-      var sbrowser = xulWindow.document.getElementById("social-status-sidebar-browser") || xulWindow.browser;
+      var sbrowser = xulWindow.service ? xulWindow.gBrowser.selectedBrowser : xulWindow.document.getElementById("social-status-sidebar-browser");
       var panelbrowser = xulWindow.document.getElementById("social-notification-browser");
       if (panelbrowser && panelbrowser.contentDocument == doc) sbrowser = panelbrowser;
 
