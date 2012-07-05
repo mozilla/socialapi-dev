@@ -16,6 +16,7 @@ const {classes: Cc, interfaces: Ci, utils: Cu, results: Cr} = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 let frameworker = {};
 Cu.import("resource://socialapi/modules/FrameWorker.jsm", frameworker);
+Cu.import("resource://socialapi/modules/SocialServiceWindow.jsm");
 Cu.import("resource://socialapi/modules/servicewindow.js");
 Cu.import("resource://socialapi/modules/workerapi.js");
 
@@ -223,36 +224,7 @@ SocialProvider.prototype = {
           return worker;
         },
         openServiceWindow: function(toURL, name, options, title, readyCallback) {
-          let fullURL = Services.io.newURI(targetWindow.location.href,null,null).resolve(toURL);
-          let dURI = Services.io.newURI(fullURL, null, null);
-          if (self.origin != dURI.prePath && dURI.prePath.indexOf("resource:") != 0) {
-            Cu.reportError("unable to load new location, "+self.origin+" != "+dURI.prePath);
-            return undefined;
-          }
-
-          // See if we've already got one...
-          let xulw = Services.ww.getWindowByName(name, targetWindow);
-          if (xulw)
-            return xulw;
-
-          let thewin = targetWindow.openDialog(fullURL, name, "chrome=no,dialog=no,"+options);
-          var xulWindow = thewin.document.defaultView.QueryInterface(Ci.nsIInterfaceRequestor)
-                         .getInterface(Ci.nsIWebNavigation)
-                         .QueryInterface(Ci.nsIDocShellTreeItem)
-                         .rootTreeItem
-                         .QueryInterface(Ci.nsIInterfaceRequestor)
-                         .getInterface(Ci.nsIDOMWindow);
-          // give the window a reference to the service provider object
-          xulWindow.service = self;
-          // hook up our weblistener to prevent redirects to other sites
-          let content = xulWindow.document.getElementById("content");
-          content.addProgressListener(self.getWebListener());
-          // we dont want the default title the browser produces, we'll fixup whenever it changes
-          xulWindow.addEventListener("DOMTitleChanged", function() {
-            var sep = xulWindow.document.documentElement.getAttribute("titlemenuseparator");
-            xulWindow.document.title = xulWindow.service.name + sep + thewin.document.title;
-          });
-          return thewin;
+          return openServiceWindow(self, targetWindow, toURL, name, options);
         },
         hasBeenIdleFor: function(ms) {
           const idleService = Cc["@mozilla.org/widget/idleservice;1"].getService(Ci.nsIIdleService);
