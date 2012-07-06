@@ -45,14 +45,16 @@ function openServiceWindow(aService, aTargetWindow, aURL, aName, aOptions) {
   }
 
   // See if we've already got one...
-  let dialog = Services.ww.getWindowByName(aName, aTargetWindow);
-  if (dialog)
-    return dialog;
+  let xulWindow = Services.ww.getWindowByName(aName, null);
+  if (xulWindow) {
+    let content = xulWindow.document.getElementById("content");
+    return content.contentWindow;
+  }
 
-  let dialog = aTargetWindow.openDialog(fullURL, aName, "chrome=no,dialog=no,"+aOptions);
+  let contentWindow = aTargetWindow.openDialog(fullURL, aName, "chrome=no,dialog=no,"+aOptions);
 
   // we need to do a couple things on the actual xul window
-  let xulWindow = dialog.document.defaultView.QueryInterface(Ci.nsIInterfaceRequestor)
+  xulWindow = contentWindow.document.defaultView.QueryInterface(Ci.nsIInterfaceRequestor)
                  .getInterface(Ci.nsIWebNavigation)
                  .QueryInterface(Ci.nsIDocShellTreeItem)
                  .rootTreeItem
@@ -62,6 +64,10 @@ function openServiceWindow(aService, aTargetWindow, aURL, aName, aOptions) {
   // give the window a reference to the service provider object
   xulWindow.service = aService;
 
+  // since we used aTargetWindow to open the window, if we do not set the name
+  // here, getWindowByName will fail to find this window again.
+  xulWindow.name = aName;
+
   // hook up our weblistener to prevent redirects to other sites
   let content = xulWindow.document.getElementById("content");
   content.addProgressListener(getWebProgressListener(aService.origin));
@@ -70,8 +76,8 @@ function openServiceWindow(aService, aTargetWindow, aURL, aName, aOptions) {
   // it changes
   xulWindow.addEventListener("DOMTitleChanged", function() {
     let sep = xulWindow.document.documentElement.getAttribute("titlemenuseparator");
-    xulWindow.document.title = xulWindow.service.name + sep + thewin.document.title;
+    xulWindow.document.title = xulWindow.service.name + sep + contentWindow.document.title;
   });
 
-  return dialog;
+  return contentWindow;
 }
