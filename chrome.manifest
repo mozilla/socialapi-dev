@@ -6,8 +6,6 @@ skin	  socialapi-plat classic/1.0     skin/pinstripe/   os=Darwin
 locale    socialapi en-US           locale/en-US/
 
 overlay	chrome://browser/content/browser.xul   chrome://socialapi/content/overlay.xul
-overlay	chrome://socialapi/content/serviceWindow.xul chrome://socialapi/content/winSocial.xul       os=WINNT
-overlay	chrome://socialapi/content/serviceWindow.xul chrome://browser/content/macBrowserOverlay.xul os=Darwin
 resource socialapi ./
 
 component {ddf3f2e0-c819-b843-b32c-c8834d98ef49} components/about.js

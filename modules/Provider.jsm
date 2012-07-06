@@ -17,7 +17,6 @@ Cu.import("resource://gre/modules/Services.jsm");
 let frameworker = {};
 Cu.import("resource://socialapi/modules/FrameWorker.jsm", frameworker);
 Cu.import("resource://socialapi/modules/SocialServiceWindow.jsm");
-Cu.import("resource://socialapi/modules/servicewindow.js");
 Cu.import("resource://socialapi/modules/workerapi.js");
 
 const EXPORTED_SYMBOLS = ["SocialProvider"];
