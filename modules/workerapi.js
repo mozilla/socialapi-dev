@@ -36,6 +36,7 @@ workerAPI.prototype = {
         return;
       }
       try {
+        dump("XXXX "+service.name+" calling "+topic+" "+JSON.stringify(data)+"\n");
         let handler = this.workerapi[topic];
         if (!handler) {
           Cu.reportError("worker called unimplemented API function '" + topic + "'");
@@ -136,6 +137,57 @@ workerAPI.prototype = {
     }
   },
 
+  ambientNotification: function (worker, data) {
+    // handle data for secondary status icons
+    let ani = this.service.createAmbientNotificationIcon(data.name);
+    if (!ani) return;
+    if (data.background) {
+      // backwards compat
+      try {
+        data.iconURL = /url\((['"]?)(.*)(\1)\)/.exec(data.background)[2];
+      } catch(e) {
+        data.iconURL = data.background;
+      }
+    }
+    if (data.iconURL) {
+      ani.setIcon(data.iconURL);
+    }
+    if (data.counter) {
+      ani.setCounter(data.counter);
+    } else {
+      ani.setCounter(0);
+    }
+    if (data.contentPanel) {
+      ani.setContentPanel(data.contentPanel);
+    }
+  },
+  
+  profileUpdate: function(worker, data) {
+    // handle the provider icon and user profile for the primary provider menu
+    if (data.background) {
+      // backwards compat
+      try {
+        data.iconURL = /url\((['"]?)(.*)(\1)\)/.exec(data.background)[2];
+      } catch(e) {
+        data.iconURL = data.background;
+      }
+    }
+    if (data.iconURL) {
+      this.service.setProviderIcon(data.iconURL);
+    }
+    let profile = {
+      portrait: data.portrait,
+      userName: data.userName,
+      displayName: data.displayName || data.userName,
+      profileURL: data.profileURL
+    };
+    // XXX support older messages for a little while
+    if (profile.portrait && !profile.userName) {
+      profile.userName = "No userName";
+    }
+    this.service.setProfileData(profile);
+  },
+
   // This is the API exposed to the worker itself by way of messages.
   workerapi: {
     'social.notification-create': function(worker, data) {
@@ -153,55 +205,25 @@ workerAPI.prototype = {
         n.show();
       }
     },
+    
+    // replacing social.ambient-notification-update with
+    // social.ambient-notification
+    'social.ambient-notification': function(worker, data) {
+      this.ambientNotification(worker, data);
+    },
     'social.ambient-notification-update': function(worker, data) {
-      // handle data for secondary status icons
-      let ani = this.service.createAmbientNotificationIcon(data.name);
-      if (!ani) return;
-      if (data.background) {
-        // backwards compat
-        try {
-          data.iconURL = /url\((['"]?)(.*)(\1)\)/.exec(data.background)[2];
-        } catch(e) {
-          data.iconURL = data.background;
-        }
-      }
-      if (data.iconURL) {
-        ani.setIcon(data.iconURL);
-      }
-      if (data.counter) {
-        ani.setCounter(data.counter);
-      } else {
-        ani.setCounter(0);
-      }
-      if (data.contentPanel) {
-        ani.setContentPanel(data.contentPanel);
-      }
+      this.ambientNotification(worker, data);
+    },
+
+    // replacing social.ambient-notification-area with
+    // social.user-profile
+    'social.user-profile': function(worker, data) {
+      this.profileUpdate(worker, data);
     },
     'social.ambient-notification-area': function(worker, data) {
-      // handle the provider icon and user profile for the primary provider menu
-      if (data.background) {
-        // backwards compat
-        try {
-          data.iconURL = /url\((['"]?)(.*)(\1)\)/.exec(data.background)[2];
-        } catch(e) {
-          data.iconURL = data.background;
-        }
-      }
-      if (data.iconURL) {
-        this.service.setProviderIcon(data.iconURL);
-      }
-      let profile = {
-        portrait: data.portrait,
-        userName: data.userName,
-        displayName: data.displayName || data.userName,
-        profileURL: data.profileURL
-      };
-      // XXX support older messages for a little while
-      if (profile.portrait && !profile.userName) {
-        profile.userName = "No userName";
-      }
-      this.service.setProfileData(profile);
+      this.profileUpdate(worker, data);
     },
+
     'social.cookies-get': function(worker, data) {
       let cm = Cc["@mozilla.org/cookiemanager;1"]
                .getService(Ci.nsICookieManager2);
