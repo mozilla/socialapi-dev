@@ -120,9 +120,9 @@ Sent by the browser during worker shutdown, when a MessagePort to the worker is 
 
 Ambient Notification Control
 ----------------------------
-### `social.ambient-notification-area`
+### `social.user-profile`
 
-Sent by the worker, to set the properties for the provider icon and user profile data used for the toolbar button.  If the users portrait and userName are absent, the button UI will indicate a logged out state.  When indicating logged out state, status icons set via `social.ambient-notification-update` will be removed.
+Sent by the worker, to set the properties for the provider icon and user profile data used for the toolbar button.  If the users portrait and userName are absent, the button UI will indicate a logged out state.  When indicating logged out state, status icons set via `social.ambient-notification` will be removed.
 
 *Argument:*
 **background** DEPRECATED, replaced by iconURL
@@ -151,9 +151,9 @@ avoid additional http requests.
 > String, required.  URL to the logged in users profile page.  This will be opened in a normal browser tab when the username is clicked on.
 
 
-### `social.ambient-notification-update`
+### `social.ambient-notification`
 
-Sent by the worker, to update or create an ambient notification icon.  One is sent for each icon.  A user must be logged in to show status icons, and you must call `social.ambient-notification-area` prior to calling `social.ambient-notification-update` to set status icons.
+Sent by the worker, to update or create an ambient notification icon.  One is sent for each icon.  A user must be logged in to show status icons, and you must call `social.user-profile` prior to calling `social.ambient-notification` to set status icons.
 
 *Argument:*
 **name**
