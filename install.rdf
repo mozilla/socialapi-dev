@@ -4,7 +4,7 @@
     <em:id>socialdev@labs.mozilla.com</em:id>
     <em:type>2</em:type>
     <em:name>SocialAPI</em:name>
-    <em:version>0.2</em:version>
+    <em:version>0.3</em:version>
     <em:bootstrap>true</em:bootstrap>
     <em:creator>Mozilla Labs</em:creator>
     <em:description>Experimental support for social features in Firefox</em:description>

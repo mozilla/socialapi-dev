@@ -76,7 +76,7 @@
   <toolbaritem
     id="social-toolbar"
     class="toolbarbutton-1 chromeclass-toolbar-additional"
-    removable="true"
+    removable="false"
     observes="socialInstalled"
     title="Social status area">
 

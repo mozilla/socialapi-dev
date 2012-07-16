@@ -20,7 +20,10 @@ function getWebProgressListener(aOrigin) {
                        /*in nsresult*/ aStatus) {
       // we have to block during STATE_START to prevent the current page onloading
       // and leaving about:blank in our service window.
-      if (aStateFlags & Ci.nsIWebProgressListener.STATE_START && aRequest.name) {
+      let docStart = aStateFlags & Ci.nsIWebProgressListener.STATE_IS_DOCUMENT &&
+                     aStateFlags & Ci.nsIWebProgressListener.STATE_START;
+
+      if (aStateFlags & docStart && aRequest.name) {
         let rURI = Services.io.newURI(aRequest.name, null, null);
         if (aOrigin != rURI.prePath && rURI.prePath.indexOf("resource:") != 0) {
           aRequest.cancel(Cr.NS_BINDING_ABORTED);
