@@ -408,7 +408,11 @@ file to enable this form of discovery.  If the user either has stored authentica
 the Firefox password manager, or if the user frequents the website, Firefox will show a notification
 bar allowing the user to install the service.
 
-TODO: provide a mechanism by which a service provider can offer an INSTALL button.
+Installation
+------------
+A provider can become activated by dispatching a custom event of "ActivateSocialFeature" on the document. The document's location is then checked against a built-in whitelist and if the location is found then the feature is activated for that provider.
+
+We recommend that providers require their users to click a link or button to activate the feature so the user is aware of the new functionality.
 
 ```
 <link rel="manifest" type="text/json" href="manifest.json"></link>
