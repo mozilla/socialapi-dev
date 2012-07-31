@@ -205,6 +205,25 @@ NOTE: No way of allowing duration and no way exposed to "cancel" a notification 
 > String: An optional ID for the notification.  This ID will not be displayed but will be passed back via a `social.notification-click` event if the user clicks on the notification.  If null or an empty string, the body will not be rendered as a hyperlink and no notification will be sent on click.
 
 
+** url **
+> String: A url to open in a new tab when the user clicks on the notification
+
+** action **
+> String: An action to perform when the user clicks on the notification.  Currently the only actions supported are "callback" and "openServiceWindow".  If action is defined, actionArgs should also be defined.
+
+** actionArgs **
+> Object: An object with arguments for actions (above).  "callback" will simply return the args to the worker.  "openServiceWindow" uses the following arguments:
+
+*** toURL ***
+> String: url to open in the service window
+
+*** name ***
+> String: a name attached to the window e.g. "chat"
+
+*** options ***
+> String: window options, same as you would use with window.open
+
+
 ### `social.notification-click`
 
 *Arguments:*
@@ -258,29 +277,6 @@ Indicates that the user has clicked the "user recommendation" interface element.
 
 No response is necessary; however, the service may respond on the same port with a user-recommend-prompt-response if the click target should change its appearance.
 
-
-User Idle Notification
-----------------------
-
-### `user-isidle`
-
-Sent by the browser when the idle timer requested in an earlier observe-isidle is reached.  No arguments.
-
-### `user-endidle`
-
-Sent by the browser when user activity resumes; only sent when a previous user-isidle has been sent.  No arguments.
-
-Cookie Change Notification
---------------------------
-### `social.cookie-changed`
-
-Sent when Firefox detects that a cookie has changed on the domain of the worker.  A cookie may have been removed or changed and no indication is given of either the cookie name or the action that was taken.
-
-Firefox will send this message up to 1 second after it has detected a cookie has changed and any changes that happen in this period will only be reported once.  For example, if 3 cookies are changed within a 1 second period, only one `social.cookie-changed` notification will be sent.
-
-*Arguments:*
-
-No arguments.
 
 Service Content API Reference
 =============================
