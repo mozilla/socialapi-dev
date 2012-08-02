@@ -5,7 +5,7 @@ const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
-Cu.import("resource://socialdev/modules/registry.js");
+Cu.import("resource://socialapi/modules/ProviderRegistry.jsm");
 
 const EXPORTED_SYMBOLS = ["baseWidget"];
 

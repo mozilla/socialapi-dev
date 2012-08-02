@@ -3,7 +3,7 @@
 */
 
 function testLog(subject, data) {
-  dump(subject + "\t" + data + "\n");
+  dump("[test provider worker]" + "\t" + subject + "\t" + data + "\n");
 }
 
 var apiPort;
@@ -15,6 +15,9 @@ function postAPIMessage(topic, data) {
   }
 }
 
+var topicsToRecord = {};
+var topicsRecorded = [];
+
 var allPorts = [];
 
 onconnect = function(e) {
@@ -22,9 +25,25 @@ onconnect = function(e) {
   allPorts.push(port);
 
   port.onmessage = function(e) {
-    testLog("TestProvider's port.onmessage", e.data.topic + " " + e.data.data)
+    testLog("port.onmessage", JSON.stringify(e.data));
     var msg = e.data;
-    if (msg.topic == "social.port-closing") {
+    // Some special support for automated tests - we can "record" some
+    // topics and return them when requested so the test suite can confirm
+    // whatever it needs to confirm.
+    if (topicsToRecord[msg.topic]) {
+      topicsRecorded.push(msg);
+    }
+
+    if (msg.topic == "testing.record-topic") {
+      topicsToRecord[msg.data] = true;
+    } else if (msg.topic == "testing.get-recorded") {
+      port.postMessage({topic: "testing.recorded", data: topicsRecorded});
+      topicsRecorded = [];
+    } else if (msg.topic == "testing.ping") {
+      port.postMessage({topic: "testing.pong", data: msg.data});
+    } else if (msg.topic == "testing.make-api-request") {
+      apiPort.postMessage(msg.data);
+    } else if (msg.topic == "social.port-closing") {
       var index = allPorts.indexOf(port);
       if (index != -1) {
         allPorts.splice(index, 1);
@@ -48,7 +67,7 @@ onconnect = function(e) {
             topic: 'social.user-recommend-prompt-response',
             data:
               {
-                img: "resource://socialdev/testprovider/testprovider/recommend.png",
+                img: "resource://socialapi/testprovider/testprovider/recommend.png",
                 message: "Test Recommend!"
               }}
         );
@@ -69,7 +88,7 @@ onconnect = function(e) {
     else if (msg.topic == "social.notification-click") {
 
     } else {
-      testLog("warning", "Unhandled message: " + msg.topic + "\n");
+      testLog("warning", "Unhandled message: " + msg.topic);
     }
   }
 }
@@ -85,15 +104,15 @@ function initializeAmbientNotifications() {
 
   postAPIMessage('social.ambient-notification-area',
   {
-    portrait: "resource://socialdev/testprovider/testprovider/portrait.png"
+    portrait: "https://example.com/browser/browser/features/socialapi/test/testprovider/portrait.png"
   });
 
 	postAPIMessage('social.ambient-notification-update',
 		{
 		  name: "ambient-notification-1", 
 		  counter: 1,
-		  background: 'url("resource://socialdev/testprovider/testprovider/notification1.png") transparent no-repeat',
-		  contentPanel: "resource://socialdev/testprovider/testprovider/notification1.htm"
+		  background: 'url("https://example.com/browser/browser/features/socialapi/test/testprovider/notification1.png") transparent no-repeat',
+		  contentPanel: "https://example.com/browser/browser/features/socialapi/test/testprovider/notification1.htm"
 	 });
 
 
@@ -101,7 +120,7 @@ function initializeAmbientNotifications() {
 		{
 		  name: "ambient-notification-2", 
       counter: 1,
-      background: 'url("resource://socialdev/testprovider/testprovider/notification2.png") transparent no-repeat',
-      contentPanel: "resource://socialdev/testprovider/testprovider/notification2.htm"
+      background: 'url("https://example.com/browser/browser/features/socialapi/test/testprovider/notification2.png") transparent no-repeat',
+      contentPanel: "https://example.com/browser/browser/features/socialapi/test/testprovider/notification2.htm"
 	 });
 }

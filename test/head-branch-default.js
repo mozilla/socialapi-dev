@@ -13,13 +13,24 @@ const TEST_PROVIDER_MANIFEST = TEST_PROVIDER_ORIGIN + TEST_PROVIDER_PATH + "/app
 const TEST_PROVIDER2_ORIGIN = "https://test1.example.com"
 const TEST_PROVIDER2_MANIFEST = TEST_PROVIDER2_ORIGIN + TEST_PROVIDER_PATH + "/app.manifest";
 
+function makeTestProvider(input) {
+  return {
+    name: input.name,
+    workerURL: input.workerURL,
+    sidebarURL: input.sidebarURL,
+    iconURL: input.iconURL,
+    origin: input.origin,
+    enabled: input.enabled,
+    activate: function() {},
+    shutdown: function() {}
+  }
+}
 
 let headModules = {}
 Cu.import("resource://socialapi/modules/ProviderRegistry.jsm", headModules);
 Cu.import("resource://socialapi/modules/Discovery.jsm", headModules);
-Cu.import("resource://socialapi/modules/Provider.jsm", headModules);
 try {
-  headModules.SetProviderFactory(function(manifest) {return new headModules.SocialProvider(manifest);});
+  headModules.SetProviderFactory(makeTestProvider);
 } catch (ex) {
   if (ex.toString() != "Error: already initialized") {
     info("Unexpected failure to initialize the registry: " + ex)
@@ -57,9 +68,6 @@ function resetSocial() {
   // reset the entire social world back to the state it is on a "clean" first
   // startup - ie, all UI elements and prefs.
   let r = headModules.registry();
-  if (isSidebarVisible()) {
-    window.social_sidebar_toggle();
-  };
   r.enabled = false;
   // all providers get nuked. - we reach into the impl here...
   let providers = r._providers;
@@ -96,9 +104,9 @@ observerChecker.prototype = {
     this.observed.push({subject: aSubject, topic: aTopic, data: aData});
   },
 
-  check: function(expected, message) {
+  check: function(expected) {
     if (this.observed.length != expected.length) {
-      dump("observer check failed for "+(message?message:"?")+" - got topics " + [o.topic for each (o in this.observed)].join(", ") +
+      dump("observer check failed - got topics " + [o.topic for each (o in this.observed)].join(", ") +
            " - expected " + [o.topic for each (o in expected)].join(", ") + "\n");
     }
     is(this.observed.length, expected.length, "check expected number of observations");
@@ -152,44 +160,11 @@ function runTests(tests, cbPreTest, cbPostTest) {
         try {
           func.call(tests, cleanupAndRunNextTest);
         } catch (ex) {
-          ok(false, "sub-test " + name + " failed: " + ex.toString() +"\n"+ex.stack);
+          ok(false, "sub-test " + name + " failed: " + ex.toString());
           cleanupAndRunNextTest();
         }
       })
     }, 0)
   }
   runNextTest();
-}
-
-// Helpers for the sidebar.
-function isSidebarVisible() {
-  return document.getElementById("social-vbox").getAttribute("hidden") != "true";
-}
-
-function openSidebar(callback) {
-  // Opens the sidebar and after it loads calls the callback.
-  // It is the caller's job to ensure a provider is installed etc.
-  if (isSidebarVisible()) {
-    throw new Error("sidebar is already visible");
-  }
-  // attach a load listener to the browser
-  let browser = document.getElementById("social-status-sidebar-browser");
-  browser.addEventListener("DOMContentLoaded", function browserlistener(evt) {
-    // hmph - the timing of these events is hard to predict - if we are just
-    // being told about about:blank, wait until the real one comes.
-    if (browser.contentWindow.location.href == "about:blank") {
-      return;
-    };
-    browser.removeEventListener("DOMContentLoaded", browserlistener, true);
-    // let the world initialize correctly - grab the worker and by the time
-    // it responds to a ping it should be good to go.
-    let worker = browser.contentWindow.wrappedJSObject.navigator.mozSocial.getWorker();
-    worker.port.onmessage = function(evt) {
-      if (evt.data.topic == "testing.pong") {
-        callback(browser.contentWindow, worker);
-      }
-    }
-    worker.port.postMessage({topic: "testing.ping"});
-  }, true);
-  window.social_sidebar_toggle();
 }

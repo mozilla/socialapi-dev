@@ -1,5 +1,5 @@
 let modules = {};
-Cu.import("resource://socialdev/modules/frameworker.js", modules);
+Cu.import("resource://socialapi/modules/FrameWorker.jsm", modules);
 
 function makeWorkerUrl(runner) {
   return "data:application/javascript," + encodeURI("let run=" + runner.toSource()) + ";run();"
@@ -122,14 +122,11 @@ let tests = {
     worker.port.postMessage({topic: "hello", data: [1,2,3]});
   },
 
-  testArray: function(cbnext) {
+  testArrayUsingBuffer: function(cbnext) {
     let run = function() {
-      // Modify the Array prototype...
-      Array.prototype.customfunction = function() {};
       onconnect = function(e) {
         let port = e.ports[0];
         port.onmessage = function(e) {
-          // Check the data we get via the port has the prototype modification
           if (e.data.topic == "go") {
             let buffer = new ArrayBuffer(10);
             // this one has always worked in the past, but worth checking anyway...
@@ -163,52 +160,82 @@ let tests = {
     worker.port.postMessage({topic: "go"});
   },
 
-  testXHR: function(cbnext) {
+  testArrayUsingReader: function(cbnext) {
     let run = function() {
       onconnect = function(e) {
         let port = e.ports[0];
-        let req;
-        try {
-          req = new XMLHttpRequest();
-        } catch(e) {
-          port.postMessage({topic: "done", result: "FAILED to create XHR object, " + e.toString() });
-        }
-        if (req === undefined) { // until bug 756173 is fixed...
-          port.postMessage({topic: "done", result: "FAILED to create XHR object"});
-          return;
-        }
-        // read a URL from our test provider so it is in the same origin as the worker.
-        // might as well just read the manifest!
-        // XXX - THIS IS WRONG!  it should work with this URL as it is in our origin!!!
-        // but we get a .status of 0, which implies CORS is killing us.
-        // req.open("GET", "http://mochi.test:8888/browser/browser/features/socialdev/test/testprovider/app.manifest", true);
-        req.open("GET", "http://enable-cors.org/", true);
-        req.onreadystatechange = function() {
-          if (req.readyState === 4) {
-            dump("XHR: req.status " + req.status + "\n");
-            let ok = req.status == 200 && req.responseText.length > 0;
-            if (ok) {
-              // check we actually got something sane...
+        port.onmessage = function(e) {
+          if (e.data.topic == "go") {
+            let buffer = new ArrayBuffer(10);
+            let reader = new FileReader();
+            reader.onload = function(event) {
               try {
-                let data = JSON.parse(req.responseText);
-                ok = "services" in data && "social" in data.services;
-              } catch(e) {
-                ok = e.toString();
+                if (new Uint8Array(reader.result).length != 10) {
+                  port.postMessage({topic: "result", reason: "length in onload handler was not 10"});
+                  return;
+                }
+                // all seems good!
+                port.postMessage({topic: "result", reason: "ok"});
+              } catch (ex) {
+                port.postMessage({topic: "result", reason: ex.toString()});
               }
             }
-            port.postMessage({topic: "done", result: ok});
+            let blob = new Blob([buffer], {type: "binary"});
+            reader.readAsArrayBuffer(blob);
           }
         }
-        req.send(null);
       }
     }
-    let worker = modules.FrameWorker(makeWorkerUrl(run), undefined, "testXHR");
+    let worker = modules.FrameWorker(makeWorkerUrl(run), undefined, "testArray");
     worker.port.onmessage = function(e) {
-      if (e.data.topic == "done") {
-        todo_is(e.data.result, "ok", "check the xhr test worked");
+      if (e.data.topic == "result") {
+        todo_is(e.data.reason, "ok", "check the array worked");
         worker.terminate();
         cbnext();
       }
     }
+    worker.port.postMessage({topic: "go"});
+  },
+
+  testXHR: function(cbnext) {
+    // NOTE: this url MUST be in the same origin as worker_xhr.js fetches from!
+    let url = "https://example.com/browser/browser/features/socialapi/test/worker_xhr.js";
+    let worker = modules.FrameWorker(url, undefined, "testXHR");
+    worker.port.onmessage = function(e) {
+      if (e.data.topic == "done") {
+        is(e.data.result, "ok", "check the xhr test worked");
+        worker.terminate();
+        cbnext();
+      }
+    }
+  },
+
+  testSameOriginImport: function(cbnext) {
+    let run = function() {
+      onconnect = function(e) {
+        let port = e.ports[0];
+        port.onmessage = function(e) {
+          if (e.data.topic == "ping") {
+            try {
+              importScripts("http://foo.bar/error");
+            } catch(ex) {
+              port.postMessage({topic: "pong", data: ex});
+              return;
+            }
+            port.postMessage({topic: "pong", data: null});
+          }
+        }
+      }
+    }
+
+    let worker = modules.FrameWorker(makeWorkerUrl(run), undefined, "testSameOriginImport");
+    worker.port.onmessage = function(e) {
+      if (e.data.topic == "pong") {
+        isnot(e.data.data, null, "check same-origin applied to importScripts");
+        worker.terminate();
+        cbnext();
+      }
+    }
+    worker.port.postMessage({topic: "ping"})
   }
 }

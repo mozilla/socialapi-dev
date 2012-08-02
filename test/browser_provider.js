@@ -1,4 +1,4 @@
-Cu.import("resource://socialdev/modules/registry.js");
+Cu.import("resource://socialapi/modules/ProviderRegistry.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
 function test() {
@@ -14,7 +14,7 @@ function test() {
       window.social_sidebar_toggle();
     }
     registry().enabled = false;
-    removeTestProvider();
+    removeProvider(TEST_PROVIDER_ORIGIN);
     resetPrefs();
     cb();
   }
@@ -28,7 +28,7 @@ let tests = {
       let result = 0;
       while (windows.hasMoreElements()) {
         let w = windows.getNext();
-        if (w.document.documentElement.getAttribute("windowtype") == "socialdev:window" &&
+        if (w.document.documentElement.getAttribute("windowtype") == "socialapi:window" &&
             !w.closed) {
           result += 1;
         }

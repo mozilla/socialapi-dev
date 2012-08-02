@@ -1,6 +1,8 @@
 "use strict";
 
-Cu.import("resource://socialdev/modules/registry.js");
+Cu.import("resource://socialapi/modules/ProviderRegistry.jsm");
+Cu.import("resource://socialapi/modules/Provider.jsm");
+Cu.import("resource://socialapi/modules/Discovery.jsm");
 
 function isAvailable() {
   // This will probably go away based on UX - it exists so the social toolbar
@@ -51,6 +53,7 @@ let stateObserver = {
     if (aTopic == 'social-service-manifest-changed') {
       // this is just to help the isAvailable() check - if a service was
       // enabled/disabled it may be that the toolbar needs to be shown/hidden
+      dump("got social-service-manifest-changed "+aData+"\n");
       set_window_social_enabled_from_doc_state();
       return;
     }
@@ -69,6 +72,7 @@ function set_window_social_enabled_from_doc_state() {
 }
 
 function set_window_social_enabled(val) {
+  dump("set_window_social_enabled "+val+"\n");
   window.social.enabled = val;
   // let the UI know.
   let broadcaster = document.getElementById("socialEnabled");
@@ -86,7 +90,6 @@ function set_window_social_enabled(val) {
     window.social.toolbarStatusArea.setProvider(registry().currentProvider);
   }
   broadcaster = document.getElementById("socialInstalled");
-  broadcaster.setAttribute("checked", installed ? "true" : "false");
   broadcaster.setAttribute("hidden", installed ? "false" : "true");
   // and the sidebar state.
   let sideBarVisible;
@@ -141,19 +144,15 @@ function social_init() {
   };
 
   // watch for when browser disables chrome in tabs, and hide the social sidebar
-  try {
-    var observer = new MozMutationObserver(function(mutations) {
+  if ('MozMutationObserver' in window || 'MutationObserver' in window) {
+    var observer = new (window.MutationObserver || window.MozMutationObserver)(function(mutations) {
       mutations.forEach(function(mutation) {
         if (mutation.type === 'attributes') {
           set_window_social_enabled_from_doc_state();
         }
       });
     });
-
-    observer.observe(document.documentElement, {
-      attributes: true, attributeFilter: ["disablechrome", "chromehidden"]
-    });
-  } catch(e) {
+  } else {
     Cu.reportError("MozMutationObserver not available, falling back to DOMAttrModified");
     // bug 756674 not sure what version MozMutationObserver became available, keep the fallback
     document.addEventListener('DOMAttrModified', function(e) {
@@ -198,17 +197,34 @@ function social_unload() {
 
 // support for OverlayManager
 var OverlayListener = {
-  load: social_init,
   unload: social_unload
 }
 
 function social_main() {
   // due to what we are doing in the sidebar, we have to wait for the
   // chromeWindow to load before we do our magic
+  Services.obs.addObserver({
+    observe: function(aSubject, aTopic, aData) {
+      Services.obs.removeObserver(this, "social-service-ready", false);
+      // this will only happen if the registry is initialized after load,
+      // which typically will only happen if the addon is enabled after
+      // startup
+      if (document.readyState == "complete") {
+        social_init();
+      }
+  }}, "social-service-ready", false);
   window.addEventListener('load', function loadHandler(e) {
     window.removeEventListener('load', loadHandler);
-    social_init();
+    // ensure that the registry is ready to do stuff, if not
+    // then the observer above will handle the init
+    if (registry().ready) {
+      social_init();
+    }
   });
+  // initialize the registry - we should be able to drop this explicit
+  // initialization once we move to landing provider as part of the "core"
+  SetProviderFactory(function(manifest) {return new SocialProvider(manifest);});
+
   window.addEventListener('unload', function loadHandler(e) {
     window.removeEventListener('unload', loadHandler);
     social_unload();

@@ -1,7 +1,7 @@
-<!ENTITY socialdev.label       "Social">
-<!ENTITY socialdev.accesskey   "F2">
-<!ENTITY socialdev.toolbartext    "Social Browsing">
-<!ENTITY socialdev.prefslabel      "Manage Social Services...">
+<!ENTITY socialapi.label       "Social">
+<!ENTITY socialapi.accesskey   "F2">
+<!ENTITY socialapi.toolbartext    "Social Browsing">
+<!ENTITY socialapi.prefslabel      "Manage Social Services...">
 <!ENTITY socialsidebar.label       "Show Social sidebar">
 <!ENTITY socialenable.label       "Enable Social Browsing">
 <!ENTITY socialsidebarrefresh.label "Refresh">

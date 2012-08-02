@@ -137,7 +137,7 @@ const OverlayManager = {
     OverlayManager.addOverlays(this.overlays);
   },
 
-  unload: function() {
+  unload: function(aParams) {
     Services.console.logStringMessage("unload");
     try {
       // Close any of our UI windows
@@ -290,7 +290,7 @@ const OverlayManager = {
     let elem = overlayDoc.firstChild;
     while (elem) {
       if (elem.nodeName == "xml-stylesheet") {
-        // href="chrome://socialdev/skin/browser.css" type="text/css"
+        // href="chrome://socialapi/skin/browser.css" type="text/css"
         let t = elem.nodeValue.match(/\s+type=\"(.*)\"/);
         if (t[1] != "text/css") {
           continue;
@@ -562,20 +562,18 @@ function install(aParams, aReason) {
 }
 
 function startup(aParams, aReason) {
-  OverlayManager.init(aParams, function() {
-    // addon specific stuff we need to start before
-    // applying our overlays
-    Cu.import("resource://socialdev/modules/registry.js");
-  });
+  let res = Services.io.getProtocolHandler("resource").QueryInterface(Ci.nsIResProtocolHandler);
+  res.setSubstitution("socialapi", aParams.resourceURI);
+  OverlayManager.init(aParams, function() {});
 }
 
 function shutdown(aParams, aReason) {
-  // Don't need to clean anything up if the application is shutting down
+  // Don't need to clean anything else up if the application is shutting down
   if (aReason == APP_SHUTDOWN) {
     return;
   }
   // Unload and remove the overlay manager
-  OverlayManager.unload();
+  OverlayManager.unload(aParams);
 }
 
 function uninstall(aParams, aReason) {

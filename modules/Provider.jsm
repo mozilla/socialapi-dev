@@ -11,13 +11,13 @@
  *  Shane Caraveo <scaraveo@mozilla.com>
  */
 
-const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
+const {classes: Cc, interfaces: Ci, utils: Cu, results: Cr} = Components;
 
 Cu.import("resource://gre/modules/Services.jsm");
 let frameworker = {};
-Cu.import("resource://socialdev/modules/frameworker.js", frameworker);
-Cu.import("resource://socialdev/modules/servicewindow.js");
-Cu.import("resource://socialdev/modules/workerapi.js");
+Cu.import("resource://socialapi/modules/FrameWorker.jsm", frameworker);
+Cu.import("resource://socialapi/modules/SocialServiceWindow.jsm");
+Cu.import("resource://socialapi/modules/workerapi.js");
 
 const EXPORTED_SYMBOLS = ["SocialProvider"];
 
@@ -35,7 +35,6 @@ const EXPORTED_SYMBOLS = ["SocialProvider"];
  * The 'active' provider is the currently selected provider in the UI.
  */
 function SocialProvider(input) {
-  this._log("creating social provider for "+input.origin);
   this.name = input.name;
   this.workerURL = input.workerURL;
   this.sidebarURL = input.sidebarURL;
@@ -47,6 +46,7 @@ function SocialProvider(input) {
   // we only patch content for builtins
   if (input.contentPatchPath && input.contentPatchPath.indexOf('resource:')==0)
     this.contentPatchPath = input.contentPatchPath;
+  this._log("creating social provider for "+input.origin);
   this.init();
 
   return this;
@@ -144,6 +144,42 @@ SocialProvider.prototype = {
   },
 
   /**
+   * returns an nsIWebProgressListener that knows how to block the use of window.location
+   * to change to a url that is not same-origin as the provider
+   */
+  getWebListener: function() {
+    // prevent location changes outside our domain
+    let self = this;
+    return {
+      QueryInterface: function(aIID) {
+        if (aIID.equals(Ci.nsIWebProgressListener)   ||
+            aIID.equals(Ci.nsISupportsWeakReference) ||
+            aIID.equals(Ci.nsISupports))
+          return this;
+        throw Components.results.NS_NOINTERFACE;
+      },
+      onStateChange: function(/*in nsIWebProgress*/ aWebProgress,
+                         /*in nsIRequest*/ aRequest,
+                         /*in unsigned long*/ aStateFlags,
+                         /*in nsresult*/ aStatus) {
+        // we have to block during STATE_START to prevent the current page onloading
+        // and leaving about:blank in our service window.
+        if (aStateFlags & Ci.nsIWebProgressListener.STATE_START && aRequest.name) {
+          let rURI = Services.io.newURI(aRequest.name, null, null);
+          if (self.origin != rURI.prePath && rURI.prePath.indexOf("resource:") != 0) {
+            aRequest.cancel(Cr.NS_BINDING_ABORTED);
+            return;
+          }
+        }
+      },
+      onProgressChange: function() {},
+      onLocationChange: function() {},
+      onStatusChange: function() {},
+      onSecurityChange: function() {}
+    }
+  },
+
+  /**
    * attachToWindow
    *
    * loads sandboxed support functions and socialAPI into content panels for
@@ -154,6 +190,10 @@ SocialProvider.prototype = {
   attachToWindow: function(targetWindow) {
     if (!this.enabled) {
       throw new Error("cannot use disabled service "+this.origin);
+    }
+    let target = Services.io.newURI(targetWindow.location.href, null, null);
+    if (this.origin != target.prePath && target.prePath.indexOf("resource:") != 0) {
+      throw new Error("cannot use service worker "+this.origin+" for "+targetWindow.location.href);
     }
     let self = this;
     this._log("attachToWindow");
@@ -191,7 +231,7 @@ SocialProvider.prototype = {
           return worker;
         },
         openServiceWindow: function(toURL, name, options, title, readyCallback) {
-          return createServiceWindow(toURL, name, options, self, title, readyCallback);
+          return openServiceWindow(self, targetWindow, toURL, name, options);
         },
         openPopup: function(toURL) {
           //dump("open popup to "+toURL+"\n");
@@ -248,6 +288,23 @@ SocialProvider.prototype = {
         hasBeenIdleFor: function(ms) {
           const idleService = Cc["@mozilla.org/widget/idleservice;1"].getService(Ci.nsIIdleService);
           return idleService.idleTime >= ms;
+        },
+        getAttention: function() {
+          // oh yeah, this is obvious, right?
+          // See https://developer.mozilla.org/en/Working_with_windows_in_chrome_code
+          let mainWindow = targetWindow.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
+                             .getInterface(Components.interfaces.nsIWebNavigation)
+                             .QueryInterface(Components.interfaces.nsIDocShellTreeItem)
+                             .rootTreeItem
+                             .QueryInterface(Components.interfaces.nsIInterfaceRequestor)
+                             .getInterface(Components.interfaces.nsIDOMWindow);
+          mainWindow.getAttention();
+        },
+        __exposedProps__: {
+          getWorker: 'r',
+          openServiceWindow: 'r',
+          hasBeenIdleFor: 'r',
+          getAttention: 'r'
         }
       }
     });
@@ -265,30 +322,37 @@ SocialProvider.prototype = {
     }
 
     targetWindow.addEventListener("unload", function() {
-      try {
-        worker.port.close();
+      // We want to close the port, but also want the target window to be
+      // able to use the port during an unload event they setup - so we
+      // set a timer which will fire after the unload events have all fired.
+      let event = {
+        notify: function(timer) {
+          worker.port.close();
+        }
       }
-      catch(e) {
-        self._log("Exception while closing worker: " + e);
-      }
+      let timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
+      timer.initWithCallback(event, 0, Ci.nsITimer.TYPE_ONE_SHOT);
     }, false);
 
   },
 
-  setAmbientNotificationBackground: function(background) {
-    this.ambientNotificationBackground = background;
+  setProviderIcon: function(iconURL) {
+    this.providerIcon = iconURL;
     Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
   },
 
   createAmbientNotificationIcon: function(name) {
+    if (!this.profile || !this.profile.userName) {
+      return null;
+    }
     // if we already have one named, return that
     if (!this.ambientNotificationIcons) this.ambientNotificationIcons = {};
     if (this.ambientNotificationIcons[name]) {
       return this.ambientNotificationIcons[name];
     }
     var icon = {
-      setBackground: function(backgroundText) {
-        icon.background = backgroundText;
+      setIcon: function(url) {
+        icon.url = url;
         Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
       },
       setCounter: function(counter) {
@@ -304,8 +368,12 @@ SocialProvider.prototype = {
     return icon;
   },
 
-  setAmbientNotificationPortrait: function(url) {
-    this.ambientNotificationPortrait = url;
-    Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
+  setProfileData: function(profile) {
+    this.profile = profile;
+    Services.obs.notifyObservers(null, "social-browsing-profile-changed", null);//XX which args?
+    if (!profile.userName) {
+      this.ambientNotificationIcons = {};
+      Services.obs.notifyObservers(null, "social-browsing-ambient-notification-changed", null);//XX which args?
+    }
   }
 }

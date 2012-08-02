@@ -2,9 +2,9 @@
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-Cu.import("resource://socialdev/modules/baseWidget.js");
+Cu.import("resource://socialapi/modules/baseWidget.js");
 
-Cu.import("resource://socialdev/modules/registry.js");
+Cu.import("resource://socialapi/modules/ProviderRegistry.jsm");
 
 
 function SocialSidebar() {
@@ -59,6 +59,34 @@ SocialSidebar.prototype = {
       // nightly throws exception?  happens on startup only
     }
 
+    if (sbrowser.watcher) {
+      sbrowser.removeProgressListener(sbrowser.watcher);
+    }
+    sbrowser.addEventListener("DOMContentLoaded", function sb_contentListener() {
+      sbrowser.removeEventListener("DOMContentLoaded", sb_contentListener, true);
+      sbrowser.watcher = {
+        QueryInterface: XPCOMUtils.generateQI([Ci.nsIWebProgressListener,
+                                               Ci.nsISupportsWeakReference]),
+        onLocationChange: function(/*in nsIWebProgress*/ aWebProgress,
+                            /*in nsIRequest*/ aRequest,
+                            /*in nsIURI*/ aLocation) {
+          // ensure any location change is same-origin as the service
+          if (sbrowser.service.origin != aLocation.prePath &&
+              aLocation.prePath.indexOf("resource:") != 0  &&
+              aLocation.prePath.indexOf("about:") != 0) {
+            aRequest.cancel(Cr.NS_BINDING_ABORTED);
+            Cu.reportError("unable to load new location, "+sbrowser.service.origin+" != "+aLocation.prePath);
+            return;
+          }
+        },
+        onStateChange: function() {},
+        onStatusChange: function() {},
+        onProgressChange: function() {},
+        onSecurityChange: function() {}
+      };
+      sbrowser.addProgressListener(sbrowser.watcher, Ci.nsIWebProgress.NOTIFY_STATE_DOCUMENT);
+    });
+
     // load the new service before we block redirects, etc, we set the attribute
     // since this may be called prior to the browser element being ready to load
     // during initial startup
@@ -84,4 +112,3 @@ SocialSidebar.prototype = {
     // no concept of "remove" in our overlay based world!
   }
 }
-
