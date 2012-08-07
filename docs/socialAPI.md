@@ -277,6 +277,15 @@ Indicates that the user has clicked the "user recommendation" interface element.
 
 No response is necessary; however, the service may respond on the same port with a user-recommend-prompt-response if the click target should change its appearance.
 
+### `social.user-unrecommend`
+
+Indicates that the user would like to retract their previous recommendation. The message includes:
+
+*Arguments:*
+
+**url**
+> String, required. The URL that the user is viewing, including query string, but minus any hash text, of the root of the current browser viewing context.
+
 
 Service Content API Reference
 =============================
