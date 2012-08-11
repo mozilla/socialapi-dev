@@ -410,43 +410,10 @@ A provider can become activated by dispatching a custom event of "ActivateSocial
 
 We recommend that providers require their users to click a link or button to activate the feature so the user is aware of the new functionality.
 
-```
-<link rel="manifest" type="text/json" href="manifest.json"></link>
-```
-
-The manifest file should be serviced with a content-type text/json.  The format of the JSON file is:
-
-```
-{
-  "services": {
-    "social": {
-      "name": "Provider Name",
-      "iconURL": "https://site.com/site.png",
-      "workerURL": "https://site.com/socialapi/worker.js",
-      "sidebarURL": "https://site.com/socialapi/sidebar.html",
+    function activate() {
+      var event = new CustomEvent("ActivateSocialFeature");
+      document.dispatchEvent(event);
     }
-  }
-}
-```
-All URLs in the manifest can be relative or absolute.  If relative, they will
-be resolved against the origin of the manifest location and if absolute they
-must all be in the same origin as the manifest.
-
-### `name`
-
-Service name used for display purposes.
-
-### `iconURL`
-
-An icon used for display purposes.
-
-### `workerURL`
-
-Location of the JavaScript file to be loaded in the background worker.
-
-### `sidebarURL`
-
-Location of the content to be loaded into the sidebar.
 
 Example interactions / expected implementation flow
 ===================================================
