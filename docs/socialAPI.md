@@ -124,7 +124,8 @@ Ambient Notification Control
 
 Sent by the worker, to set the properties for the provider icon and user profile data used for the toolbar button.  If the users portrait and userName are absent, the button UI will indicate a logged out state.  When indicating logged out state, status icons set via `social.ambient-notification` will be removed.
 
-*Argument:*
+*Arguments:*
+
 **background** DEPRECATED, replaced by iconURL
 > String, optional.  If supplied, specifies the CSS value for the background
 of the area.  Typically this will just supply a background color.  UPDATE: the
@@ -155,7 +156,8 @@ avoid additional http requests.
 
 Sent by the worker, to update or create an ambient notification icon.  One is sent for each icon.  A user must be logged in to show status icons, and you must call `social.user-profile` prior to calling `social.ambient-notification` to set status icons.
 
-*Argument:*
+*Arguments:*
+
 **name**
 > String.  An identifier for the icon.  The first time a given name is seen,
 it effectively creates a new icon.  If the same name is used in subsequent
@@ -185,50 +187,59 @@ Active Notification Control
 ---------------------------
 ### `social.notification-create`
 
-Sent by the worker, to create and display a notification object. This requests that the browser notify the user of an immediately-relevant change in state. See https://developer.mozilla.org/en/DOM/navigator.mozNotification for more detail.  There is no 'response' sent back to the worker upon creation, however, if the user clicks on the notification a `social.notification-click` will be sent back with the ID of the notification.
+Sent by the worker, to create and display a notification object. This requests that the browser notify the user of an immediately-relevant change in state. See https://developer.mozilla.org/en/DOM/navigator.mozNotification for more detail.  When the user clicks on the notification, the `social.notification-action` message is sent to the worker.  The title of the notification will always be the name of the provider.
 
 NOTE: We want to augment the mozNotification object defined in the docs with an additional "type" field. Details TBD.
 NOTE: No way of allowing duration and no way exposed to "cancel" a notification (assumption is they are very short-lived).  Is this OK?
 
 *Arguments:*
 
-** icon **
-> String/null. The URL of an image to be placed in the notification.  While this can be any valid URL, implementors are strongly encouraged to use a data URL to minimize latency.
+**id**
+> String: An ID for the notification.  This ID will not be displayed but will be passed back via a `social.notification-action` event if the user clicks on the notification.  
 
-** title **
-> String: The title or heading displayed in the notification.
+**type**
+> String: The Type string should be consistent for each **type** of notification.  This may be used by some notification systems to provide user level filtering of notifications.  A provider may choose any string for the type, but should keep the type strings consistent and descriptive for each type of action.  For example, chat notifications should always have the same type string.  Suggested/example notifications include:
 
-** body **
+* social.providername.chat-request
+* social.providername.friend-request
+* social.providername.activity (e.g. someone posted to your activity stream)
+
+**icon**
+> String/null. The URL of an image to be placed in the notification.  While this can be any valid URL, implementers are strongly encouraged to use a data URL to minimize latency.
+
+**body**
 > String: The body of the notification message.  This body will be rendered as a hyperlink and may be clicked.  HTML markup is not supported.
 
-** id **
-> String: An optional ID for the notification.  This ID will not be displayed but will be passed back via a `social.notification-click` event if the user clicks on the notification.  If null or an empty string, the body will not be rendered as a hyperlink and no notification will be sent on click.
+**action**
+> String: An action to perform when the user clicks on the notification.  If no action is provided, the notification is not clickable.  Currently the only actions supported are ***link***, ***callback*** and ***openServiceWindow***.  If the action is defined, actionArgs should also be defined.
+
+**actionArgs**
+> Object: An object with arguments for actions (above).  Supported actions and their actionArgs are:
+
+* link
+  * toURL: String: url to open in a new browser tab
+* callback
+  * all arguments are returned to the worker (see `social.notification-action`)
+* openServiceWindow
+  * toURL: String: url to open in the service window
+  * name: String: a name attached to the window e.g. "chat"
+  * options: String: window options, same as you would use with window.open
 
 
-** url **
-> String: A url to open in a new tab when the user clicks on the notification
+### `social.notification-action`
 
-** action **
-> String: An action to perform when the user clicks on the notification.  Currently the only actions supported are "callback" and "openServiceWindow".  If action is defined, actionArgs should also be defined.
-
-** actionArgs **
-> Object: An object with arguments for actions (above).  "callback" will simply return the args to the worker.  "openServiceWindow" uses the following arguments:
-
-*** toURL ***
-> String: url to open in the service window
-
-*** name ***
-> String: a name attached to the window e.g. "chat"
-
-*** options ***
-> String: window options, same as you would use with window.open
-
-
-### `social.notification-click`
+Sent to the worker as a response to a "callback" notification, after the user has clicked on the notification.
 
 *Arguments:*
+
 **id**
 > String: the ID of the notification that was clicked.
+
+**action**
+> String: The **action** sent in `social.notification-create`.
+
+**actionArgs**
+> Object: The **actionArgs** sent in `social.notification-create`.
 
 
 
@@ -291,16 +302,16 @@ returns a reference to the Service Worker.
 
 The content can then call postMessage on it as normal.  Messages posted this way may be private implementation messages or any of the standard `social.` messages described above.
 
-### `openServiceWindow( url, name, options, title, readyCallback)`
+### `navigator.mozSocial.openServiceWindow( url, name, options, callback)`
 NOTE The openServiceWindow call is likely to change.
 
-Creates a new window, initially displaying the `url` page.  This window will not have navigation controls or toolbars.  An attempt to create a "service window" with a domain that does not match the domain of the Service Provider is an error and will have no effect.
+Creates a new window, initially displaying the `url` page.  A reference to the window is returned as the first argument to `callback`.  Content in the window is not guaranteed to be loaded at the time of the callback.  This window will not have navigation controls or toolbars.  An attempt to create a "service window" with a domain that does not match the domain of the Service Provider is an error and will have no effect.
 
-"service windows" will contain a single content region, with no tabbed browser elements, and no navigation chrome. The browser will display domain and security badges as its implementors see fit. The browser may implement "pinning" to attach the content region to an existing chrome window; content should observe the size of its window and reflow as needed.
+"service windows" will contain a single content region, with no tabbed browser elements, and no navigation chrome. The browser will display domain and security badges as its implementers see fit. The browser may implement "pinning" to attach the content region to an existing chrome window; content should observe the size of its window and reflow as needed.
 
-Messages may be posted to and from the service window as normal. If the "name" argument passed to the function matches an existing window that is already open, a reference to that window is returned rather than opening a new one.
+Messages may be posted to and from the service window as normal. If the `name` argument passed to the function matches an existing window that is already open, a reference to that window is returned, via `callback`, rather than opening a new one.
 
-Calls to `openServiceWindow` are subject to normal anti-popup behavior: windows may only be opened in the event context of a user click. `window.onunload` is available as normal; implementors are encouraged to use it to notify the service that a window is closing.
+Calls to `openServiceWindow` are subject to normal anti-popup behavior: windows may only be opened in the event context of a user click. `window.onunload` is available as normal; implementers are encouraged to use it to notify the service that a window is closing.
 
 Widgets
 =======
@@ -313,32 +324,26 @@ If a service defines a SidebarWidget, the browser will instantiate a content reg
 Sidebars can be in a *visible* or *hidden* state.
 
 * When visible, they will receive a vertical rectangle of screen space in which to render; this rectangle is stable across changes in tab focus and has an independent scrollbar from the scrollbar of tabbed browsing content.
-* When hidden, a sidebar is completely removed from the visual hierarchy. The user agent will continue to deliver messages to it, and the sidebar may pre-render its DOM for later display. (TODO: Is this right? Or should we "suspend" when we minimize? If we do, it becomes harder to dynamically display sidebar later; maybe this isn't a problem).
+* When hidden, a sidebar is completely removed from the visual hierarchy. The user agent will continue to deliver messages to it, and the sidebar may pre-render its DOM for later display.
 
 Sidebar windows will only be instantiated on browser windows that have a full tabbed-browsing interface; windows created with window.open that do not have these interface elements will not have a sidebar.
 
 When a tab that is rendered directly by the browser without a location bar is selected, the sidebar will automatically be placed into the *hidden* state.  When the user navigates away from that tab, the sidebar will be made *visible* again.  These tabs include the Add-ons management page, about:permissions, etc.
 
-The minimized/maximized/hidden state of the sidebar widget is a per-window setting. The most-recently-set state is remembered and used for new windows, and is persisted across browser restarts.
+The minimized/maximized/hidden state of the sidebar widget is will be consistent across all browser windows. The most-recently-set state is remembered and used for new windows, and is persisted across browser restarts.
 
 Messages Sent to Widget
 -----------------------
 
-XXX Not yet implemented: this section is TBD and may change
+XXX Bug 777177. Not yet implemented: this section is TBD and may change
 
-### `content-hidden`
+### `sidebarHide`
 
-Sent by the browser when the user hides the sidebar content.
+DOM Event sent by the browser when the user hides the sidebar content.
 
-### `content-minimized`
+### `sidebarShow`
 
-Sent by the browser when the user minimizes the sidebar content.
-
-TODO: does this fire when the user initiates the minimize or after animation? if the former, maybe provide a way to read out the expected height when minimized?
-
-### `content-maximized`
-
-Sent by the browser when the user maximizes the sidebar content.
+DOM Event sent by the browser when the user shows the sidebar content.
 
 Browser "Panel" Integration
 ---------------------------
@@ -382,7 +387,7 @@ ServiceWindows are expected to use `getWorker()` and `postMessage()` to register
 
 TODO: can the service see the "frontmost/hasfocus" property on these windows?
 
-`window.onunload` is available as normal; implementors are encouraged to use it to notify the service that they are going away. The Service Worker can also inspect the .closed property of postMessage origins to see if the window has been closed.
+`window.onunload` is available as normal; implementers are encouraged to use it to notify the service that they are going away. The Service Worker can also inspect the .closed property of postMessage origins to see if the window has been closed.
 
 Changes to `document.title` in the service window's content will change the title displayed on the window, in operating systems where that concept is applicable.
 
@@ -397,6 +402,8 @@ For a message with topic `topic` and arguments (arg1:val1, arg2:val2), construct
 
 Discovery and Service Manifest
 ==============================
+
+NOTE: Currently NOT IMPLEMENTED
 
 As a user browses web sites Firefox can discover new social providers and offer installation of those
 providers.  A social providers website would include a LINK tag in the header pointing to a manifest
@@ -464,9 +471,7 @@ Example interactions / expected implementation flow
 To Figure Out
 =============
 
-1. Should we not create a sidebar window if the user isn't signed in? Or should we create a sidebar that can present a "sign in" box?
-2. Do we need to blacklist some URLs for "recommend"? (i.e. anything with security-sensitive GET params)
-3. Can sidebar content cause itself to be hidden, minimized, maximized?
-4. Can serviceWindows cause themselves to be hidden, minimized, maximized, resized?
-5. Still need to figure out panels popping out of sidebar, especially in minimized mode; position, sizing, asynchrony.
-6. Punting on any questions of content-talking-to-service right now, or vice-versa. Two worlds for now. Preference is for markup.
+* Should we not create a sidebar window if the user isn't signed in? Or should we create a sidebar that can present a "sign in" box?
+* Do we need to blacklist some URLs for "recommend"? (i.e. anything with security-sensitive GET params)
+* Still need to figure out panels popping out of sidebar, especially in minimized mode; position, sizing, asynchrony.
+* Punting on any questions of content-talking-to-service right now, or vice-versa. Two worlds for now. Preference is for markup.
