@@ -269,8 +269,8 @@ The Worker constructs and posts a user-recommend-prompt-response in response to 
 **url**
 > String. Must be set to the URL that was included in the user-recommend-prompt that causes this response, if any. This allows the browser to catch race conditions (i.e. when the user has navigated away from content before the service responded).
 
-**img**
-> String. Will be set as the "src" property of an image contained in the user-facing click target for the "recommend" action. It can contain a web-addressible image or a data URL containing dynamically-generated image data. Implementors are strongly encouraged to use a data URL to minimize latency.
+**images**
+> String. Will be set as the "src" property of an image contained in the user-facing click target for the "recommend" action. It can contain a web-addressible image or a data URL containing dynamically-generated image data. Implementors are strongly encouraged to use a data URL to minimize latency. The image is expected to be a "CSS Sprite" laid out in horizontal order with the "recommend" icon being the first 16 pixels width-wise, and then being immediately followed by the "recommended" icon. This image should be 32px wide and 16px tall.
 
 **message**
 > String.  Will be used as the tooltip on the Recommend UI widget.
