@@ -84,10 +84,11 @@ Service workers are expected to provide functions, at global scope, named `oncon
 
 ```
 var apiPort;
-
+var ports = [];
 onconnect = function(e) {
-    port = e.ports[0];
-    apiPort.onmessage = function (msgEvent)
+    var port = e.ports[0];
+    ports.push(port);
+    port.onmessage = function (msgEvent)
     {
         var msg = msgEvent.data;
         if (msg.topic == "social.port-closing") {
@@ -103,6 +104,13 @@ onconnect = function(e) {
         }
     }
 }
+
+// send a message to all provider content
+function broadcast(topic, data) {
+  for (var i = 0; i < ports.length; i++) {
+    ports[i].postMessage({topic: topic, data: data});
+  }
+}
 ```
 
 Every message has a data element with 2 fields; 'topic' and 'data'.  The topic identifies which method or event is being used, and the data specifies additional data unique to the topic.  All standardized methods and events have topics that begin with "social." - this means services are free to use topics without this prefix as a private implementation detail (for example, to communicate between some content from the service and the service's worker)
@@ -112,15 +120,21 @@ Control Messages sent to Service Workers
 ----------------------------------------
 ### `social.initialize`
 
+**STATUS: DONE Fx17**
+
 Sent by the browser during startup.  When a worker's JavaScript has been successfully loaded and evaluated, the browser will send a message with this topic.
 
 ### `social.port-closing`
+
+**STATUS: DONE Fx17**
 
 Sent by the browser during worker shutdown, when a MessagePort to the worker is about to be closed.  This will be the last message the worker receives on the port.
 
 Ambient Notification Control
 ----------------------------
 ### `social.user-profile`
+
+**STATUS: DONE Fx17**
 
 Sent by the worker, to set the properties for the provider icon and user profile data used for the toolbar button.  If the users portrait and userName are absent, the button UI will indicate a logged out state.  When indicating logged out state, status icons set via `social.ambient-notification` will be removed.
 
@@ -154,6 +168,8 @@ avoid additional http requests.
 
 ### `social.ambient-notification`
 
+**STATUS: DONE Fx17**
+
 Sent by the worker, to update or create an ambient notification icon.  One is sent for each icon.  A user must be logged in to show status icons, and you must call `social.user-profile` prior to calling `social.ambient-notification` to set status icons.
 
 *Arguments:*
@@ -186,6 +202,8 @@ the popup panel for the icon.
 Active Notification Control
 ---------------------------
 ### `social.notification-create`
+
+**STATUS: TARGETED Fx17, BUG 774506**
 
 Sent by the worker, to create and display a notification object. This requests that the browser notify the user of an immediately-relevant change in state. See https://developer.mozilla.org/en/DOM/navigator.mozNotification for more detail.  When the user clicks on the notification, the `social.notification-action` message is sent to the worker.  The title of the notification will always be the name of the provider.
 
@@ -228,6 +246,8 @@ NOTE: No way of allowing duration and no way exposed to "cancel" a notification 
 
 ### `social.notification-action`
 
+**STATUS: TARGETED Fx17, BUG 774506**
+
 Sent to the worker as a response to a "callback" notification, after the user has clicked on the notification.
 
 *Arguments:*
@@ -248,6 +268,8 @@ Link Recommendation Control
 
 ### `social.user-recommend-prompt`
 
+**STATUS: NOT TARGETED BUG 780987**
+
 Sent by the browser to request the visual prompt for the "user recommendation" interface element. The user agent MAY include a "url" or "domain" property with the request, indicating the current browsing context. The Worker should respond with a user-recommend-prompt-response
 
 Note that most user agents will NOT include the domain and url in user-recommend-prompt, but that the user may, in some configurations, choose to enable URL- or domain-keyed prompting.
@@ -261,6 +283,8 @@ Note that most user agents will NOT include the domain and url in user-recommend
 > String, optional. If present, indicates the full URL, including query string, but minus any hash text, of the root of the current browser viewing context.
 
 ### `social.user-recommend-prompt-response`
+
+**STATUS: NOT TARGETED BUG 780987**
 
 The Worker constructs and posts a user-recommend-prompt-response in response to a `social.user-recommend-prompt` message received from the browser.  See `social.user-recommend-prompt` for more details.
 
@@ -290,6 +314,8 @@ No response is necessary; however, the service may respond on the same port with
 
 ### `social.user-unrecommend`
 
+**STATUS: NOT TARGETED BUG 780987**
+
 Indicates that the user would like to retract their previous recommendation. The message includes:
 
 *Arguments:*
@@ -307,12 +333,15 @@ Methods:
 --------
 ### `navigator.mozSocial.getWorker()`
 
+**STATUS: DONE Fx17**
+
 returns a reference to the Service Worker.
 
 The content can then call postMessage on it as normal.  Messages posted this way may be private implementation messages or any of the standard `social.` messages described above.
 
 ### `navigator.mozSocial.openServiceWindow( url, name, options, callback)`
-NOTE The openServiceWindow call is likely to change.
+
+**STATUS: DONE Fx17**
 
 Creates a new window, initially displaying the `url` page.  A reference to the window is returned as the first argument to `callback`.  Content in the window is not guaranteed to be loaded at the time of the callback.  This window will not have navigation controls or toolbars.  An attempt to create a "service window" with a domain that does not match the domain of the Service Provider is an error and will have no effect.
 
@@ -321,6 +350,34 @@ Creates a new window, initially displaying the `url` page.  A reference to the w
 Messages may be posted to and from the service window as normal. If the `name` argument passed to the function matches an existing window that is already open, a reference to that window is returned, via `callback`, rather than opening a new one.
 
 Calls to `openServiceWindow` are subject to normal anti-popup behavior: windows may only be opened in the event context of a user click. `window.onunload` is available as normal; implementers are encouraged to use it to notify the service that a window is closing.
+
+### `navigator.mozSocial.openChatWindow( url, callback)`
+
+**STATUS: TARGETED Fx17, BUG 779686**
+
+Opens a chat window that is anchored to the bottom of the browser window.  Each chat window is expected to
+be a singular chat, but functionality may vary by provider.  The `callback` receives a windowRef of the 
+content in the chat window.
+
+### `navigator.mozSocial.openPanel( url, offset, callback)`
+
+**STATUS: TARGETED Fx17, BUG 779923**
+
+Opens a flyout attached to the sidebar at a vertical offset.  The `callback` receives a windowRef to the
+content in the flyout.
+
+### `navigator.mozSocial.getAttention( )`
+
+**STATUS: DONE Fx17**
+
+Operation varies by platform.  May flash the window or otherwise notify the user that the application
+needs attention.
+
+### `navigator.mozSocial.isVisible`
+
+**STATUS: TARGETED Fx17, BUG 779360**
+
+Boolean value, True if the content is visible.
 
 Widgets
 =======
@@ -344,7 +401,7 @@ The minimized/maximized/hidden state of the sidebar widget is will be consistent
 Messages Sent to Widget
 -----------------------
 
-XXX Bug 777177. Not yet implemented: this section is TBD and may change
+**STATUS: DONE Fx17**
 
 ### `sidebarHide`
 
@@ -406,13 +463,16 @@ Message Serialization
 
 For a message with topic `topic` and arguments (arg1:val1, arg2:val2), construct an object like:
 
-    { topic: topic, arg1: val1, arg2: val2 }
+    { topic: topic, data: { arg1: val1, arg2: val2 } }
 
 
 Discovery and Service Manifest
 ==============================
 
-NOTE: Currently NOT IMPLEMENTED
+Discovery
+---------
+
+**STATUS: NOT TARGETED**
 
 As a user browses web sites Firefox can discover new social providers and offer installation of those
 providers.  A social providers website would include a LINK tag in the header pointing to a manifest
@@ -420,8 +480,11 @@ file to enable this form of discovery.  If the user either has stored authentica
 the Firefox password manager, or if the user frequents the website, Firefox will show a notification
 bar allowing the user to install the service.
 
-Installation
-------------
+Activation
+----------
+
+**STATUS: DONE Fx17**
+
 A provider can become activated by dispatching a custom event of "ActivateSocialFeature" on the document. The document's location is then checked against a built-in whitelist and if the location is found then the feature is activated for that provider.
 
 We recommend that providers require their users to click a link or button to activate the feature so the user is aware of the new functionality.
