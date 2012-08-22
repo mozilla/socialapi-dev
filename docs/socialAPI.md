@@ -314,8 +314,6 @@ No response is necessary; however, the service may respond on the same port with
 
 ### `social.user-unrecommend`
 
-**STATUS: NOT TARGETED BUG 780987**
-
 Indicates that the user would like to retract their previous recommendation. The message includes:
 
 *Arguments:*
