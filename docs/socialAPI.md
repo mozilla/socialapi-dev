@@ -268,7 +268,7 @@ Link Recommendation Control
 
 ### `social.user-recommend-prompt`
 
-**STATUS: NOT TARGETED BUG 780987**
+**STATUS: DONE Fx17**
 
 Sent by the browser to request the visual prompt for the "user recommendation" interface element. The user agent MAY include a "url" or "domain" property with the request, indicating the current browsing context. The Worker should respond with a user-recommend-prompt-response
 
