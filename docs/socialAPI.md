@@ -270,36 +270,27 @@ Link Recommendation Control
 
 **STATUS: DONE Fx17**
 
-Sent by the browser to request the visual prompt for the "user recommendation" interface element. The user agent MAY include a "url" or "domain" property with the request, indicating the current browsing context. The Worker should respond with a user-recommend-prompt-response
+Sent by the browser to request the visual prompt for the "user recommendation" interface element. The Worker should respond with a user-recommend-prompt-response
 
-Note that most user agents will NOT include the domain and url in user-recommend-prompt, but that the user may, in some configurations, choose to enable URL- or domain-keyed prompting.
+Note that typically this message will only be sent when a provider is activated and the response will be used for all URLs.  In other words, the provider should not expect this message to be sent each time the user agent navigates or displays a new URL.
 
 *Arguments:*
 
-**domain**
-> String, optional. If present, indicates the domain (scheme, host, and port) of the root of the current browser viewing context.
-
-**url**
-> String, optional. If present, indicates the full URL, including query string, but minus any hash text, of the root of the current browser viewing context.
+None
 
 ### `social.user-recommend-prompt-response`
 
-**STATUS: NOT TARGETED BUG 780987**
+**STATUS: DONE Fx17**
 
 The Worker constructs and posts a user-recommend-prompt-response in response to a `social.user-recommend-prompt` message received from the browser.  See `social.user-recommend-prompt` for more details.
 
 *Arguments:*
 
-**url**
-> String. Must be set to the URL that was included in the user-recommend-prompt that causes this response, if any. This allows the browser to catch race conditions (i.e. when the user has navigated away from content before the service responded).
-
 **images**
-> String. Will be set as the "src" property of an image contained in the user-facing click target for the "recommend" action. It can contain a web-addressible image or a data URL containing dynamically-generated image data. Implementors are strongly encouraged to use a data URL to minimize latency. The image is expected to be a "CSS Sprite" laid out in horizontal order with the "recommend" icon being the first 16 pixels width-wise, and then being immediately followed by the "recommended" icon. This image should be 32px wide and 16px tall.
+> Object. Must have 2 string keys, 'share' and 'unshare', which each value being the URL to an image which will be set as the "src" property of an image contained in the user-facing click target for the "recommend" action.  The user agent will track if the current page has been shared - if so, it will show the 'unshare' image, otherwise will show the 'share' image. It can contain a web-addressible image or a data URL containing dynamically-generated image data. Implementors are strongly encouraged to use a data URL to minimize latency.  Each image is expected to be 16px wide and 16px high.
 
-**message**
-> String.  Will be used as the tooltip on the Recommend UI widget.
-
-Note that for some configurations, the browser will never provide a domain or url property in the user-recommend-prompt event; the Worker should be prepared to serve up static (e.g. data URL) content in these cases. (TODO: do we want to come up with a system to signal that it hasn't changed to speed up rendering?)
+**messages**
+> Object.  Must have 4 string keys, 'shareTooltip', 'unshareTooltip', 'sharedLabel', 'unsharedLabel'.  'shareTooltip' and 'unshareTooltip' are the strings used as the tooltip on the click target when the 'share' and 'unshare' images are shown respectively .  'sharedLabel' and 'unsharedLabel' are strings that will be used to update a label widget after the 'share' or 'unshare' action is taken to reflect the transition from shared-to-unshared or vice-versa.  Note that in Fx17, the labels are not visible but are used as an accessibility aid so a screen-reader or similar can note the transition.
 
 ###  `social.user-recommend`
 
