@@ -203,7 +203,7 @@ Active Notification Control
 ---------------------------
 ### `social.notification-create`
 
-**STATUS: TARGETED Fx17, BUG 774506**
+**STATUS: DONE Fx17, BUG 774506**
 
 Sent by the worker, to create and display a notification object. This requests that the browser notify the user of an immediately-relevant change in state. See https://developer.mozilla.org/en/DOM/navigator.mozNotification for more detail.  When the user clicks on the notification, the `social.notification-action` message is sent to the worker.  The title of the notification will always be the name of the provider.
 
@@ -236,12 +236,6 @@ NOTE: No way of allowing duration and no way exposed to "cancel" a notification 
 
 * link
   * toURL: String: url to open in a new browser tab
-* callback
-  * all arguments are returned to the worker (see `social.notification-action`)
-* openServiceWindow
-  * toURL: String: url to open in the service window
-  * name: String: a name attached to the window e.g. "chat"
-  * options: String: window options, same as you would use with window.open
 
 
 ### `social.notification-action`
