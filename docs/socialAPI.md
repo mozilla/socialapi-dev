@@ -284,7 +284,16 @@ The Worker constructs and posts a user-recommend-prompt-response in response to 
 > Object. Must have 2 string keys, 'share' and 'unshare', which each value being the URL to an image which will be set as the "src" property of an image contained in the user-facing click target for the "recommend" action.  The user agent will track if the current page has been shared - if so, it will show the 'unshare' image, otherwise will show the 'share' image. It can contain a web-addressible image or a data URL containing dynamically-generated image data. Implementors are strongly encouraged to use a data URL to minimize latency.  Each image is expected to be 16px wide and 16px high.
 
 **messages**
-> Object.  Must have 4 string keys, 'shareTooltip', 'unshareTooltip', 'sharedLabel', 'unsharedLabel'.  'shareTooltip' and 'unshareTooltip' are the strings used as the tooltip on the click target when the 'share' and 'unshare' images are shown respectively .  'sharedLabel' and 'unsharedLabel' are strings that will be used to update a label widget after the 'share' or 'unshare' action is taken to reflect the transition from shared-to-unshared or vice-versa.  Note that in Fx17, the labels are not visible but are used as an accessibility aid so a screen-reader or similar can note the transition.
+> Object.  Must have the following string keys:
+
+* 'shareTooltip', 'unshareTooltip': The strings used as the tooltip on the click target when the 'share' and 'unshare' images, respectively, are shown.
+* 'sharedLabel', 'unsharedLabel': Strings that will be used to update a label widget after the 'share' or 'unshare' action is taken to reflect the transition from shared-to-unshared or vice-versa.  Note that in Fx17, the labels are not visible but are used as an accessibility aid so a screen-reader or similar can note the transition.
+* 'unshareLabel': A string to be displayed on the 'unshare popup' to reflect the item has been shared.  Eg: "You previously shared this item".
+* 'portraitLabel': A string used as the aria-label for the user's profile image shown in the 'unshare popup'.  Eg: "Your profile image"
+* 'unshareConfirmLabel': A string used as the label on the button on the 'unshare popup' used to perform the 'unshare'.  Eg: "Unshare it"
+* 'unshareConfirmAccessKey': A string used as the access key for the unshare button.  Typically this should be a letter included in the 'unshareConfirmLabel' string.
+* 'unshareCancelLabel': A string used as the label on the button on the 'unshare popup' when the user desires to continue sharing the item.  Eg: "Close".
+* 'unshareCancelAccessKey': A string used as the access key for the unshare cancel button.
 
 ###  `social.user-recommend`
 
