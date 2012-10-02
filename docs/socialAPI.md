@@ -61,7 +61,7 @@ A user-interface region (typically rectangular) that is temporarily displayed ab
 Creation and Lifecycle of a Social Service Worker
 =================================================
 
-It is expected that a Social Service Provider will be defined by a structured text file (JSON) containing a number of keyed URLs, a name, an icon, and a "root domain" prefix.
+It is expected that a Social Service Provider will be defined by a structured text file (JSON) containing a number of keyed URLs, a name, and an icon.  URLs must be the same-origin as the JSON file if remotely loaded.  
 
 A Service Worker is instantiated with the Service Worker URL provided by the service provider, which should resolve to a JavaScript file that will be evaluated by the Server Worker. The Worker is a Shared Worker, rendered "headlessly", in a style very similar to the Web Workers specification (though note that the current implementation is not, in fact, a Worker)
 
@@ -203,7 +203,7 @@ Active Notification Control
 ---------------------------
 ### `social.notification-create`
 
-**STATUS: DONE Fx17, BUG 774506**
+**STATUS: DONE Fx17**
 
 Sent by the worker, to create and display a notification object. This requests that the browser notify the user of an immediately-relevant change in state. See https://developer.mozilla.org/en/DOM/navigator.mozNotification for more detail.  When the user clicks on the notification, the `social.notification-action` message is sent to the worker.  The title of the notification will always be the name of the provider.
 
@@ -240,7 +240,7 @@ NOTE: No way of allowing duration and no way exposed to "cancel" a notification 
 
 ### `social.notification-action`
 
-**STATUS: TARGETED Fx17, BUG 774506**
+**STATUS: DONE Fx17**
 
 Sent to the worker as a response to a "callback" notification, after the user has clicked on the notification.
 
@@ -331,21 +331,9 @@ returns a reference to the Service Worker.
 
 The content can then call postMessage on it as normal.  Messages posted this way may be private implementation messages or any of the standard `social.` messages described above.
 
-### `navigator.mozSocial.openServiceWindow( url, name, options, callback)`
-
-**STATUS: DONE Fx17**
-
-Creates a new window, initially displaying the `url` page.  A reference to the window is returned as the first argument to `callback`.  Content in the window is not guaranteed to be loaded at the time of the callback.  This window will not have navigation controls or toolbars.  An attempt to create a "service window" with a domain that does not match the domain of the Service Provider is an error and will have no effect.
-
-"service windows" will contain a single content region, with no tabbed browser elements, and no navigation chrome. The browser will display domain and security badges as its implementers see fit. The browser may implement "pinning" to attach the content region to an existing chrome window; content should observe the size of its window and reflow as needed.
-
-Messages may be posted to and from the service window as normal. If the `name` argument passed to the function matches an existing window that is already open, a reference to that window is returned, via `callback`, rather than opening a new one.
-
-Calls to `openServiceWindow` are subject to normal anti-popup behavior: windows may only be opened in the event context of a user click. `window.onunload` is available as normal; implementers are encouraged to use it to notify the service that a window is closing.
-
 ### `navigator.mozSocial.openChatWindow( url, callback)`
 
-**STATUS: TARGETED Fx17, BUG 779686**
+**STATUS: DONE Fx17**
 
 Opens a chat window that is anchored to the bottom of the browser window.  Each chat window is expected to
 be a singular chat, but functionality may vary by provider.  The `callback` receives a windowRef of the 
@@ -353,7 +341,7 @@ content in the chat window.
 
 ### `navigator.mozSocial.openPanel( url, offset, callback)`
 
-**STATUS: TARGETED Fx17, BUG 779923**
+**STATUS: DONE Fx17**
 
 Opens a flyout attached to the sidebar at a vertical offset.  The `callback` receives a windowRef to the
 content in the flyout.
@@ -367,7 +355,7 @@ needs attention.
 
 ### `navigator.mozSocial.isVisible`
 
-**STATUS: TARGETED Fx17, BUG 779360**
+**STATUS: DONE Fx17**
 
 Boolean value, True if the content is visible.
 
@@ -395,23 +383,29 @@ Messages Sent to Widget
 
 **STATUS: DONE Fx17**
 
-### `sidebarHide`
+### `socialFrameHide`
 
 DOM Event sent by the browser when the user hides the sidebar content.
 
-### `sidebarShow`
+### `socialFrameShow`
 
 DOM Event sent by the browser when the user shows the sidebar content.
 
 Browser "Panel" Integration
 ---------------------------
 
+**STATUS: DONE Fx17**
+
 To allow content to place an ephemeral window in front of normal browser content and chrome, the following API is used:
 
-    TODO - not yet implemented
+    `navigator.mozSocial.openChatWindow( url, callback)`
+
+The callback will receive the window object from the chat frame.  
 
 ShareWidget
 ===========
+
+**STATUS: NOT TARGETED**
 
 If a service defines a ShareWidget, when the user triggers the "Share" behavior, the browser will create a "floating panel" interface element containing an IFRAME whose src is set to the ShareWidget URL. A Share event is then fired at the message, as defined in the ShareHandler section, below.
 
@@ -426,28 +420,6 @@ Messages Sent to Widget:
 Sent by the browser to the share widget once the widget has loaded, providing the details of the content the user has requested to share.
 
 **Arguments TBD**
-
-
-ServiceWindows
-==============
-
-ServiceWindows are created by calling `openServiceWindow` in a Widget window.
-
-A ServiceWindow can only serve content from the Social Service Provider's domain. Any attempt to navigate the root of the ServiceWindow's browser away from this domain will be automatically intercepted and redirected to a new tab in the front most tabbed browsing window (or a new window if no such browsing window exists).
-
-ServiceWindow content inherits the API defined for ServiceContent above.
-
-TODO On OSes that require an application window to be open for process visibility, does closing all the tabbed browsing windows and keeping a ServiceWindow open cause application shutdown, or does the browser keep running? If it keeps running we need a way to get a browser window back.
-
-TODO: Need to specify more about the primary widget interactions of ServiceWindows. On Windows they get an application menu, on Mac they need to inherit some of the MenuBar (rather like prefwindows).
-
-ServiceWindows are expected to use `getWorker()` and `postMessage()` to register with the Service Worker shortly after becoming loaded. The Service Worker can inspect the "origin" property of messages that are delivered this way to make a list of current windows, and can invoke the `close()` and `focus()` methods on these windows.
-
-TODO: can the service see the "frontmost/hasfocus" property on these windows?
-
-`window.onunload` is available as normal; implementers are encouraged to use it to notify the service that they are going away. The Service Worker can also inspect the .closed property of postMessage origins to see if the window has been closed.
-
-Changes to `document.title` in the service window's content will change the title displayed on the window, in operating systems where that concept is applicable.
 
 
 Message Serialization
