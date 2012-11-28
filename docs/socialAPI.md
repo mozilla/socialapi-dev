@@ -195,7 +195,7 @@ avoid additional http requests. (e.g. "data:image/png;base64,...data...")
 typically used to convey an `unread` concept.
 
 **contentPanel**
-> String, optional.  Specifies the URL of content that will be displayed in
+> String.  Specifies the URL of content that will be displayed in
 the popup panel for the icon.
 
 
